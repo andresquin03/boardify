@@ -1,6 +1,11 @@
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Clock, Heart, Users } from "lucide-react";
+"use client";
+
+import { useOptimistic, useTransition } from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Clock, Heart, Bookmark, CircleCheckBig, Users } from "lucide-react";
+import { toggleFavorite, toggleWishlist, toggleOwned } from "@/lib/actions";
+import { cn } from "@/lib/utils";
 
 interface GameCardProps {
   game: {
@@ -10,9 +15,43 @@ interface GameCardProps {
     playtime: string;
     image?: string | null;
   };
+  userState?: {
+    isFavorite: boolean;
+    isWishlist: boolean;
+    isOwned: boolean;
+  };
+  isAuthenticated?: boolean;
 }
 
-export function GameCard({ game }: GameCardProps) {
+export function GameCard({ game, userState, isAuthenticated }: GameCardProps) {
+  const [isPending, startTransition] = useTransition();
+  const [optimistic, setOptimistic] = useOptimistic(
+    userState ?? { isFavorite: false, isWishlist: false, isOwned: false },
+  );
+
+  function handleToggle(action: "favorite" | "wishlist" | "owned") {
+    if (!isAuthenticated) return;
+
+    startTransition(async () => {
+      if (action === "favorite") {
+        setOptimistic((prev) => ({ ...prev, isFavorite: !prev.isFavorite }));
+        await toggleFavorite(game.id);
+      } else if (action === "wishlist") {
+        if (optimistic.isOwned) return;
+        setOptimistic((prev) => ({ ...prev, isWishlist: !prev.isWishlist }));
+        await toggleWishlist(game.id);
+      } else {
+        const newOwned = !optimistic.isOwned;
+        setOptimistic((prev) => ({
+          ...prev,
+          isOwned: newOwned,
+          ...(newOwned && { isWishlist: false }),
+        }));
+        await toggleOwned(game.id);
+      }
+    });
+  }
+
   return (
     <Card className="rounded-2xl shadow-sm transition-shadow hover:shadow-md">
       <CardHeader className="pb-2">
@@ -20,26 +59,110 @@ export function GameCard({ game }: GameCardProps) {
           <DiceIcon className="h-10 w-10 text-muted-foreground/50" />
         </div>
       </CardHeader>
-      <CardContent className="space-y-2">
-        <CardTitle className="text-base">{game.title}</CardTitle>
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <Users className="h-3.5 w-3.5" />
-            {game.playerCount}
-          </span>
-          <span className="flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5" />
-            {game.playtime}
-          </span>
+      <CardContent>
+        <div className="flex items-start justify-between gap-2">
+          <div className="space-y-1.5">
+            <h3 className="text-base font-semibold leading-tight">{game.title}</h3>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Users className="h-3.5 w-3.5" />
+                {game.playerCount}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                {game.playtime}
+              </span>
+            </div>
+          </div>
+          {isAuthenticated && (
+            <div className="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => handleToggle("favorite")}
+                    className={actionButtonClass({
+                      active: optimistic.isFavorite,
+                      activeClassName: "border-rose-400/40 bg-rose-500/10 text-rose-500",
+                      inactiveClassName: "text-muted-foreground hover:bg-muted hover:text-rose-500",
+                    })}
+                    aria-label="Favorite"
+                    aria-pressed={optimistic.isFavorite}
+                  >
+                    <Heart className="h-4.5 w-4.5" fill={optimistic.isFavorite ? "currentColor" : "none"} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Favorite</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={isPending || optimistic.isOwned}
+                    onClick={() => handleToggle("wishlist")}
+                    className={actionButtonClass({
+                      active: optimistic.isWishlist,
+                      activeClassName: "border-sky-400/40 bg-sky-500/10 text-sky-500",
+                      inactiveClassName: "text-muted-foreground hover:bg-muted hover:text-sky-500",
+                      disabled: optimistic.isOwned,
+                    })}
+                    aria-label="Wishlist"
+                    aria-pressed={optimistic.isWishlist}
+                  >
+                    <Bookmark className="h-4.5 w-4.5" fill={optimistic.isWishlist ? "currentColor" : "none"} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {optimistic.isOwned ? "Owned games can't be wishlisted" : "Wishlist"}
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => handleToggle("owned")}
+                    className={actionButtonClass({
+                      active: optimistic.isOwned,
+                      activeClassName: "border-emerald-400/40 bg-emerald-500/10 text-emerald-500",
+                      inactiveClassName: "text-muted-foreground hover:bg-muted hover:text-emerald-500",
+                    })}
+                    aria-label="Owned"
+                    aria-pressed={optimistic.isOwned}
+                  >
+                    <CircleCheckBig className="h-4.5 w-4.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Owned</TooltipContent>
+              </Tooltip>
+            </div>
+          )}
         </div>
       </CardContent>
-      <CardFooter>
-        <Button variant="outline" size="sm" className="w-full gap-1.5">
-          <Heart className="h-3.5 w-3.5" />
-          Add to favorites
-        </Button>
-      </CardFooter>
     </Card>
+  );
+}
+
+function actionButtonClass({
+  active,
+  activeClassName,
+  inactiveClassName,
+  disabled = false,
+}: {
+  active: boolean;
+  activeClassName: string;
+  inactiveClassName: string;
+  disabled?: boolean;
+}) {
+  return cn(
+    "cursor-pointer rounded-md border transition-all duration-200",
+    "p-1.5",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
+    active ? "scale-105 shadow-sm" : "scale-100",
+    active ? activeClassName : inactiveClassName,
+    disabled &&
+      "cursor-default border-transparent text-muted-foreground/40 transition-none hover:bg-transparent hover:text-muted-foreground/40",
   );
 }
 
