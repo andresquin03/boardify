@@ -1,9 +1,8 @@
+import { notFound } from "next/navigation";
 import { ProfileHeader } from "@/components/profile/profile-header";
 import { GameCard } from "@/components/games/game-card";
-import { mockUser } from "@/lib/mock-data";
-
-// Hardcoded to false; flip to true to preview owner view
-const IS_OWNER = false;
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 export default async function ProfilePage({
   params,
@@ -11,23 +10,54 @@ export default async function ProfilePage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
+  const session = await auth();
 
-  // In a real app you'd fetch the user by username.
-  // For now we just override the mock data's username with the route param.
-  const user = { ...mockUser, username };
+  // Look up user by username, or fall back to email prefix match
+  let user = await prisma.user.findUnique({
+    where: { username },
+    include: {
+      favorites: {
+        include: { game: true },
+      },
+    },
+  });
+
+  // Fallback: match by email prefix (e.g. /u/johndoe matches johndoe@gmail.com)
+  if (!user) {
+    user = await prisma.user.findFirst({
+      where: { email: { startsWith: username + "@" } },
+      include: {
+        favorites: {
+          include: { game: true },
+        },
+      },
+    });
+  }
+
+  if (!user) notFound();
+
+  const isOwner = session?.user?.id === user.id;
+  const favoriteGames = user.favorites.map((f) => f.game);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <ProfileHeader user={user} isOwner={IS_OWNER} />
+      <ProfileHeader
+        user={{
+          name: user.name,
+          username: user.username ?? username,
+          image: user.image,
+        }}
+        isOwner={isOwner}
+      />
 
       {/* Favorite Games */}
       <section className="mt-10">
         <h2 className="text-xl font-semibold">Favorite Games</h2>
-        {user.favoriteGames.length === 0 ? (
+        {favoriteGames.length === 0 ? (
           <p className="mt-4 text-muted-foreground">No favorite games yet.</p>
         ) : (
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {user.favoriteGames.map((game) => (
+            {favoriteGames.map((game) => (
               <GameCard key={game.id} game={game} />
             ))}
           </div>

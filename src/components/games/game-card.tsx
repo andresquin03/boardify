@@ -1,10 +1,15 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock, Heart, Users } from "lucide-react";
-import type { Game } from "@/lib/mock-data";
 
 interface GameCardProps {
-  game: Game;
+  game: {
+    id: string;
+    title: string;
+    playerCount: string;
+    playtime: string;
+    image?: string | null;
+  };
 }
 
 export function GameCard({ game }: GameCardProps) {
@@ -12,7 +17,7 @@ export function GameCard({ game }: GameCardProps) {
     <Card className="rounded-2xl shadow-sm transition-shadow hover:shadow-md">
       <CardHeader className="pb-2">
         <div className="flex h-28 items-center justify-center rounded-xl bg-muted">
-          <Dice className="h-10 w-10 text-muted-foreground/50" />
+          <DiceIcon className="h-10 w-10 text-muted-foreground/50" />
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -38,7 +43,7 @@ export function GameCard({ game }: GameCardProps) {
   );
 }
 
-function Dice({ className }: { className?: string }) {
+function DiceIcon({ className }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

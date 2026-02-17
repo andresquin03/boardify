@@ -7,10 +7,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { GameCard } from "@/components/games/game-card";
-import { games } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 import { Search } from "lucide-react";
 
-export default function GamesPage() {
+export default async function GamesPage() {
+  const games = await prisma.game.findMany({
+    orderBy: { title: "asc" },
+  });
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
       <h1 className="text-3xl font-bold">Games</h1>

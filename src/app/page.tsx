@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Dice5, Heart, Users } from "lucide-react";
+import { signInWithGoogle } from "@/lib/actions";
 
 const features = [
   {
@@ -43,9 +44,11 @@ export default function HomePage() {
           players, and organize unforgettable game nights.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-          <Button size="lg" className="gap-2">
-            Sign in with Google
-          </Button>
+          <form action={signInWithGoogle}>
+            <Button size="lg" className="gap-2" type="submit">
+              Sign in with Google
+            </Button>
+          </form>
           <Button variant="outline" size="lg" asChild>
             <Link href="/games">Browse games</Link>
           </Button>

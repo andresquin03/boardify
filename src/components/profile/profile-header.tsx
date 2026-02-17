@@ -1,15 +1,19 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Pencil, Settings } from "lucide-react";
-import type { UserProfile } from "@/lib/mock-data";
 
 interface ProfileHeaderProps {
-  user: UserProfile;
+  user: {
+    name: string | null;
+    username: string | null;
+    image: string | null;
+  };
   isOwner: boolean;
 }
 
 export function ProfileHeader({ user, isOwner }: ProfileHeaderProps) {
-  const initials = user.displayName
+  const displayName = user.name ?? user.username ?? "User";
+  const initials = displayName
     .split(" ")
     .map((n) => n[0])
     .join("")
@@ -18,12 +22,15 @@ export function ProfileHeader({ user, isOwner }: ProfileHeaderProps) {
   return (
     <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
       <Avatar className="h-24 w-24 text-2xl">
+        <AvatarImage src={user.image ?? undefined} alt={displayName} />
         <AvatarFallback>{initials}</AvatarFallback>
       </Avatar>
       <div className="flex flex-1 flex-col items-center gap-2 sm:items-start">
         <div>
-          <h1 className="text-2xl font-bold">{user.displayName}</h1>
-          <p className="text-muted-foreground">@{user.username}</p>
+          <h1 className="text-2xl font-bold">{displayName}</h1>
+          {user.username && (
+            <p className="text-muted-foreground">@{user.username}</p>
+          )}
         </div>
         {isOwner && (
           <div className="flex gap-2">
