@@ -16,9 +16,10 @@ import { prisma } from "@/lib/prisma";
 
 export async function Navbar() {
   const session = await auth();
+  const hasCompletedOnboarding = Boolean(session?.user?.username);
 
   let pendingRequestCount = 0;
-  if (session?.user?.id) {
+  if (session?.user?.id && hasCompletedOnboarding) {
     pendingRequestCount = await prisma.friendship.count({
       where: { addresseeId: session.user.id, status: "PENDING" },
     });
@@ -54,7 +55,7 @@ export async function Navbar() {
             >
               Games
             </Link>
-            {session?.user && (
+            {session?.user && hasCompletedOnboarding && (
               <Link
                 href="/friends"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
@@ -69,7 +70,7 @@ export async function Navbar() {
           {session?.user ? (
             <>
               <Link
-                href="/friends"
+                href={hasCompletedOnboarding ? "/friends" : "/onboarding"}
                 className="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 <Bell className="h-4.5 w-4.5" />
@@ -100,7 +101,7 @@ export async function Navbar() {
                 <DropdownMenuContent align="center" sideOffset={10}>
                   <DropdownMenuItem asChild>
                     <Link
-                      href={`/u/${session.user.username ?? session.user.id}`}
+                      href={session.user.username ? `/u/${session.user.username}` : "/onboarding"}
                       className="flex w-full items-center justify-center gap-2 text-center"
                     >
                       <User className="h-4 w-4" />

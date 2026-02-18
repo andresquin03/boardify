@@ -9,6 +9,33 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function findUserByUsernameWithRetry(username: string) {
+  const attempts = 4;
+  const delay = 100;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const user = await prisma.user.findUnique({
+      where: { username },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        bio: true,
+        image: true,
+        visibility: true,
+      },
+    });
+
+    if (user) return user;
+    if (attempt < attempts - 1) await sleep(delay);
+  }
+
+  return null;
+}
+
 export default async function ProfilePage({
   params,
 }: {
@@ -18,17 +45,7 @@ export default async function ProfilePage({
   const session = await auth();
   const viewerId = session?.user?.id ?? null;
 
-  const user = await prisma.user.findUnique({
-    where: { username },
-    select: {
-      id: true,
-      name: true,
-      username: true,
-      bio: true,
-      image: true,
-      visibility: true,
-    },
-  });
+  const user = await findUserByUsernameWithRetry(username);
 
   if (!user) notFound();
 

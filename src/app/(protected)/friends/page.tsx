@@ -100,7 +100,7 @@ export default async function FriendsPage() {
             {friendUsers.map((user) => (
               <Link
                 key={user.id}
-                href={`/u/${user.username ?? user.id}`}
+                href={user.username ? `/u/${user.username}` : "/onboarding"}
                 className="flex items-center gap-3 rounded-xl border bg-card/70 p-3 shadow-sm transition-colors hover:bg-accent/50"
               >
                 <Avatar className="h-10 w-10">
@@ -135,7 +135,7 @@ function UserRow({
 }) {
   return (
     <Link
-      href={`/u/${user.username ?? user.id}`}
+      href={user.username ? `/u/${user.username}` : "/onboarding"}
       className="flex items-center gap-3 transition-colors hover:opacity-80"
     >
       <Avatar className="h-10 w-10">

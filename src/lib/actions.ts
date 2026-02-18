@@ -7,7 +7,30 @@ import { redirect } from "next/navigation";
 
 // ── Input validation ─────────────────────────────────────
 
-const CUID_RE = /^c[a-z0-9]{24}$/;
+const CUID_RE = /^c[a-z0-9]{20,32}$/;
+const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{1,28}[a-z0-9]$/;
+const PROFILE_PATH_SEGMENT_RE = /^[a-z0-9._-]{3,50}$/;
+
+function normalizeUsername(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function isUsernameUniqueConstraintError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const known = error as { code?: string; meta?: { target?: unknown } };
+  if (known.code !== "P2002") return false;
+
+  const target = known.meta?.target;
+  if (Array.isArray(target)) {
+    return target.some((item) => item === "username");
+  }
+
+  if (typeof target === "string") {
+    return target.includes("username");
+  }
+
+  return false;
+}
 
 function assertCuid(value: unknown, label: string): asserts value is string {
   if (typeof value !== "string" || !CUID_RE.test(value)) {
@@ -15,8 +38,11 @@ function assertCuid(value: unknown, label: string): asserts value is string {
   }
 }
 
-function assertSafeString(value: unknown, label: string, maxLength = 100): asserts value is string {
-  if (typeof value !== "string" || value.length === 0 || value.length > maxLength) {
+function assertProfilePathSegment(value: unknown, label: string): asserts value is string {
+  if (
+    typeof value !== "string" ||
+    !(USERNAME_RE.test(value) || CUID_RE.test(value) || PROFILE_PATH_SEGMENT_RE.test(value))
+  ) {
     throw new Error(`Invalid ${label}`);
   }
 }
@@ -31,9 +57,16 @@ export async function handleSignOut() {
   await signOut({ redirectTo: "/" });
 }
 
-async function getAuthUserId() {
+async function getAuthUserId({
+  requireOnboardingCompleted = true,
+}: {
+  requireOnboardingCompleted?: boolean;
+} = {}) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Not authenticated");
+  if (requireOnboardingCompleted && !session.user.username) {
+    throw new Error("Onboarding not completed");
+  }
   return session.user.id;
 }
 
@@ -113,7 +146,7 @@ export async function toggleOwned(gameId: string) {
 
 export async function sendFriendRequest(addresseeId: string, profileUsername: string) {
   assertCuid(addresseeId, "addresseeId");
-  assertSafeString(profileUsername, "profileUsername", 50);
+  assertProfilePathSegment(profileUsername, "profileUsername");
   const requesterId = await getAuthUserId();
 
   if (requesterId === addresseeId) {
@@ -182,6 +215,7 @@ function revalidateFriendshipProfiles(friendship: {
   addressee: { username: string | null };
 }) {
   revalidatePath("/friends");
+  revalidatePath("/", "layout");
   if (friendship.requester.username) {
     revalidatePath(`/u/${friendship.requester.username}`);
   }
@@ -232,9 +266,13 @@ export async function rejectFriendRequest(friendshipId: string) {
 
 export async function unfriend(friendshipId: string, profileUsername: string) {
   assertCuid(friendshipId, "friendshipId");
-  assertSafeString(profileUsername, "profileUsername", 50);
+  assertProfilePathSegment(profileUsername, "profileUsername");
   const userId = await getAuthUserId();
   const friendship = await getAuthorizedFriendship(friendshipId, userId);
+
+  if (friendship.status !== "ACCEPTED") {
+    throw new Error("Only accepted friendships can be unfriended");
+  }
 
   await prisma.friendship.update({
     where: { id: friendshipId },
@@ -246,7 +284,6 @@ export async function unfriend(friendshipId: string, profileUsername: string) {
 
 // ── Onboarding ──────────────────────────────────────────
 
-const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{1,28}[a-z0-9]$/;
 const VALID_VISIBILITIES = ["PUBLIC", "FRIENDS", "PRIVATE"] as const;
 
 type ProfileFormState = {
@@ -256,6 +293,12 @@ type ProfileFormState = {
     bio?: string;
     visibility?: string;
     general?: string;
+  };
+  values?: {
+    username: string;
+    name: string;
+    bio: string;
+    visibility: "PUBLIC" | "FRIENDS" | "PRIVATE";
   };
 } | null;
 
@@ -267,43 +310,64 @@ type ProfileInput = {
 };
 
 type ParsedProfileFormData =
-  | { errors: NonNullable<ProfileFormState>["errors"]; data?: never }
-  | { errors?: never; data: ProfileInput };
+  | {
+      errors: NonNullable<ProfileFormState>["errors"];
+      values: NonNullable<ProfileFormState>["values"];
+    }
+  | { data: ProfileInput };
 
 function parseProfileFormData(formData: FormData): ParsedProfileFormData {
-  const username = formData.get("username");
-  const name = formData.get("name");
-  const bio = formData.get("bio");
-  const visibility = formData.get("visibility");
+  const rawUsername = formData.get("username");
+  const rawName = formData.get("name");
+  const rawBio = formData.get("bio");
+  const rawVisibility = formData.get("visibility");
+  const username =
+    typeof rawUsername === "string" ? normalizeUsername(rawUsername) : "";
+  const name = typeof rawName === "string" ? rawName.trim() : "";
+  const bio = typeof rawBio === "string" ? rawBio.trim() : "";
+  const visibility =
+    typeof rawVisibility === "string" &&
+    VALID_VISIBILITIES.includes(rawVisibility as typeof VALID_VISIBILITIES[number])
+      ? (rawVisibility as "PUBLIC" | "FRIENDS" | "PRIVATE")
+      : "PUBLIC";
+  const values: NonNullable<ProfileFormState>["values"] = {
+    username,
+    name,
+    bio,
+    visibility,
+  };
 
   const errors: NonNullable<ProfileFormState>["errors"] = {};
 
-  if (typeof username !== "string" || !USERNAME_RE.test(username)) {
+  if (!USERNAME_RE.test(username)) {
     errors.username = "Invalid username. Use 3-30 lowercase letters, numbers, dots, underscores or hyphens.";
   }
 
-  if (typeof name !== "string" || name.trim().length === 0 || name.length > 50) {
+  if (name.length === 0 || name.length > 50) {
     errors.name = "Display name is required (max 50 characters).";
   }
 
-  if (bio !== null && bio !== "" && (typeof bio !== "string" || bio.length > 160)) {
+  if (bio !== "" && bio.length > 160) {
     errors.bio = "Bio must be 160 characters or less.";
   }
 
-  if (typeof visibility !== "string" || !VALID_VISIBILITIES.includes(visibility as typeof VALID_VISIBILITIES[number])) {
+  if (
+    typeof rawVisibility !== "string" ||
+    !VALID_VISIBILITIES.includes(rawVisibility as typeof VALID_VISIBILITIES[number])
+  ) {
     errors.visibility = "Invalid visibility option.";
   }
 
   if (Object.keys(errors).length > 0) {
-    return { errors };
+    return { errors, values };
   }
 
   return {
     data: {
-      username: username as string,
-      name: (name as string).trim(),
-      bio: bio ? (bio as string).trim() : null,
-      visibility: visibility as "PUBLIC" | "FRIENDS" | "PRIVATE",
+      username,
+      name,
+      bio: bio ? bio : null,
+      visibility,
     },
   };
 }
@@ -312,27 +376,59 @@ export async function completeOnboarding(
   _prev: ProfileFormState,
   formData: FormData,
 ): Promise<ProfileFormState> {
-  const userId = await getAuthUserId();
+  const userId = await getAuthUserId({ requireOnboardingCompleted: false });
   const parsed = parseProfileFormData(formData);
   if ("errors" in parsed) {
-    return { errors: parsed.errors };
+    return { errors: parsed.errors, values: parsed.values };
   }
 
-  const taken = await prisma.user.findUnique({
-    where: { username: parsed.data.username },
+  const taken = await prisma.user.findFirst({
+    where: {
+      username: {
+        equals: parsed.data.username,
+        mode: "insensitive",
+      },
+    },
     select: { id: true },
   });
 
   if (taken && taken.id !== userId) {
-    return { errors: { username: "This username is already taken." } };
+    return {
+      errors: { username: "This username is already taken." },
+      values: {
+        username: parsed.data.username,
+        name: parsed.data.name,
+        bio: parsed.data.bio ?? "",
+        visibility: parsed.data.visibility,
+      },
+    };
   }
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: parsed.data,
-  });
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: parsed.data,
+    });
+  } catch (error) {
+    if (isUsernameUniqueConstraintError(error)) {
+      return {
+        errors: { username: "This username is already taken." },
+        values: {
+          username: parsed.data.username,
+          name: parsed.data.name,
+          bio: parsed.data.bio ?? "",
+          visibility: parsed.data.visibility,
+        },
+      };
+    }
+    throw error;
+  }
 
-  redirect("/");
+  revalidatePath("/", "layout");
+  revalidatePath("/onboarding");
+  revalidatePath(`/u/${parsed.data.username}`);
+
+  redirect(`/u/${parsed.data.username}`);
 }
 
 export async function updateProfileSettings(

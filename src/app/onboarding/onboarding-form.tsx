@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,26 +26,34 @@ const visibilityConfig = {
   },
 } as const;
 
-type VisibilityValue = keyof typeof visibilityConfig;
-
 export function OnboardingForm({
   defaultUsername,
   defaultName,
+  defaultBio,
+  defaultVisibility,
 }: {
   defaultUsername: string;
   defaultName: string;
+  defaultBio: string;
+  defaultVisibility: "PUBLIC" | "FRIENDS" | "PRIVATE";
 }) {
   const [state, action, isPending] = useActionState(completeOnboarding, null);
-  const [visibility, setVisibility] = useState<VisibilityValue>("PUBLIC");
+  const initialValues = state?.values ?? {
+    username: defaultUsername,
+    name: defaultName,
+    bio: defaultBio,
+    visibility: defaultVisibility,
+  };
+  const formKey = `${initialValues.username}|${initialValues.name}|${initialValues.bio}|${initialValues.visibility}`;
 
   return (
-    <form action={action} className="space-y-4" noValidate>
+    <form key={formKey} action={action} className="space-y-4" noValidate>
       <div className="space-y-2">
         <Label htmlFor="username">Username</Label>
         <Input
           id="username"
           name="username"
-          defaultValue={defaultUsername}
+          defaultValue={initialValues.username}
           placeholder="your-username"
           maxLength={30}
         />
@@ -64,7 +72,7 @@ export function OnboardingForm({
         <Input
           id="name"
           name="name"
-          defaultValue={defaultName}
+          defaultValue={initialValues.name}
           placeholder="Your Name"
           maxLength={50}
         />
@@ -78,6 +86,7 @@ export function OnboardingForm({
         <Textarea
           id="bio"
           name="bio"
+          defaultValue={initialValues.bio}
           placeholder="Tell us about yourself..."
           maxLength={160}
           rows={3}
@@ -90,11 +99,7 @@ export function OnboardingForm({
 
       <div className="space-y-2">
         <Label htmlFor="visibility">Profile visibility</Label>
-        <Select
-          name="visibility"
-          value={visibility}
-          onValueChange={(value) => setVisibility(value as VisibilityValue)}
-        >
+        <Select name="visibility" defaultValue={initialValues.visibility}>
           <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
