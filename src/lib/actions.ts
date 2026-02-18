@@ -74,3 +74,41 @@ export async function toggleOwned(gameId: string) {
   revalidatePath("/games");
   revalidatePath("/g", "layout");
 }
+
+export async function sendFriendRequest(addresseeId: string, profileUsername: string) {
+  const requesterId = await getAuthUserId();
+
+  if (requesterId === addresseeId) {
+    return;
+  }
+
+  const existing = await prisma.friendship.findFirst({
+    where: {
+      OR: [
+        { requesterId, addresseeId },
+        { requesterId: addresseeId, addresseeId: requesterId },
+      ],
+    },
+    select: { id: true, status: true },
+  });
+
+  if (!existing) {
+    await prisma.friendship.create({
+      data: {
+        requesterId,
+        addresseeId,
+      },
+    });
+  } else if (existing.status === "REJECTED") {
+    await prisma.friendship.update({
+      where: { id: existing.id },
+      data: {
+        requesterId,
+        addresseeId,
+        status: "PENDING",
+      },
+    });
+  }
+
+  revalidatePath(`/u/${profileUsername}`);
+}
