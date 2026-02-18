@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,20 @@ import {
 } from "@/components/ui/select";
 import { completeOnboarding } from "@/lib/actions";
 
+const visibilityConfig = {
+  PUBLIC: {
+    label: "🌐 Public profile",
+  },
+  FRIENDS: {
+    label: "👥 Friends only",
+  },
+  PRIVATE: {
+    label: "🔒 Private profile",
+  },
+} as const;
+
+type VisibilityValue = keyof typeof visibilityConfig;
+
 export function OnboardingForm({
   defaultUsername,
   defaultName,
@@ -22,9 +36,10 @@ export function OnboardingForm({
   defaultName: string;
 }) {
   const [state, action, isPending] = useActionState(completeOnboarding, null);
+  const [visibility, setVisibility] = useState<VisibilityValue>("PUBLIC");
 
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} className="space-y-4" noValidate>
       <div className="space-y-2">
         <Label htmlFor="username">Username</Label>
         <Input
@@ -33,14 +48,15 @@ export function OnboardingForm({
           defaultValue={defaultUsername}
           placeholder="your-username"
           maxLength={30}
-          required
         />
         {state?.errors?.username && (
           <p className="text-sm text-destructive">{state.errors.username}</p>
         )}
-        <p className="text-xs text-muted-foreground">
-          3-30 characters. Lowercase letters, numbers, dots, underscores and hyphens.
-        </p>
+        {!state?.errors?.username && (
+          <p className="text-xs text-muted-foreground">
+            3-30 characters. Lowercase letters, numbers, dots, underscores and hyphens.
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -51,7 +67,6 @@ export function OnboardingForm({
           defaultValue={defaultName}
           placeholder="Your Name"
           maxLength={50}
-          required
         />
         {state?.errors?.name && (
           <p className="text-sm text-destructive">{state.errors.name}</p>
@@ -75,14 +90,18 @@ export function OnboardingForm({
 
       <div className="space-y-2">
         <Label htmlFor="visibility">Profile visibility</Label>
-        <Select name="visibility" defaultValue="PUBLIC">
+        <Select
+          name="visibility"
+          value={visibility}
+          onValueChange={(value) => setVisibility(value as VisibilityValue)}
+        >
           <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="PUBLIC">Public</SelectItem>
-            <SelectItem value="FRIENDS">Friends only</SelectItem>
-            <SelectItem value="PRIVATE">Private</SelectItem>
+            <SelectItem value="PUBLIC">{visibilityConfig.PUBLIC.label}</SelectItem>
+            <SelectItem value="FRIENDS">{visibilityConfig.FRIENDS.label}</SelectItem>
+            <SelectItem value="PRIVATE">{visibilityConfig.PRIVATE.label}</SelectItem>
           </SelectContent>
         </Select>
         {state?.errors?.visibility && (

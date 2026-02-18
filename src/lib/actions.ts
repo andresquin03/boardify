@@ -179,7 +179,11 @@ type ProfileInput = {
   visibility: "PUBLIC" | "FRIENDS" | "PRIVATE";
 };
 
-function parseProfileFormData(formData: FormData): { errors?: NonNullable<ProfileFormState>["errors"]; data?: ProfileInput } {
+type ParsedProfileFormData =
+  | { errors: NonNullable<ProfileFormState>["errors"]; data?: never }
+  | { errors?: never; data: ProfileInput };
+
+function parseProfileFormData(formData: FormData): ParsedProfileFormData {
   const username = formData.get("username");
   const name = formData.get("name");
   const bio = formData.get("bio");
@@ -188,7 +192,7 @@ function parseProfileFormData(formData: FormData): { errors?: NonNullable<Profil
   const errors: NonNullable<ProfileFormState>["errors"] = {};
 
   if (typeof username !== "string" || !USERNAME_RE.test(username)) {
-    errors.username = "3-30 characters, only lowercase letters, numbers, dots, underscores and hyphens. Must start and end with a letter or number.";
+    errors.username = "Invalid username. Use 3-30 lowercase letters, numbers, dots, underscores or hyphens.";
   }
 
   if (typeof name !== "string" || name.trim().length === 0 || name.length > 50) {
@@ -223,7 +227,7 @@ export async function completeOnboarding(
 ): Promise<ProfileFormState> {
   const userId = await getAuthUserId();
   const parsed = parseProfileFormData(formData);
-  if (parsed.errors) {
+  if ("errors" in parsed) {
     return { errors: parsed.errors };
   }
 

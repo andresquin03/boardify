@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,20 @@ import {
 } from "@/components/ui/select";
 import { updateProfileSettings } from "@/lib/actions";
 
+const visibilityConfig = {
+  PUBLIC: {
+    label: "🌐 Public profile",
+  },
+  FRIENDS: {
+    label: "👥 Friends only",
+  },
+  PRIVATE: {
+    label: "🔒 Private profile",
+  },
+} as const;
+
+type VisibilityValue = keyof typeof visibilityConfig;
+
 export function EditProfileForm({
   defaultName,
   defaultBio,
@@ -24,9 +38,10 @@ export function EditProfileForm({
   defaultVisibility: "PUBLIC" | "FRIENDS" | "PRIVATE";
 }) {
   const [state, action, isPending] = useActionState(updateProfileSettings, null);
+  const [visibility, setVisibility] = useState<VisibilityValue>(defaultVisibility);
 
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} className="space-y-4" noValidate>
       <div className="space-y-2">
         <Label htmlFor="name">Display name</Label>
         <Input
@@ -35,7 +50,6 @@ export function EditProfileForm({
           defaultValue={defaultName}
           placeholder="Your Name"
           maxLength={50}
-          required
         />
         {state?.errors?.name && (
           <p className="text-sm text-destructive">{state.errors.name}</p>
@@ -60,14 +74,18 @@ export function EditProfileForm({
 
       <div className="space-y-2">
         <Label htmlFor="visibility">Profile visibility</Label>
-        <Select name="visibility" defaultValue={defaultVisibility}>
+        <Select
+          name="visibility"
+          value={visibility}
+          onValueChange={(value) => setVisibility(value as VisibilityValue)}
+        >
           <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="PUBLIC">Public</SelectItem>
-            <SelectItem value="FRIENDS">Friends only</SelectItem>
-            <SelectItem value="PRIVATE">Private</SelectItem>
+            <SelectItem value="PUBLIC">{visibilityConfig.PUBLIC.label}</SelectItem>
+            <SelectItem value="FRIENDS">{visibilityConfig.FRIENDS.label}</SelectItem>
+            <SelectItem value="PRIVATE">{visibilityConfig.PRIVATE.label}</SelectItem>
           </SelectContent>
         </Select>
         {state?.errors?.visibility && (
