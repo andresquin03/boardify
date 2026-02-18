@@ -90,6 +90,7 @@ export default async function ProfilePage({
   const favoriteGames = userGames.filter((ug) => ug.isFavorite).map((ug) => ug.game);
   const wishlistGames = userGames.filter((ug) => ug.isWishlist).map((ug) => ug.game);
   const ownedGames = userGames.filter((ug) => ug.isOwned).map((ug) => ug.game);
+  const friendsListHref = isOwner ? "/friends" : isFriend ? `/u/${username}/friends` : undefined;
   const relationState = isFriend
     ? "FRIEND"
     : hasPendingRequest && relation?.addresseeId === viewerId
@@ -158,6 +159,7 @@ export default async function ProfilePage({
                       icon={UsersRound}
                       value={friendCount}
                       tone="text-violet-500"
+                      href={friendsListHref}
                     />
                   </div>
                 </div>
@@ -219,6 +221,7 @@ function StatCard({
   chipClassName,
   iconWrapClassName,
   filledIcon = true,
+  href,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   value: number;
@@ -226,8 +229,9 @@ function StatCard({
   chipClassName?: string;
   iconWrapClassName?: string;
   filledIcon?: boolean;
+  href?: string;
 }) {
-  return (
+  const content = (
     <Card className="h-20 w-20 rounded-xl border shadow-sm sm:h-24 sm:w-24">
       <CardContent className="flex h-full flex-col items-center justify-center p-2 text-center">
         <div className={cn("rounded-full bg-muted p-2", chipClassName)}>
@@ -242,6 +246,18 @@ function StatCard({
         <p className="mt-2 text-xl font-semibold leading-none sm:text-2xl">{value}</p>
       </CardContent>
     </Card>
+  );
+
+  if (!href) return content;
+
+  return (
+    <Link
+      href={href}
+      aria-label="View friends list"
+      className="block rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+    >
+      {content}
+    </Link>
   );
 }
 

@@ -1,9 +1,29 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Globe, Lock, UsersRound } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { FriendRequestActions } from "./friend-request-card";
+
+const visibilityConfig = {
+  PUBLIC: {
+    label: "Public profile",
+    icon: Globe,
+    className: "border-sky-400/30 bg-sky-500/10 text-sky-500 dark:text-sky-400",
+  },
+  FRIENDS: {
+    label: "Friends only",
+    icon: UsersRound,
+    className: "border-amber-400/30 bg-amber-500/10 text-amber-500 dark:text-amber-400",
+  },
+  PRIVATE: {
+    label: "Private profile",
+    icon: Lock,
+    className: "border-violet-400/30 bg-violet-500/10 text-violet-500 dark:text-violet-400",
+  },
+} as const;
 
 export default async function FriendsPage() {
   const session = await auth();
@@ -27,8 +47,8 @@ export default async function FriendsPage() {
         OR: [{ requesterId: userId }, { addresseeId: userId }],
       },
       include: {
-        requester: { select: { id: true, name: true, username: true, image: true } },
-        addressee: { select: { id: true, name: true, username: true, image: true } },
+        requester: { select: { id: true, name: true, username: true, image: true, visibility: true } },
+        addressee: { select: { id: true, name: true, username: true, image: true, visibility: true } },
       },
       orderBy: { updatedAt: "desc" },
     }),
@@ -36,7 +56,7 @@ export default async function FriendsPage() {
 
   const friendUsers = friends.map((f) =>
     f.requesterId === userId ? f.addressee : f.requester,
-  );
+  ).filter((user) => user.id !== userId);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -119,6 +139,7 @@ export default async function FriendsPage() {
                     <p className="text-xs text-muted-foreground">@{user.username}</p>
                   )}
                 </div>
+                <VisibilityBadge visibility={user.visibility} />
               </Link>
             ))}
           </div>
@@ -136,7 +157,7 @@ function UserRow({
   return (
     <Link
       href={user.username ? `/u/${user.username}` : "/onboarding"}
-      className="flex items-center gap-3 transition-colors hover:opacity-80"
+      className="flex min-w-0 flex-1 items-center gap-3 transition-colors hover:opacity-80"
     >
       <Avatar className="h-10 w-10">
         <AvatarImage src={user.image ?? undefined} alt={user.name ?? ""} />
@@ -148,12 +169,35 @@ function UserRow({
             .toUpperCase() ?? "U"}
         </AvatarFallback>
       </Avatar>
-      <div>
+      <div className="min-w-0">
         <p className="text-sm font-medium">{user.name}</p>
         {user.username && (
           <p className="text-xs text-muted-foreground">@{user.username}</p>
         )}
       </div>
     </Link>
+  );
+}
+
+function VisibilityBadge({
+  visibility,
+}: {
+  visibility?: "PUBLIC" | "FRIENDS" | "PRIVATE" | null;
+}) {
+  const key = visibility ?? "PUBLIC";
+  const config = visibilityConfig[key];
+  const Icon = config.icon;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={`ml-auto inline-flex h-7 w-7 items-center justify-center rounded-full border ${config.className}`}
+        >
+          <Icon className="h-3.5 w-3.5" />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="top">{config.label}</TooltipContent>
+    </Tooltip>
   );
 }

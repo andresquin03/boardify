@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 const CUID_RE = /^c[a-z0-9]{20,32}$/;
 const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{1,28}[a-z0-9]$/;
 const PROFILE_PATH_SEGMENT_RE = /^[a-z0-9._-]{3,50}$/;
+const GAME_ID_RE = /^[a-z0-9][a-z0-9._-]{0,99}$/;
 
 function normalizeUsername(value: string) {
   return value.trim().toLowerCase();
@@ -34,6 +35,12 @@ function isUsernameUniqueConstraintError(error: unknown) {
 
 function assertCuid(value: unknown, label: string): asserts value is string {
   if (typeof value !== "string" || !CUID_RE.test(value)) {
+    throw new Error(`Invalid ${label}`);
+  }
+}
+
+function assertGameId(value: unknown, label: string): asserts value is string {
+  if (typeof value !== "string" || !GAME_ID_RE.test(value)) {
     throw new Error(`Invalid ${label}`);
   }
 }
@@ -89,7 +96,7 @@ function getOrCreateUserGame(userId: string, gameId: string) {
 }
 
 export async function toggleFavorite(gameId: string) {
-  assertCuid(gameId, "gameId");
+  assertGameId(gameId, "gameId");
   const userId = await getAuthUserId();
   await assertGameExists(gameId);
   const existing = await getOrCreateUserGame(userId, gameId);
@@ -104,7 +111,7 @@ export async function toggleFavorite(gameId: string) {
 }
 
 export async function toggleWishlist(gameId: string) {
-  assertCuid(gameId, "gameId");
+  assertGameId(gameId, "gameId");
   const userId = await getAuthUserId();
   await assertGameExists(gameId);
   const existing = await getOrCreateUserGame(userId, gameId);
@@ -124,7 +131,7 @@ export async function toggleWishlist(gameId: string) {
 }
 
 export async function toggleOwned(gameId: string) {
-  assertCuid(gameId, "gameId");
+  assertGameId(gameId, "gameId");
   const userId = await getAuthUserId();
   await assertGameExists(gameId);
   const existing = await getOrCreateUserGame(userId, gameId);

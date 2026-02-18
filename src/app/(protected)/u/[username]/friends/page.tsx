@@ -1,23 +1,10 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { Globe, Lock, Search, UserCheck, UserPlus, UsersRound } from "lucide-react";
+import { notFound, redirect } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Lock, Globe, UserCheck, UserPlus, UsersRound } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
-interface UsersPageProps {
-  searchParams: Promise<{
-    q?: string | string[];
-  }>;
-}
-
-function normalizeSingleValue(value?: string | string[]) {
-  if (Array.isArray(value)) return value[0] ?? "";
-  return value ?? "";
-}
 
 const visibilityConfig = {
   PUBLIC: {
@@ -37,143 +24,142 @@ const visibilityConfig = {
   },
 } as const;
 
-export default async function UsersPage({ searchParams }: UsersPageProps) {
+export default async function UserFriendsPage({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}) {
   const session = await auth();
   if (!session?.user?.id) redirect("/");
   const viewerId = session.user.id;
 
-  const params = await searchParams;
-  const query = normalizeSingleValue(params.q).trim();
-
-  const users = await prisma.user.findMany({
-    where: {
-      AND: [
-        { visibility: { not: "PRIVATE" } },
-        { username: { not: null } },
-        ...(query
-          ? [
-              {
-                OR: [
-                  { username: { contains: query, mode: "insensitive" as const } },
-                  { name: { contains: query, mode: "insensitive" as const } },
-                ],
-              },
-            ]
-          : []),
-      ],
-    },
-    select: {
-      id: true,
-      name: true,
-      username: true,
-      image: true,
-      visibility: true,
-    },
-    orderBy: [{ username: "asc" }],
+  const { username } = await params;
+  const targetUser = await prisma.user.findUnique({
+    where: { username },
+    select: { id: true, name: true, username: true },
   });
 
-  const otherUserIds = users
-    .map((user) => user.id)
-    .filter((userId) => userId !== viewerId);
+  if (!targetUser) notFound();
 
-  const friendships = otherUserIds.length
+  if (viewerId === targetUser.id) {
+    redirect("/friends");
+  }
+
+  const relationWithTarget = await prisma.friendship.findFirst({
+    where: {
+      status: "ACCEPTED",
+      OR: [
+        { requesterId: viewerId, addresseeId: targetUser.id },
+        { requesterId: targetUser.id, addresseeId: viewerId },
+      ],
+    },
+    select: { id: true },
+  });
+
+  if (!relationWithTarget) notFound();
+
+  const acceptedFriendships = await prisma.friendship.findMany({
+    where: {
+      status: "ACCEPTED",
+      OR: [{ requesterId: targetUser.id }, { addresseeId: targetUser.id }],
+    },
+    include: {
+      requester: { select: { id: true, name: true, username: true, image: true, visibility: true } },
+      addressee: { select: { id: true, name: true, username: true, image: true, visibility: true } },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  const friendUsers = acceptedFriendships
+    .map((friendship) =>
+      friendship.requesterId === targetUser.id ? friendship.addressee : friendship.requester,
+    )
+    .filter((user) => user.id !== targetUser.id)
+    .filter((user) => Boolean(user.username))
+    .sort((a, b) => {
+      const aName = (a.name ?? a.username ?? "").toLowerCase();
+      const bName = (b.name ?? b.username ?? "").toLowerCase();
+      return aName.localeCompare(bName);
+    });
+
+  const listedOtherUserIds = friendUsers
+    .map((friend) => friend.id)
+    .filter((id) => id !== viewerId);
+
+  const viewerFriendships = listedOtherUserIds.length
     ? await prisma.friendship.findMany({
         where: {
           status: "ACCEPTED",
           OR: [
-            { requesterId: viewerId, addresseeId: { in: otherUserIds } },
-            { requesterId: { in: otherUserIds }, addresseeId: viewerId },
+            { requesterId: viewerId, addresseeId: { in: listedOtherUserIds } },
+            { requesterId: { in: listedOtherUserIds }, addresseeId: viewerId },
           ],
         },
         select: { requesterId: true, addresseeId: true },
       })
     : [];
 
-  const friendIds = new Set<string>();
-  for (const friendship of friendships) {
-    friendIds.add(
+  const viewerFriendIds = new Set<string>();
+  for (const friendship of viewerFriendships) {
+    viewerFriendIds.add(
       friendship.requesterId === viewerId ? friendship.addresseeId : friendship.requesterId,
     );
   }
 
+  const displayName = targetUser.name ?? targetUser.username ?? "User";
+
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10">
-      <h1 className="text-2xl font-bold">Users</h1>
+    <div className="mx-auto max-w-2xl px-4 py-10">
+      <h1 className="text-2xl font-bold">{displayName}&apos;s friends</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Find players by name or username. Private profiles are hidden.
+        {friendUsers.length} {friendUsers.length === 1 ? "friend" : "friends"}
       </p>
 
-      <form className="mt-5 flex flex-col gap-2 sm:flex-row" method="get">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            name="q"
-            defaultValue={query}
-            placeholder="Search users..."
-            className="pl-9"
-            maxLength={50}
-          />
-        </div>
-        <Button type="submit" className="cursor-pointer">
-          Search
-        </Button>
-        {query && (
-          <Button asChild type="button" variant="ghost" className="cursor-pointer">
-            <Link href="/users">Clear</Link>
-          </Button>
-        )}
-      </form>
-
-      <p className="mt-4 text-sm text-muted-foreground">
-        {users.length} {users.length === 1 ? "user" : "users"} found
-      </p>
-
-      {users.length === 0 ? (
-        <p className="mt-6 text-sm text-muted-foreground">No users match your search.</p>
+      {friendUsers.length === 0 ? (
+        <p className="mt-6 text-sm text-muted-foreground">No friends yet.</p>
       ) : (
-        <div className="mt-4 grid gap-2">
-          {users.map((user) => {
-            const isCurrentUser = user.id === viewerId;
-            const isFriend = friendIds.has(user.id);
-            const displayName = user.name ?? user.username ?? "User";
-            const initials = displayName
-              .split(" ")
-              .map((part) => part[0])
-              .join("")
-              .toUpperCase();
+        <div className="mt-4 space-y-2">
+          {friendUsers.map((friend) => {
+            const isCurrentUser = friend.id === viewerId;
+            const isFriend = viewerFriendIds.has(friend.id);
             const visibilityKey =
-              user.visibility === "FRIENDS"
+              friend.visibility === "FRIENDS"
                 ? "FRIENDS"
-                : user.visibility === "PRIVATE"
+                : friend.visibility === "PRIVATE"
                   ? "PRIVATE"
                   : "PUBLIC";
             const visibility = visibilityConfig[visibilityKey];
             const VisibilityIcon = visibility.icon;
-            const RelationIcon = isFriend ? UserCheck : UserPlus;
+            const friendDisplayName = friend.name ?? friend.username ?? "User";
+            const initials = friendDisplayName
+              .split(" ")
+              .map((part) => part[0])
+              .join("")
+              .toUpperCase();
 
             return (
               <Link
-                key={user.id}
-                href={`/u/${user.username}`}
+                key={friend.id}
+                href={`/u/${friend.username}`}
                 className={`flex items-center justify-between gap-3 rounded-xl border bg-card/70 p-3 shadow-sm transition-colors hover:bg-accent/40 ${
                   isCurrentUser ? "border-primary/40 bg-primary/5 hover:bg-primary/10" : ""
                 }`}
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={user.image ?? undefined} alt={displayName} />
+                    <AvatarImage src={friend.image ?? undefined} alt={friendDisplayName} />
                     <AvatarFallback>{initials}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">
-                      {displayName}
+                      {friendDisplayName}
                       {isCurrentUser && (
                         <span className="ml-2 rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
                           You
                         </span>
                       )}
                     </p>
-                    <p className="truncate text-xs text-muted-foreground">@{user.username}</p>
+                    <p className="truncate text-xs text-muted-foreground">@{friend.username}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -190,7 +176,11 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
                               : "border-muted-foreground/25 bg-muted/70 text-muted-foreground"
                           }`}
                         >
-                          <RelationIcon className="h-3.5 w-3.5" />
+                          {isFriend ? (
+                            <UserCheck className="h-3.5 w-3.5" />
+                          ) : (
+                            <UserPlus className="h-3.5 w-3.5" />
+                          )}
                         </span>
                       </TooltipTrigger>
                       <TooltipContent side="top">
