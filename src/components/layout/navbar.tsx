@@ -57,6 +57,14 @@ export async function Navbar() {
             </Link>
             {session?.user && hasCompletedOnboarding && (
               <Link
+                href="/users"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Users
+              </Link>
+            )}
+            {session?.user && hasCompletedOnboarding && (
+              <Link
                 href="/friends"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
