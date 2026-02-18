@@ -42,7 +42,7 @@ export default async function ProfilePage({
             { requesterId: user.id, addresseeId: viewerId },
           ],
         },
-        select: { status: true },
+        select: { id: true, status: true, requesterId: true, addresseeId: true },
       })
     : null;
   const isFriend = relation?.status === "ACCEPTED";
@@ -75,9 +75,11 @@ export default async function ProfilePage({
   const ownedGames = userGames.filter((ug) => ug.isOwned).map((ug) => ug.game);
   const relationState = isFriend
     ? "FRIEND"
-    : hasPendingRequest
-      ? "PENDING"
-      : "NONE";
+    : hasPendingRequest && relation?.addresseeId === viewerId
+      ? "PENDING_RECEIVED"
+      : hasPendingRequest
+        ? "PENDING_SENT"
+        : "NONE" as const;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
@@ -100,6 +102,7 @@ export default async function ProfilePage({
             profilePathUsername={username}
             isOwner={isOwner}
             relationState={relationState}
+            friendshipId={relation?.id}
             canSendRequest={Boolean(viewerId) && !hasPendingRequest && !isFriend}
           />
         </div>

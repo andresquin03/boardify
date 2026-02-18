@@ -143,7 +143,7 @@ export async function sendFriendRequest(addresseeId: string, profileUsername: st
         addresseeId,
       },
     });
-  } else if (existing.status === "REJECTED") {
+  } else if (existing.status === "REJECTED" || existing.status === "UNFRIENDED") {
     await prisma.friendship.update({
       where: { id: existing.id },
       data: {
@@ -155,6 +155,93 @@ export async function sendFriendRequest(addresseeId: string, profileUsername: st
   }
 
   revalidatePath(`/u/${profileUsername}`);
+  revalidatePath("/friends");
+}
+
+async function getAuthorizedFriendship(friendshipId: string, userId: string) {
+  const friendship = await prisma.friendship.findUnique({
+    where: { id: friendshipId },
+    select: {
+      id: true,
+      requesterId: true,
+      addresseeId: true,
+      status: true,
+      requester: { select: { username: true } },
+      addressee: { select: { username: true } },
+    },
+  });
+  if (!friendship) throw new Error("Friendship not found");
+  if (friendship.requesterId !== userId && friendship.addresseeId !== userId) {
+    throw new Error("Not authorized");
+  }
+  return friendship;
+}
+
+function revalidateFriendshipProfiles(friendship: {
+  requester: { username: string | null };
+  addressee: { username: string | null };
+}) {
+  revalidatePath("/friends");
+  if (friendship.requester.username) {
+    revalidatePath(`/u/${friendship.requester.username}`);
+  }
+  if (friendship.addressee.username) {
+    revalidatePath(`/u/${friendship.addressee.username}`);
+  }
+}
+
+export async function acceptFriendRequest(friendshipId: string) {
+  assertCuid(friendshipId, "friendshipId");
+  const userId = await getAuthUserId();
+  const friendship = await getAuthorizedFriendship(friendshipId, userId);
+
+  if (friendship.addresseeId !== userId) {
+    throw new Error("Only the recipient can accept a request");
+  }
+  if (friendship.status !== "PENDING") {
+    throw new Error("Request is not pending");
+  }
+
+  await prisma.friendship.update({
+    where: { id: friendshipId },
+    data: { status: "ACCEPTED" },
+  });
+
+  revalidateFriendshipProfiles(friendship);
+}
+
+export async function rejectFriendRequest(friendshipId: string) {
+  assertCuid(friendshipId, "friendshipId");
+  const userId = await getAuthUserId();
+  const friendship = await getAuthorizedFriendship(friendshipId, userId);
+
+  if (friendship.addresseeId !== userId) {
+    throw new Error("Only the recipient can reject a request");
+  }
+  if (friendship.status !== "PENDING") {
+    throw new Error("Request is not pending");
+  }
+
+  await prisma.friendship.update({
+    where: { id: friendshipId },
+    data: { status: "REJECTED" },
+  });
+
+  revalidateFriendshipProfiles(friendship);
+}
+
+export async function unfriend(friendshipId: string, profileUsername: string) {
+  assertCuid(friendshipId, "friendshipId");
+  assertSafeString(profileUsername, "profileUsername", 50);
+  const userId = await getAuthUserId();
+  const friendship = await getAuthorizedFriendship(friendshipId, userId);
+
+  await prisma.friendship.update({
+    where: { id: friendshipId },
+    data: { status: "UNFRIENDED" },
+  });
+
+  revalidateFriendshipProfiles(friendship);
 }
 
 // ── Onboarding ──────────────────────────────────────────

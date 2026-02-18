@@ -2,8 +2,10 @@ import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { sendFriendRequest } from "@/lib/actions";
-import { Globe, Lock, UsersRound, Pencil, UserCheck, UserPlus, Clock3 } from "lucide-react";
+import { Globe, Lock, UsersRound, Pencil, UserPlus, Clock3 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UnfriendDropdown } from "./unfriend-dropdown";
+import { FriendRequestActions } from "@/app/(protected)/friends/friend-request-card";
 
 interface ProfileHeaderProps {
   user: {
@@ -16,7 +18,8 @@ interface ProfileHeaderProps {
   };
   profilePathUsername: string;
   isOwner: boolean;
-  relationState?: "FRIEND" | "PENDING" | "NONE";
+  relationState?: "FRIEND" | "PENDING_SENT" | "PENDING_RECEIVED" | "NONE";
+  friendshipId?: string | null;
   canSendRequest?: boolean;
 }
 
@@ -43,6 +46,7 @@ export function ProfileHeader({
   profilePathUsername,
   isOwner,
   relationState = "NONE",
+  friendshipId,
   canSendRequest = false,
 }: ProfileHeaderProps) {
   const displayName = user.name ?? user.username ?? "User";
@@ -98,19 +102,14 @@ export function ProfileHeader({
             </Button>
           )}
 
-          {!isOwner && relationState === "FRIEND" && (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled
-              className="mt-0.5 gap-1.5 border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
-            >
-              <UserCheck className="h-3.5 w-3.5" />
-              Friends
-            </Button>
+          {!isOwner && relationState === "FRIEND" && friendshipId && (
+            <UnfriendDropdown
+              friendshipId={friendshipId}
+              profileUsername={profilePathUsername}
+            />
           )}
 
-          {!isOwner && relationState === "PENDING" && (
+          {!isOwner && relationState === "PENDING_SENT" && (
             <Button
               variant="outline"
               size="sm"
@@ -120,6 +119,10 @@ export function ProfileHeader({
               <Clock3 className="h-3.5 w-3.5" />
               Request sent
             </Button>
+          )}
+
+          {!isOwner && relationState === "PENDING_RECEIVED" && friendshipId && (
+            <FriendRequestActions friendshipId={friendshipId} />
           )}
 
           {!isOwner && relationState === "NONE" && canSendRequest && (
