@@ -72,7 +72,7 @@ export async function Navbar() {
               <DropdownMenuContent align="center" sideOffset={10}>
                 <DropdownMenuItem asChild>
                   <Link
-                    href={`/u/${session.user.email?.split("@")[0]}`}
+                    href={`/u/${session.user.username ?? session.user.id}`}
                     className="flex w-full items-center justify-center gap-2 text-center"
                   >
                     <User className="h-4 w-4" />

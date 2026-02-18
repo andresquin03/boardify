@@ -18,33 +18,17 @@ export default async function ProfilePage({
   const session = await auth();
   const viewerId = session?.user?.id ?? null;
 
-  // Look up user by username, or fall back to email prefix match.
-  let user = await prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { username },
     select: {
       id: true,
       name: true,
       username: true,
+      bio: true,
       image: true,
-      email: true,
       visibility: true,
     },
   });
-
-  // Fallback: /u/johndoe may refer to johndoe@gmail.com.
-  if (!user) {
-    user = await prisma.user.findFirst({
-      where: { email: { startsWith: username + "@" } },
-      select: {
-        id: true,
-        name: true,
-        username: true,
-        image: true,
-        email: true,
-        visibility: true,
-      },
-    });
-  }
 
   if (!user) notFound();
 
@@ -109,6 +93,7 @@ export default async function ProfilePage({
               id: user.id,
               name: user.name,
               username: user.username ?? username,
+              bio: canViewCollections ? user.bio : null,
               image: user.image,
               visibility: user.visibility ?? "PUBLIC",
             }}

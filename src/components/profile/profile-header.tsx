@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { sendFriendRequest } from "@/lib/actions";
@@ -9,6 +10,7 @@ interface ProfileHeaderProps {
     id: string;
     name: string | null;
     username: string | null;
+    bio: string | null;
     image: string | null;
     visibility?: "PUBLIC" | "FRIENDS" | "PRIVATE" | null;
   };
@@ -67,6 +69,9 @@ export function ProfileHeader({
             {user.username && (
               <p className="text-muted-foreground">@{user.username}</p>
             )}
+            {user.bio && (
+              <p className="mt-1 text-sm text-muted-foreground">{user.bio}</p>
+            )}
           </div>
 
           <div
@@ -81,12 +86,15 @@ export function ProfileHeader({
 
           {isOwner && (
             <Button
+              asChild
               variant="outline"
               size="sm"
               className="mt-0.5 cursor-pointer gap-1.5 transition-all hover:-translate-y-0.5 hover:shadow-sm"
             >
-              <Pencil className="h-3.5 w-3.5" />
-              Edit profile
+              <Link href="/settings/profile">
+                <Pencil className="h-3.5 w-3.5" />
+                Edit profile
+              </Link>
             </Button>
           )}
 

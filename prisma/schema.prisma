@@ -16,6 +16,7 @@ model User {
   emailVerified DateTime?
   image         String?
   username      String?   @unique
+  bio           String?
   visibility    ProfileVisibility @default(PUBLIC)
 
   accounts            Account[]
@@ -148,4 +149,5 @@ model UserGame {
   game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
   @@unique([userId, gameId])
+  @@index([userId])
 }
