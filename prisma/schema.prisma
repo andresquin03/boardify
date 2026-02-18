@@ -64,15 +64,44 @@ model VerificationToken {
 // ── App models ──────────────────────────────────────────
 
 model Game {
-  id          String @id @default(cuid())
-  title       String
-  playerCount String
-  playtime    String
-  image       String?
+  id            String  @id @default(cuid())
+  title         String
+  slug          String  @unique
+  description   String?
+  minPlayers    Int
+  maxPlayers    Int
+  minPlaytime   Int
+  maxPlaytime   Int
+  yearPublished Int?
+  complexity    Float?
+  designer      String?
+  image         String?
 
-  userGames UserGame[]
+  userGames   UserGame[]
+  categories  GameCategory[]
 
   createdAt DateTime @default(now())
+}
+
+model Category {
+  id   String @id @default(cuid())
+  name String @unique
+  slug String @unique
+
+  games GameCategory[]
+
+  createdAt DateTime @default(now())
+}
+
+model GameCategory {
+  id         String @id @default(cuid())
+  gameId     String
+  categoryId String
+
+  game     Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, categoryId])
 }
 
 model UserGame {

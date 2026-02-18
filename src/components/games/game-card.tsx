@@ -5,14 +5,19 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Clock, Heart, Bookmark, CircleCheckBig, Users } from "lucide-react";
 import { toggleFavorite, toggleWishlist, toggleOwned } from "@/lib/actions";
+import { formatPlayerCount, formatPlaytime } from "@/lib/game-utils";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 interface GameCardProps {
   game: {
     id: string;
+    slug: string;
     title: string;
-    playerCount: string;
-    playtime: string;
+    minPlayers: number;
+    maxPlayers: number;
+    minPlaytime: number;
+    maxPlaytime: number;
     image?: string | null;
   };
   userState?: {
@@ -53,29 +58,34 @@ export function GameCard({ game, userState, isAuthenticated }: GameCardProps) {
   }
 
   return (
-    <Card className="rounded-2xl shadow-sm transition-shadow hover:shadow-md">
+    <Card className="group relative rounded-2xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:ring-1 hover:ring-border/80">
+      <Link
+        href={`/g/${game.slug}`}
+        aria-label={`Open ${game.title}`}
+        className="absolute inset-0 z-10 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+      />
       <CardHeader className="pb-2">
-        <div className="flex h-28 items-center justify-center rounded-xl bg-muted">
+        <div className="flex h-28 items-center justify-center rounded-xl bg-muted transition-colors group-hover:bg-muted/80">
           <DiceIcon className="h-10 w-10 text-muted-foreground/50" />
         </div>
       </CardHeader>
       <CardContent>
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-1.5">
-            <h3 className="text-base font-semibold leading-tight">{game.title}</h3>
+            <h3 className="text-base font-semibold leading-tight group-hover:underline">{game.title}</h3>
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Users className="h-3.5 w-3.5" />
-                {game.playerCount}
+                {formatPlayerCount(game.minPlayers, game.maxPlayers)}
               </span>
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
-                {game.playtime}
+                {formatPlaytime(game.minPlaytime, game.maxPlaytime)}
               </span>
             </div>
           </div>
           {isAuthenticated && (
-            <div className="flex items-center gap-1">
+            <div className="relative z-20 flex items-center gap-1">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button

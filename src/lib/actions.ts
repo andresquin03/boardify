@@ -36,6 +36,7 @@ export async function toggleFavorite(gameId: string) {
   });
 
   revalidatePath("/games");
+  revalidatePath("/g", "layout");
 }
 
 export async function toggleWishlist(gameId: string) {
@@ -53,6 +54,7 @@ export async function toggleWishlist(gameId: string) {
   });
 
   revalidatePath("/games");
+  revalidatePath("/g", "layout");
 }
 
 export async function toggleOwned(gameId: string) {
@@ -70,4 +72,5 @@ export async function toggleOwned(gameId: string) {
   });
 
   revalidatePath("/games");
+  revalidatePath("/g", "layout");
 }
