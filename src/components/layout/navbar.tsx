@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -8,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { Dice5, LogOut, User } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { signInWithGoogle, handleSignOut } from "@/lib/actions";
 
@@ -20,7 +21,22 @@ export async function Navbar() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2 font-bold text-lg">
-            <Dice5 className="h-6 w-6" />
+            <span className="relative h-7 w-7">
+              <Image
+                src="/boardify-light.png"
+                alt="Boardify"
+                width={28}
+                height={28}
+                className="h-7 w-7 rounded-md dark:hidden"
+              />
+              <Image
+                src="/boardify-dark.png"
+                alt="Boardify"
+                width={28}
+                height={28}
+                className="hidden h-7 w-7 rounded-md dark:block"
+              />
+            </span>
             Boardify
           </Link>
           <nav className="flex items-center gap-4">

@@ -18,6 +18,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Boardify",
   description: "Boardify your game nights.",
+  icons: {
+    icon: [
+      { url: "/boardify-light.png", media: "(prefers-color-scheme: light)" },
+      { url: "/boardify-dark.png", media: "(prefers-color-scheme: dark)" },
+    ],
+    shortcut: "/boardify-light.png",
+    apple: "/boardify-light.png",
+  },
 };
 
 export default function RootLayout({

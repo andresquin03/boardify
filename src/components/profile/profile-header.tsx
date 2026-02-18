@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Pencil, Settings } from "lucide-react";
+import { Pencil } from "lucide-react";
 
 interface ProfileHeaderProps {
   user: {
@@ -34,13 +34,13 @@ export function ProfileHeader({ user, isOwner }: ProfileHeaderProps) {
         </div>
         {isOwner && (
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              className="cursor-pointer gap-1.5 transition-all hover:-translate-y-0.5 hover:shadow-sm"
+            >
               <Pencil className="h-3.5 w-3.5" />
               Edit profile
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <Settings className="h-3.5 w-3.5" />
-              Manage favorites
             </Button>
           </div>
         )}
