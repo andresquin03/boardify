@@ -2,7 +2,14 @@ import { GameCard } from "@/components/games/game-card";
 import { GamesFilters } from "@/components/games/games-filters";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { isPlayerFilterValue, type PlayerFilterValue } from "@/lib/game-filters";
+import {
+  isDifficultyFilterValue,
+  isGameSortValue,
+  isPlayerFilterValue,
+  type DifficultyFilterValue,
+  type GameSortValue,
+  type PlayerFilterValue,
+} from "@/lib/game-filters";
 import type { Prisma } from "@/generated/prisma/client";
 
 interface GamesPageProps {
@@ -10,6 +17,8 @@ interface GamesPageProps {
     q?: string | string[];
     players?: string | string[];
     categories?: string | string[];
+    difficulty?: string | string[];
+    sort?: string | string[];
   }>;
 }
 
@@ -49,6 +58,58 @@ function buildPlayersFilter(selectedPlayers: PlayerFilterValue[]) {
   };
 }
 
+function buildDifficultyFilter(selectedDifficulty: DifficultyFilterValue | "") {
+  if (!selectedDifficulty) return undefined;
+
+  if (selectedDifficulty === "easy") {
+    return { difficulty: { lte: 2 } };
+  }
+
+  if (selectedDifficulty === "medium") {
+    return {
+      difficulty: {
+        gt: 2,
+        lte: 3,
+      },
+    };
+  }
+
+  return { difficulty: { gt: 3 } };
+}
+
+function compareNullableNumberDesc(a: number | null, b: number | null) {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return b - a;
+}
+
+function sortGamesByOption<
+  T extends { title: string; difficulty: number | null; rating: number | null },
+>(games: T[], sortBy: GameSortValue) {
+  const sorted = [...games];
+
+  if (sortBy === "abc") {
+    return sorted.sort((a, b) =>
+      a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
+    );
+  }
+
+  if (sortBy === "difficulty") {
+    return sorted.sort((a, b) => {
+      const numberDiff = compareNullableNumberDesc(a.difficulty, b.difficulty);
+      if (numberDiff !== 0) return numberDiff;
+      return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+    });
+  }
+
+  return sorted.sort((a, b) => {
+    const numberDiff = compareNullableNumberDesc(a.rating, b.rating);
+    if (numberDiff !== 0) return numberDiff;
+    return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+  });
+}
+
 export default async function GamesPage({ searchParams }: GamesPageProps) {
   const params = await searchParams;
   const session = await auth();
@@ -57,6 +118,14 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
   const query = normalizeSingleValue(params.q).trim();
   const selectedPlayers = toArray(params.players).filter(isPlayerFilterValue);
   const selectedCategories = [...new Set(toArray(params.categories).filter(Boolean))];
+  const selectedDifficultyRaw = normalizeSingleValue(params.difficulty).trim().toLowerCase();
+  const selectedDifficulty = isDifficultyFilterValue(selectedDifficultyRaw)
+    ? selectedDifficultyRaw
+    : "";
+  const selectedSortRaw = normalizeSingleValue(params.sort).trim().toLowerCase();
+  const selectedSort: GameSortValue = isGameSortValue(selectedSortRaw)
+    ? selectedSortRaw
+    : "abc";
 
   const whereFilters: Prisma.GameWhereInput[] = [];
 
@@ -82,6 +151,11 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
     whereFilters.push(playersFilter);
   }
 
+  const difficultyFilter = buildDifficultyFilter(selectedDifficulty);
+  if (difficultyFilter) {
+    whereFilters.push(difficultyFilter);
+  }
+
   if (selectedCategories.length > 0) {
     whereFilters.push({
       categories: {
@@ -96,8 +170,8 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
 
   const games = await prisma.game.findMany({
     where: whereFilters.length > 0 ? { AND: whereFilters } : undefined,
-    orderBy: { title: "asc" },
   });
+  const sortedGames = sortGamesByOption(games, selectedSort);
 
   const categories = await prisma.category.findMany({
     select: { name: true },
@@ -132,14 +206,16 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
         initialQuery={query}
         selectedPlayers={selectedPlayers}
         selectedCategories={selectedCategories}
+        selectedDifficulty={selectedDifficulty}
+        selectedSort={selectedSort}
         categoryOptions={categoryOptions}
       />
 
-      {games.length === 0 ? (
+      {sortedGames.length === 0 ? (
         <p className="mt-8 text-sm text-muted-foreground">No games found with those filters.</p>
       ) : (
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {games.map((game) => (
+          {sortedGames.map((game) => (
             <GameCard
               key={game.id}
               game={game}

@@ -8,6 +8,7 @@ import { toggleFavorite, toggleWishlist, toggleOwned } from "@/lib/actions";
 import { formatPlayerCount, formatPlaytime } from "@/lib/game-utils";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import Image from "next/image";
 
 interface GameCardProps {
   game: {
@@ -65,8 +66,20 @@ export function GameCard({ game, userState, isAuthenticated }: GameCardProps) {
         className="absolute inset-0 z-10 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
       />
       <CardHeader className="pb-2">
-        <div className="flex h-28 items-center justify-center rounded-xl bg-muted transition-colors group-hover:bg-muted/80">
-          <DiceIcon className="h-10 w-10 text-muted-foreground/50" />
+        <div className="relative h-32 overflow-hidden rounded-xl bg-muted transition-colors group-hover:bg-muted/80">
+          {game.image ? (
+            <Image
+              src={game.image}
+              alt={`Cover of ${game.title}`}
+              fill
+              className="object-contain p-2"
+              sizes="(max-width: 640px) 100vw, 360px"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <DiceIcon className="h-10 w-10 text-muted-foreground/50" />
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent>

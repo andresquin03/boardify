@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { formatPlayerCount, formatPlaytime } from "@/lib/game-utils";
 import { GameActions } from "@/components/games/game-actions";
-import { Clock, Users, Star, CalendarDays, Shapes, Pencil } from "lucide-react";
+import { Clock, Users, Star, CalendarDays, Shapes, Pencil, Thermometer } from "lucide-react";
+import Image from "next/image";
 
 export default async function GameDetailPage({
   params,
@@ -38,8 +39,23 @@ export default async function GameDetailPage({
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       {/* Header */}
-      <div className="flex h-48 items-center justify-center rounded-2xl bg-muted">
-        <DiceIcon className="h-16 w-16 text-muted-foreground/30" />
+      <div className="overflow-hidden rounded-2xl border bg-muted/30">
+        <div className="relative aspect-[4/3] w-full sm:aspect-[16/9]">
+          {game.image ? (
+            <Image
+              src={game.image}
+              alt={`Cover of ${game.title}`}
+              fill
+              className="object-contain p-3 sm:p-6"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 900px"
+              priority
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <DiceIcon className="h-16 w-16 text-muted-foreground/30" />
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -82,10 +98,16 @@ export default async function GameDetailPage({
           <Clock className="h-4 w-4" />
           <span>{formatPlaytime(game.minPlaytime, game.maxPlaytime)}</span>
         </div>
-        {game.complexity && (
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <Star className="h-4 w-4" />
-            <span>{game.complexity.toFixed(1)} / 5</span>
+        {game.rating !== null && (
+          <div className="flex items-center gap-1.5 text-amber-500 dark:text-amber-400">
+            <Star className="h-4 w-4" fill="currentColor" />
+            <span>{game.rating.toFixed(1)} / 10 rating</span>
+          </div>
+        )}
+        {game.difficulty !== null && (
+          <div className={`flex items-center gap-1.5 ${getDifficultyColorClass(game.difficulty)}`}>
+            <Thermometer className="h-4 w-4" />
+            <span>{game.difficulty.toFixed(1)} / 5 difficulty</span>
           </div>
         )}
       </div>
@@ -101,6 +123,14 @@ export default async function GameDetailPage({
       )}
     </div>
   );
+}
+
+function getDifficultyColorClass(value: number) {
+  if (value <= 1.4) return "text-blue-500 dark:text-blue-400";
+  if (value <= 2) return "text-emerald-500 dark:text-emerald-400";
+  if (value <= 3) return "text-yellow-400 dark:text-yellow-300";
+  if (value <= 4) return "text-orange-500 dark:text-orange-400";
+  return "text-red-500 dark:text-red-400";
 }
 
 function DiceIcon({ className }: { className?: string }) {

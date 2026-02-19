@@ -1,6 +1,7 @@
 import { Clock, Users } from "lucide-react";
 import { formatPlayerCount, formatPlaytime } from "@/lib/game-utils";
 import Link from "next/link";
+import Image from "next/image";
 
 interface ProfileGameCardProps {
   game: {
@@ -19,7 +20,18 @@ export function ProfileGameCard({ game }: ProfileGameCardProps) {
   return (
     <Link href={`/g/${game.slug}`} className="group flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 transition-colors hover:bg-muted/50">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted">
-        <DiceIcon className="h-5 w-5 text-muted-foreground/40" />
+        {game.image ? (
+          <Image
+            src={game.image}
+            alt={`Cover of ${game.title}`}
+            width={40}
+            height={40}
+            className="h-full w-full rounded-md object-contain p-0.5"
+            sizes="40px"
+          />
+        ) : (
+          <DiceIcon className="h-5 w-5 text-muted-foreground/40" />
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium leading-tight">{game.title}</p>

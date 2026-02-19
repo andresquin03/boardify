@@ -56,7 +56,7 @@ const features = [
     iconHoverColor: "group-hover:text-violet-600",
     title: "Detailed game pages",
     description:
-      "See game info, categories, complexity, and your personal status in one place.",
+      "See game info, categories, rating, difficulty, and your personal status in one place.",
   },
 ];
 

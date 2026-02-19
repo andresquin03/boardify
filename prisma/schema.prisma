@@ -107,7 +107,8 @@ model Game {
   minPlaytime   Int
   maxPlaytime   Int
   yearPublished Int?
-  complexity    Float?
+  difficulty    Float?
+  rating        Float?
   designer      String?
   image         String?
 
