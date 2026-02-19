@@ -6,6 +6,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
@@ -117,17 +118,18 @@ export async function Navbar() {
                       My friends
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <form action={handleSignOut}>
+                  <DropdownMenuSeparator />
+                  <form action={handleSignOut}>
+                    <DropdownMenuItem asChild>
                       <button
                         type="submit"
-                        className="flex w-full items-center justify-center gap-2 text-center cursor-pointer"
+                        className="flex w-full cursor-pointer items-center justify-center gap-2 text-center text-destructive/80 transition-colors hover:text-destructive focus:text-destructive"
                       >
                         <LogOut className="h-4 w-4" />
                         Sign out
                       </button>
-                    </form>
-                  </DropdownMenuItem>
+                    </DropdownMenuItem>
+                  </form>
                 </DropdownMenuContent>
               </DropdownMenu>
             </>
