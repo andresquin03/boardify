@@ -59,9 +59,9 @@ export default async function GameDetailPage({
       </div>
 
       <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+        <div className="min-w-0 flex-1 text-center sm:text-left">
           <h1 className="text-3xl font-bold">{game.title}</h1>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+          <div className="mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-muted-foreground sm:justify-start">
             {game.designer && (
               <span className="flex items-center gap-1">
                 <Pencil className="h-3.5 w-3.5" />
@@ -84,7 +84,9 @@ export default async function GameDetailPage({
         </div>
 
         {!!userId && (
-          <GameActions gameId={game.id} userState={userState} />
+          <div className="flex w-full justify-center sm:w-auto sm:justify-end">
+            <GameActions gameId={game.id} userState={userState} />
+          </div>
         )}
       </div>
 

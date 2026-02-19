@@ -4,6 +4,7 @@ import { ProfileHeader } from "@/components/profile/profile-header";
 import { ProfileGameCard } from "@/components/profile/profile-game-card";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Heart, Bookmark, CircleCheckBig, Check, UsersRound, Network } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
@@ -11,6 +12,95 @@ import { cn } from "@/lib/utils";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+type MatchStats = {
+  shared: number;
+  union: number;
+  percent: number;
+};
+
+type CollectionKind = "favorite" | "wishlist" | "owned";
+type CollectionFlag = "isFavorite" | "isWishlist" | "isOwned";
+type CollectionRow = { gameId: string } & Record<CollectionFlag, boolean>;
+type CollectionSetMap = Record<CollectionKind, Set<string>>;
+type CollectionMatchMap = Record<CollectionKind, MatchStats>;
+type ProfileGame = {
+  id: string;
+  slug: string;
+  title: string;
+  minPlayers: number;
+  maxPlayers: number;
+  minPlaytime: number;
+  maxPlaytime: number;
+  image?: string | null;
+};
+
+const COLLECTION_CONFIG = {
+  favorite: { flag: "isFavorite" },
+  wishlist: { flag: "isWishlist" },
+  owned: { flag: "isOwned" },
+} as const satisfies Record<CollectionKind, { flag: CollectionFlag }>;
+
+const COLLECTION_KINDS = Object.keys(COLLECTION_CONFIG) as CollectionKind[];
+
+function computeMatchStats(a: Set<string>, b: Set<string>): MatchStats {
+  let intersectionSize = 0;
+  for (const gameId of a) {
+    if (b.has(gameId)) intersectionSize += 1;
+  }
+  const unionSize = new Set([...a, ...b]).size;
+  const percent = unionSize > 0 ? Math.round((intersectionSize / unionSize) * 100) : 0;
+  return { shared: intersectionSize, union: unionSize, percent };
+}
+
+function createFlagPredicate(flag: CollectionFlag) {
+  return <TRow extends Record<CollectionFlag, boolean>>(row: TRow) => row[flag];
+}
+
+function createIdSetFactory<TRow extends { gameId: string }>(rows: TRow[]) {
+  return (predicate: (row: TRow) => boolean) =>
+    new Set(rows.filter(predicate).map((row) => row.gameId));
+}
+
+function createGameListFactory<TRow extends { game: unknown }>(rows: TRow[]) {
+  return (predicate: (row: TRow) => boolean) => rows.filter(predicate).map((row) => row.game);
+}
+
+function buildCollectionSets<TRow extends CollectionRow>(
+  rows: TRow[],
+): { byKind: CollectionSetMap; any: Set<string> } {
+  const buildSet = createIdSetFactory(rows);
+  const byKind = COLLECTION_KINDS.reduce((acc, kind) => {
+    acc[kind] = buildSet(createFlagPredicate(COLLECTION_CONFIG[kind].flag));
+    return acc;
+  }, {} as CollectionSetMap);
+
+  const any = buildSet((row) =>
+    COLLECTION_KINDS.some((kind) => row[COLLECTION_CONFIG[kind].flag]),
+  );
+
+  return { byKind, any };
+}
+
+function buildCollectionGames<TRow extends CollectionRow & { game: unknown }>(
+  rows: TRow[],
+): Record<CollectionKind, TRow["game"][]> {
+  const buildGames = createGameListFactory(rows);
+  return COLLECTION_KINDS.reduce((acc, kind) => {
+    acc[kind] = buildGames(createFlagPredicate(COLLECTION_CONFIG[kind].flag));
+    return acc;
+  }, {} as Record<CollectionKind, TRow["game"][]>);
+}
+
+function buildCollectionMatchMap(
+  profileSets: CollectionSetMap,
+  viewerSets: CollectionSetMap,
+): CollectionMatchMap {
+  return COLLECTION_KINDS.reduce((acc, kind) => {
+    acc[kind] = computeMatchStats(profileSets[kind], viewerSets[kind]);
+    return acc;
+  }, {} as CollectionMatchMap);
 }
 
 async function findUserByUsernameWithRetry(username: string) {
@@ -81,6 +171,17 @@ export default async function ProfilePage({
         include: { game: true },
       })
     : [];
+  const viewerGames = viewerId && !isOwner && canViewCollections
+    ? await prisma.userGame.findMany({
+        where: { userId: viewerId },
+        select: {
+          gameId: true,
+          isFavorite: true,
+          isWishlist: true,
+          isOwned: true,
+        },
+      })
+    : [];
 
   const [friendCount, groupCount] = await Promise.all([
     prisma.friendship.count({
@@ -94,9 +195,26 @@ export default async function ProfilePage({
     }),
   ]);
 
-  const favoriteGames = userGames.filter((ug) => ug.isFavorite).map((ug) => ug.game);
-  const wishlistGames = userGames.filter((ug) => ug.isWishlist).map((ug) => ug.game);
-  const ownedGames = userGames.filter((ug) => ug.isOwned).map((ug) => ug.game);
+  const gamesByCollection = buildCollectionGames(userGames);
+  const favoriteGames = gamesByCollection.favorite;
+  const wishlistGames = gamesByCollection.wishlist;
+  const ownedGames = gamesByCollection.owned;
+
+  const profileCollections = buildCollectionSets(userGames);
+  const viewerCollections = buildCollectionSets(viewerGames);
+  const sharedFavoriteIds = viewerCollections.byKind.favorite;
+  const sharedWishlistIds = viewerCollections.byKind.wishlist;
+  const sharedOwnedIds = viewerCollections.byKind.owned;
+
+  const matchMap = buildCollectionMatchMap(profileCollections.byKind, viewerCollections.byKind);
+  const favoriteMatchStats = matchMap.favorite;
+  const wishlistMatchStats = matchMap.wishlist;
+  const ownedMatchStats = matchMap.owned;
+  const generalMatchStats = computeMatchStats(profileCollections.any, viewerCollections.any);
+  const showCategoryMatch = Boolean(!isOwner && viewerId);
+  const generalMatchPercent = generalMatchStats.percent;
+  const hasCompatibilityData = viewerCollections.any.size > 0;
+  const viewerHasNoCollectionData = viewerCollections.any.size === 0;
   const friendsListHref = isOwner ? "/friends" : isFriend ? `/u/${username}/friends` : undefined;
   const groupsListHref = isOwner || isFriend ? `/u/${username}/groups` : undefined;
   const relationState = isFriend
@@ -130,6 +248,10 @@ export default async function ProfilePage({
             relationState={relationState}
             friendshipId={relation?.id}
             canSendRequest={Boolean(viewerId) && !hasPendingRequest && !isFriend}
+            generalMatchPercent={
+              showCategoryMatch && hasCompatibilityData ? generalMatchPercent : undefined
+            }
+            generalMatchUnavailable={showCategoryMatch && !hasCompatibilityData}
           />
         </div>
 
@@ -144,11 +266,17 @@ export default async function ProfilePage({
                       icon={Heart}
                       value={favoriteGames.length}
                       tone="text-rose-500"
+                      href="#favorites-section"
+                      accent="rose"
+                      ariaLabel="Go to favorites list"
                     />
                     <StatCard
                       icon={Bookmark}
                       value={wishlistGames.length}
                       tone="text-sky-500"
+                      href="#wishlist-section"
+                      accent="sky"
+                      ariaLabel="Go to wishlist list"
                     />
                     <StatCard
                       icon={Check}
@@ -156,6 +284,9 @@ export default async function ProfilePage({
                       tone="h-3.5 w-3.5 text-white stroke-[3]"
                       iconWrapClassName="inline-flex h-6.5 w-6.5 items-center justify-center rounded-full bg-emerald-500"
                       filledIcon={false}
+                      href="#owned-section"
+                      accent="emerald"
+                      ariaLabel="Go to owned games list"
                     />
                   </div>
                 </div>
@@ -203,6 +334,7 @@ export default async function ProfilePage({
       {canViewCollections && (
         <>
           <CollectionSection
+            sectionId="favorites-section"
             title="Favorites"
             icon={Heart}
             count={favoriteGames.length}
@@ -210,9 +342,14 @@ export default async function ProfilePage({
             games={favoriteGames}
             isOwner={isOwner}
             iconTone="text-rose-500"
+            sharedType="favorite"
+            sharedGameIds={!isOwner ? sharedFavoriteIds : undefined}
+            matchStats={showCategoryMatch ? favoriteMatchStats : undefined}
+            forceMatchUnavailable={showCategoryMatch && viewerHasNoCollectionData}
           />
 
           <CollectionSection
+            sectionId="wishlist-section"
             title="Wishlist"
             icon={Bookmark}
             count={wishlistGames.length}
@@ -220,9 +357,14 @@ export default async function ProfilePage({
             games={wishlistGames}
             isOwner={isOwner}
             iconTone="text-sky-500"
+            sharedType="wishlist"
+            sharedGameIds={!isOwner ? sharedWishlistIds : undefined}
+            matchStats={showCategoryMatch ? wishlistMatchStats : undefined}
+            forceMatchUnavailable={showCategoryMatch && viewerHasNoCollectionData}
           />
 
           <CollectionSection
+            sectionId="owned-section"
             title="Owned"
             icon={CircleCheckBig}
             count={ownedGames.length}
@@ -230,6 +372,10 @@ export default async function ProfilePage({
             games={ownedGames}
             isOwner={isOwner}
             iconTone="text-emerald-500"
+            sharedType="owned"
+            sharedGameIds={!isOwner ? sharedOwnedIds : undefined}
+            matchStats={showCategoryMatch ? ownedMatchStats : undefined}
+            forceMatchUnavailable={showCategoryMatch && viewerHasNoCollectionData}
           />
         </>
       )}
@@ -238,6 +384,11 @@ export default async function ProfilePage({
 }
 
 const accentStyles = {
+  rose: {
+    card: "border-rose-400/25 group-hover:-translate-y-0.5 group-hover:border-rose-400/55 group-hover:bg-rose-500/[0.06] group-hover:shadow-[0_4px_12px_-4px_rgba(244,63,94,0.7)] group-active:translate-y-0 group-active:scale-[0.98] group-active:border-rose-400/70 group-active:bg-rose-500/[0.1]",
+    chip: "group-hover:scale-105 group-hover:bg-rose-500/10 group-active:scale-95 group-active:bg-rose-500/15",
+    link: "group block cursor-pointer rounded-xl transition-all duration-200 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+  },
   violet: {
     card: "border-violet-400/25 group-hover:-translate-y-0.5 group-hover:border-violet-400/55 group-hover:bg-violet-500/[0.06] group-hover:shadow-[0_4px_12px_-4px_rgba(139,92,246,0.7)] group-active:translate-y-0 group-active:scale-[0.98] group-active:border-violet-400/70 group-active:bg-violet-500/[0.1]",
     chip: "group-hover:scale-105 group-hover:bg-violet-500/10 group-active:scale-95 group-active:bg-violet-500/15",
@@ -247,6 +398,11 @@ const accentStyles = {
     card: "border-sky-400/25 group-hover:-translate-y-0.5 group-hover:border-sky-400/55 group-hover:bg-sky-500/[0.06] group-hover:shadow-[0_4px_12px_-4px_rgba(56,189,248,0.7)] group-active:translate-y-0 group-active:scale-[0.98] group-active:border-sky-400/70 group-active:bg-sky-500/[0.1]",
     chip: "group-hover:scale-105 group-hover:bg-sky-500/10 group-active:scale-95 group-active:bg-sky-500/15",
     link: "group block cursor-pointer rounded-xl transition-all duration-200 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+  },
+  emerald: {
+    card: "border-emerald-400/25 group-hover:-translate-y-0.5 group-hover:border-emerald-400/55 group-hover:bg-emerald-500/[0.06] group-hover:shadow-[0_4px_12px_-4px_rgba(16,185,129,0.7)] group-active:translate-y-0 group-active:scale-[0.98] group-active:border-emerald-400/70 group-active:bg-emerald-500/[0.1]",
+    chip: "group-hover:scale-105 group-hover:bg-emerald-500/10 group-active:scale-95 group-active:bg-emerald-500/15",
+    link: "group block cursor-pointer rounded-xl transition-all duration-200 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
   },
 } as const;
 
@@ -258,15 +414,17 @@ function StatCard({
   iconWrapClassName,
   filledIcon = true,
   href,
+  ariaLabel,
   accent = "violet",
 }: {
   icon: React.ComponentType<{ className?: string }>;
-  value: number;
+  value: number | string;
   tone: string;
   chipClassName?: string;
   iconWrapClassName?: string;
   filledIcon?: boolean;
   href?: string;
+  ariaLabel?: string;
   accent?: keyof typeof accentStyles;
 }) {
   const isInteractive = Boolean(href);
@@ -312,7 +470,9 @@ function StatCard({
   return (
     <Link
       href={href}
-      aria-label={accent === "sky" ? "View groups" : "View friends list"}
+      aria-label={
+        ariaLabel ?? (accent === "sky" ? "View groups" : "View friends list")
+      }
       className={colors.link}
     >
       {content}
@@ -321,6 +481,7 @@ function StatCard({
 }
 
 function CollectionSection({
+  sectionId,
   title,
   icon: Icon,
   iconTone,
@@ -328,32 +489,77 @@ function CollectionSection({
   emptyText,
   games,
   isOwner,
+  sharedType,
+  sharedGameIds,
+  matchStats,
+  forceMatchUnavailable = false,
 }: {
+  sectionId?: string;
   title: string;
   icon: React.ComponentType<{ className?: string }>;
   iconTone: string;
   count: number;
   emptyText: string;
-  games: Array<{
-    id: string;
-    slug: string;
-    title: string;
-    minPlayers: number;
-    maxPlayers: number;
-    minPlaytime: number;
-    maxPlaytime: number;
-    image?: string | null;
-  }>;
+  games: ProfileGame[];
   isOwner: boolean;
+  sharedType?: "favorite" | "wishlist" | "owned";
+  sharedGameIds?: Set<string>;
+  matchStats?: MatchStats;
+  forceMatchUnavailable?: boolean;
 }) {
+  const matchUnavailable = forceMatchUnavailable;
+  const emptyCategoryBothSides = Boolean(matchStats && matchStats.union === 0);
+  const effectiveMatchPercent = emptyCategoryBothSides ? 100 : (matchStats?.percent ?? 0);
+  const matchBadgeClassName = matchUnavailable
+    ? "border-zinc-400/35 bg-zinc-500/10 text-zinc-500 dark:text-zinc-300"
+    : sharedType === "favorite"
+      ? "border-rose-400/35 bg-rose-500/12 text-rose-500 dark:text-rose-300"
+      : sharedType === "wishlist"
+        ? "border-sky-400/35 bg-sky-500/12 text-sky-500 dark:text-sky-300"
+        : "border-emerald-400/35 bg-emerald-500/12 text-emerald-500 dark:text-emerald-300";
+  const matchTooltipClassName = matchUnavailable
+    ? "text-zinc-200 dark:text-zinc-700"
+    : sharedType === "favorite"
+      ? "text-rose-200 dark:text-rose-700"
+      : sharedType === "wishlist"
+        ? "text-sky-200 dark:text-sky-700"
+        : "text-emerald-200 dark:text-emerald-700";
+
   return (
-    <section className="mt-8 rounded-xl border bg-card/70 p-4 shadow-sm sm:p-5">
+    <section
+      id={sectionId}
+      tabIndex={-1}
+      className="mt-8 scroll-mt-24 rounded-xl border bg-card/70 p-4 shadow-sm outline-none sm:p-5"
+    >
       <div className="flex items-center justify-between">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Icon className={`h-4 w-4 ${iconTone}`} />
           {title}
         </CardTitle>
-        <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{count}</span>
+        <div className="flex items-center gap-2">
+          {matchStats && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  className={cn(
+                    "rounded-full border px-2 py-0.5 text-xs font-medium",
+                    matchBadgeClassName,
+                  )}
+                >
+                  {matchUnavailable ? "-%" : `${effectiveMatchPercent}% match`}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className={matchTooltipClassName}>
+                {matchUnavailable
+                  ? "Start adding games to your profile to track compatibility."
+                  : emptyCategoryBothSides
+                    ? `Both of you have no ${title.toLowerCase()} games yet, counted as 100% match.`
+                    : `${matchStats.shared}/${matchStats.union} shared in ${title.toLowerCase()}.`}
+              </TooltipContent>
+            </Tooltip>
+          )}
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{count}</span>
+        </div>
       </div>
 
       {games.length === 0 ? (
@@ -368,7 +574,11 @@ function CollectionSection({
       ) : (
         <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {games.map((game) => (
-            <ProfileGameCard key={game.id} game={game} />
+            <ProfileGameCard
+              key={game.id}
+              game={game}
+              sharedType={sharedGameIds?.has(game.id) ? sharedType : undefined}
+            />
           ))}
         </div>
       )}

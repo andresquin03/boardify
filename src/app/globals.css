@@ -121,6 +121,12 @@
 }
 
 @layer base {
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
   * {
     @apply border-border outline-ring/50;
     scrollbar-width: thin;
@@ -153,6 +159,71 @@
 }
 
 @layer utilities {
+  @keyframes toggle-bump {
+    0% {
+      transform: scale(1);
+    }
+    32% {
+      transform: scale(1.32);
+    }
+    58% {
+      transform: scale(0.93);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes toggle-glow {
+    0% {
+      opacity: 0.68;
+      transform: scale(0.68);
+    }
+    48% {
+      opacity: 0.32;
+      transform: scale(1.08);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.44);
+    }
+  }
+
+  @keyframes toggle-press {
+    0% {
+      transform: scale(1);
+    }
+    35% {
+      transform: scale(1.12);
+    }
+    70% {
+      transform: scale(0.97);
+    }
+    100% {
+      transform: scale(1.05);
+    }
+  }
+
+  .toggle-bump {
+    animation: toggle-bump 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .toggle-glow {
+    animation: toggle-glow 500ms ease-out;
+  }
+
+  .toggle-press {
+    animation: toggle-press 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .toggle-bump,
+    .toggle-glow,
+    .toggle-press {
+      animation: none;
+    }
+  }
+
   .pressable {
     -webkit-tap-highlight-color: transparent;
     transition:
