@@ -5,16 +5,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { User, Bell, UsersRound } from "lucide-react";
+import { Bell } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { signInWithGoogle } from "@/lib/actions";
 import { prisma } from "@/lib/prisma";
-import { SignOutMenuItem } from "@/components/layout/sign-out-menu-item";
+import { UserMenuContent } from "@/components/layout/user-menu-content";
 
 export async function Navbar() {
   const session = await auth();
@@ -108,26 +106,10 @@ export async function Navbar() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="center" sideOffset={10}>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href={session.user.username ? `/u/${session.user.username}` : "/onboarding"}
-                      className="pressable flex w-full cursor-pointer items-center justify-center gap-2 text-center"
-                    >
-                      <User className="h-4 w-4" />
-                      My profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href={hasCompletedOnboarding ? "/friends" : "/onboarding"}
-                      className="pressable flex w-full cursor-pointer items-center justify-center gap-2 text-center"
-                    >
-                      <UsersRound className="h-4 w-4" />
-                      My friends
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <SignOutMenuItem />
+                  <UserMenuContent
+                    username={session.user.username}
+                    hasCompletedOnboarding={hasCompletedOnboarding}
+                  />
                 </DropdownMenuContent>
               </DropdownMenu>
             </>
