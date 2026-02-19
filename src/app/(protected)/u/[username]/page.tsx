@@ -138,8 +138,8 @@ export default async function ProfilePage({
             <div className="flex h-full min-h-full flex-col rounded-2xl border bg-card/70 p-3 shadow-sm backdrop-blur-sm">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                 <div className="rounded-xl border bg-card/70 p-3 shadow-sm">
-                  <p className="text-xs font-medium text-muted-foreground">Games</p>
-                  <div className="mt-2 grid grid-cols-3 gap-2">
+                  <p className="text-center text-xs font-medium text-muted-foreground sm:text-left">Games</p>
+                  <div className="mt-2 grid grid-cols-3 gap-2 justify-items-center sm:justify-items-start">
                     <StatCard
                       icon={Heart}
                       value={favoriteGames.length}
@@ -162,8 +162,8 @@ export default async function ProfilePage({
 
                 <div className="grid grid-cols-2 gap-3 sm:contents">
                   <div className="rounded-xl border bg-card/70 p-3 shadow-sm">
-                    <p className="text-xs font-medium text-muted-foreground">Friends</p>
-                    <div className="mt-2 grid grid-cols-1 gap-2">
+                    <p className="text-center text-xs font-medium text-muted-foreground sm:text-left">Friends</p>
+                    <div className="mt-2 grid grid-cols-1 gap-2 justify-items-center sm:justify-items-start">
                       <StatCard
                         icon={UsersRound}
                         value={friendCount}
@@ -174,8 +174,8 @@ export default async function ProfilePage({
                   </div>
 
                   <div className="rounded-xl border bg-card/70 p-3 shadow-sm">
-                    <p className="text-xs font-medium text-muted-foreground">Groups</p>
-                    <div className="mt-2 grid grid-cols-1 gap-2">
+                    <p className="text-center text-xs font-medium text-muted-foreground sm:text-left">Groups</p>
+                    <div className="mt-2 grid grid-cols-1 gap-2 justify-items-center sm:justify-items-start">
                       <StatCard
                         icon={Network}
                         value={groupCount}
