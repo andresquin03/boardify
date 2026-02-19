@@ -160,7 +160,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
               <Link
                 key={user.id}
                 href={`/u/${user.username}`}
-                className={`flex items-center justify-between gap-3 rounded-xl border bg-card/70 p-3 shadow-sm transition-colors hover:bg-accent/40 ${
+                className={`pressable flex items-center justify-between gap-3 rounded-xl border bg-card/70 p-3 shadow-sm transition-colors hover:bg-accent/40 active:bg-accent/55 ${
                   isCurrentUser ? "border-primary/40 bg-primary/5 hover:bg-primary/10" : ""
                 }`}
               >

@@ -63,7 +63,7 @@ export function GameCard({ game, userState, isAuthenticated }: GameCardProps) {
       <Link
         href={`/g/${game.slug}`}
         aria-label={`Open ${game.title}`}
-        className="absolute inset-0 z-10 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+        className="pressable absolute inset-0 z-10 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 active:bg-foreground/5"
       />
       <CardHeader className="pb-2">
         <div className="relative h-32 overflow-hidden rounded-xl bg-muted transition-colors group-hover:bg-muted/80">

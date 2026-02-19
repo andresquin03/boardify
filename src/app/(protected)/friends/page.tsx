@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Globe, Handshake, Lock, UsersRound } from "lucide-react";
+import { Globe, Handshake, Lock, UserPlus, UsersRound } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { FriendRequestActions } from "./friend-request-card";
@@ -119,14 +119,23 @@ export default async function FriendsPage() {
           </span>
         </h2>
         {friendUsers.length === 0 ? (
-          <p className="mt-3 text-sm text-muted-foreground">No friends yet.</p>
+          <div className="mt-3 flex flex-col items-start gap-3">
+            <p className="text-sm text-muted-foreground">No friends yet.</p>
+            <Link
+              href="/users"
+              className="pressable inline-flex items-center gap-2 rounded-md border border-border/70 bg-card px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent/60 active:bg-accent/75"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              Go find some friends
+            </Link>
+          </div>
         ) : (
           <div className="mt-3 space-y-2">
             {friendUsers.map((user) => (
               <Link
                 key={user.id}
                 href={user.username ? `/u/${user.username}` : "/onboarding"}
-                className="flex items-center gap-3 rounded-xl border bg-card/70 p-3 shadow-sm transition-colors hover:bg-accent/50"
+                className="pressable flex items-center gap-3 rounded-xl border bg-card/70 p-3 shadow-sm transition-colors hover:bg-accent/50 active:bg-accent/65"
               >
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={user.image ?? undefined} alt={user.name ?? ""} />
@@ -162,7 +171,7 @@ function UserRow({
   return (
     <Link
       href={user.username ? `/u/${user.username}` : "/onboarding"}
-      className="flex min-w-0 flex-1 items-center gap-3 transition-colors hover:opacity-80"
+      className="pressable flex min-w-0 flex-1 items-center gap-3 transition-colors hover:opacity-80 active:opacity-70"
     >
       <Avatar className="h-10 w-10">
         <AvatarImage src={user.image ?? undefined} alt={user.name ?? ""} />

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { FormPendingButton } from "@/components/ui/form-pending-button";
 import { sendFriendRequest } from "@/lib/actions";
 import { Globe, Lock, UsersRound, Pencil, UserPlus, Clock3 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -106,6 +107,7 @@ export function ProfileHeader({
             <UnfriendDropdown
               friendshipId={friendshipId}
               profileUsername={profilePathUsername}
+              profileDisplayName={displayName}
             />
           )}
 
@@ -127,15 +129,16 @@ export function ProfileHeader({
 
           {!isOwner && relationState === "NONE" && canSendRequest && (
             <form action={sendFriendRequest.bind(null, user.id, profilePathUsername)}>
-              <Button
+              <FormPendingButton
                 type="submit"
                 variant="outline"
                 size="sm"
+                pendingText="Sending..."
                 className="mt-0.5 cursor-pointer gap-1.5 transition-all hover:-translate-y-0.5 hover:shadow-sm"
               >
                 <UserPlus className="h-3.5 w-3.5" />
                 Send request
-              </Button>
+              </FormPendingButton>
             </form>
           )}
         </div>

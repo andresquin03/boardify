@@ -65,9 +65,11 @@ export default async function ProfilePage({
   const isFriend = relation?.status === "ACCEPTED";
   const hasPendingRequest = relation?.status === "PENDING";
 
-  const canAccessPage = isOwner || visibility !== "PRIVATE";
+  const canAccessPage = isOwner || visibility !== "PRIVATE" || isFriend;
   const canViewCollections =
-    isOwner || visibility === "PUBLIC" || (visibility === "FRIENDS" && isFriend);
+    isOwner ||
+    visibility === "PUBLIC" ||
+    (isFriend && (visibility === "FRIENDS" || visibility === "PRIVATE"));
 
   if (!canAccessPage) {
     notFound();
@@ -231,10 +233,25 @@ function StatCard({
   filledIcon?: boolean;
   href?: string;
 }) {
+  const isInteractive = Boolean(href);
+
   const content = (
-    <Card className="h-20 w-20 rounded-xl border shadow-sm sm:h-24 sm:w-24">
+    <Card
+      className={cn(
+        "h-20 w-20 rounded-xl border shadow-sm transition-all duration-200 sm:h-24 sm:w-24",
+        isInteractive &&
+          "border-violet-400/25 group-hover:-translate-y-0.5 group-hover:border-violet-400/55 group-hover:bg-violet-500/[0.06] group-hover:shadow-[0_10px_20px_-14px_rgba(139,92,246,0.9)] group-active:translate-y-0 group-active:scale-[0.98] group-active:border-violet-400/70 group-active:bg-violet-500/[0.1]",
+      )}
+    >
       <CardContent className="flex h-full flex-col items-center justify-center p-2 text-center">
-        <div className={cn("rounded-full bg-muted p-2", chipClassName)}>
+        <div
+          className={cn(
+            "rounded-full bg-muted p-2 transition-all duration-200",
+            chipClassName,
+            isInteractive &&
+              "group-hover:scale-105 group-hover:bg-violet-500/10 group-active:scale-95 group-active:bg-violet-500/15",
+          )}
+        >
           {iconWrapClassName ? (
             <span className={iconWrapClassName}>
               <Icon className={tone} {...(filledIcon ? { fill: "currentColor" } : {})} />
@@ -243,7 +260,14 @@ function StatCard({
             <Icon className={`h-5 w-5 ${tone}`} {...(filledIcon ? { fill: "currentColor" } : {})} />
           )}
         </div>
-        <p className="mt-2 text-xl font-semibold leading-none sm:text-2xl">{value}</p>
+        <p
+          className={cn(
+            "mt-2 text-xl font-semibold leading-none transition-transform duration-200 sm:text-2xl",
+            isInteractive && "group-hover:scale-105 group-active:scale-95",
+          )}
+        >
+          {value}
+        </p>
       </CardContent>
     </Card>
   );
@@ -254,7 +278,7 @@ function StatCard({
     <Link
       href={href}
       aria-label="View friends list"
-      className="block rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+      className="group block cursor-pointer rounded-xl transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_10px_24px_-14px_rgba(139,92,246,0.75)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       {content}
     </Link>

@@ -18,7 +18,7 @@ interface ProfileGameCardProps {
 
 export function ProfileGameCard({ game }: ProfileGameCardProps) {
   return (
-    <Link href={`/g/${game.slug}`} className="group flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 transition-colors hover:bg-muted/50">
+    <Link href={`/g/${game.slug}`} className="pressable group flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 transition-colors hover:bg-muted/50 active:bg-muted/70">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted">
         {game.image ? (
           <Image

@@ -10,10 +10,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { LogOut, User, Bell, UsersRound } from "lucide-react";
+import { User, Bell, UsersRound } from "lucide-react";
 import { auth } from "@/lib/auth";
-import { signInWithGoogle, handleSignOut } from "@/lib/actions";
+import { signInWithGoogle } from "@/lib/actions";
 import { prisma } from "@/lib/prisma";
+import { SignOutMenuItem } from "@/components/layout/sign-out-menu-item";
 
 export async function Navbar() {
   const session = await auth();
@@ -52,14 +53,14 @@ export async function Navbar() {
           <nav className="flex items-center gap-4">
             <Link
               href="/games"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="pressable text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               Games
             </Link>
             {session?.user && hasCompletedOnboarding && (
               <Link
                 href="/users"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="pressable text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 Users
               </Link>
@@ -72,13 +73,20 @@ export async function Navbar() {
             <>
               <Link
                 href={hasCompletedOnboarding ? "/friends" : "/onboarding"}
-                className="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                className="group pressable relative inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent hover:text-foreground active:translate-y-0 active:scale-95 active:bg-amber-500/20 active:text-amber-400"
               >
-                <Bell className="h-4.5 w-4.5" />
+                <Bell
+                  className={`h-4.5 w-4.5 transition-all duration-400 ease-out group-hover:-rotate-12 group-hover:scale-110 group-active:scale-95 group-active:text-amber-400 ${
+                    pendingRequestCount > 0 ? "text-foreground" : ""
+                  }`}
+                />
                 {pendingRequestCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
-                    {pendingRequestCount > 9 ? "9+" : pendingRequestCount}
-                  </span>
+                  <>
+                    <span className="absolute -top-0.5 -right-0.5 h-4.5 w-4.5 rounded-full bg-destructive/35 motion-safe:animate-ping" />
+                    <span className="absolute -top-0.5 -right-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                      {pendingRequestCount > 9 ? "9+" : pendingRequestCount}
+                    </span>
+                  </>
                 )}
               </Link>
               <DropdownMenu>
@@ -103,7 +111,7 @@ export async function Navbar() {
                   <DropdownMenuItem asChild>
                     <Link
                       href={session.user.username ? `/u/${session.user.username}` : "/onboarding"}
-                      className="flex w-full items-center justify-center gap-2 text-center"
+                      className="pressable flex w-full cursor-pointer items-center justify-center gap-2 text-center"
                     >
                       <User className="h-4 w-4" />
                       My profile
@@ -112,24 +120,14 @@ export async function Navbar() {
                   <DropdownMenuItem asChild>
                     <Link
                       href={hasCompletedOnboarding ? "/friends" : "/onboarding"}
-                      className="flex w-full items-center justify-center gap-2 text-center"
+                      className="pressable flex w-full cursor-pointer items-center justify-center gap-2 text-center"
                     >
                       <UsersRound className="h-4 w-4" />
                       My friends
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <form action={handleSignOut}>
-                    <DropdownMenuItem asChild>
-                      <button
-                        type="submit"
-                        className="flex w-full cursor-pointer items-center justify-center gap-2 text-center text-destructive/80 transition-colors hover:text-destructive focus:text-destructive"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Sign out
-                      </button>
-                    </DropdownMenuItem>
-                  </form>
+                  <SignOutMenuItem />
                 </DropdownMenuContent>
               </DropdownMenu>
             </>
