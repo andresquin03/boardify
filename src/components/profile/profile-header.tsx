@@ -120,6 +120,10 @@ export function ProfileHeader({
   const visibility = visibilityConfig[visibilityKey];
   const VisibilityIcon = visibility.icon;
   const matchMeta = typeof generalMatchPercent === "number" ? getMatchMeta(generalMatchPercent) : null;
+  const availableMatchData =
+    typeof generalMatchPercent === "number" && matchMeta
+      ? { percent: generalMatchPercent, meta: matchMeta }
+      : null;
 
   return (
     <div className="rounded-2xl border bg-card/70 p-4 shadow-sm backdrop-blur-sm sm:p-6">
@@ -171,10 +175,10 @@ export function ProfileHeader({
                 profileUsername={profilePathUsername}
                 profileDisplayName={displayName}
               />
-              {(typeof generalMatchPercent === "number" && matchMeta) || generalMatchUnavailable ? (
+              {availableMatchData || generalMatchUnavailable ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    {generalMatchUnavailable ? (
+                    {generalMatchUnavailable || !availableMatchData ? (
                       <div className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-400/35 bg-zinc-500/10 px-2 py-1.5 text-zinc-500 dark:text-zinc-300">
                         <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-zinc-500/15">
                           <CircleHelp className="h-3.5 w-3.5" />
@@ -182,25 +186,25 @@ export function ProfileHeader({
                         <span className="text-xs font-semibold">-%</span>
                       </div>
                     ) : (
-                      <div className={cn("inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5", matchMeta.className)}>
-                        <span className={cn("inline-flex h-5 w-5 items-center justify-center rounded-full", matchMeta.iconWrapClassName)}>
-                          <matchMeta.icon className="h-3.5 w-3.5" />
+                      <div className={cn("inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5", availableMatchData.meta.className)}>
+                        <span className={cn("inline-flex h-5 w-5 items-center justify-center rounded-full", availableMatchData.meta.iconWrapClassName)}>
+                          <availableMatchData.meta.icon className="h-3.5 w-3.5" />
                         </span>
-                        <span className="text-xs font-semibold">{generalMatchPercent}%</span>
+                        <span className="text-xs font-semibold">{availableMatchData.percent}%</span>
                       </div>
                     )}
                   </TooltipTrigger>
                   <TooltipContent
                     side="top"
                     className={
-                      generalMatchUnavailable
+                      generalMatchUnavailable || !availableMatchData
                         ? "text-zinc-200 dark:text-zinc-700"
-                        : matchMeta.tooltipClassName
+                        : availableMatchData.meta.tooltipClassName
                     }
                   >
-                    {generalMatchUnavailable
+                    {generalMatchUnavailable || !availableMatchData
                       ? "Start adding games to your profile to track compatibility."
-                      : `${matchMeta.label}: ${matchMeta.tooltip}`}
+                      : `${availableMatchData.meta.label}: ${availableMatchData.meta.tooltip}`}
                   </TooltipContent>
                 </Tooltip>
               ) : null}
