@@ -46,7 +46,7 @@ export async function Navbar() {
                 className="hidden h-7 w-7 rounded-md dark:block"
               />
             </span>
-            Boardify
+            <span className="hidden sm:inline">Boardify</span>
           </Link>
           <nav className="flex items-center gap-4">
             <Link
@@ -56,12 +56,20 @@ export async function Navbar() {
               Games
             </Link>
             {session?.user && hasCompletedOnboarding && (
-              <Link
-                href="/users"
-                className="pressable text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Users
-              </Link>
+              <>
+                <Link
+                  href="/users"
+                  className="pressable text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Users
+                </Link>
+                <Link
+                  href="/groups"
+                  className="pressable text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Groups
+                </Link>
+              </>
             )}
           </nav>
         </div>

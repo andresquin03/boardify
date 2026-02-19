@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, BookOpen, Bookmark, Heart, LibraryBig, Sparkles, Users } from "lucide-react";
+import { ArrowRight, BookOpen, Bookmark, Heart, LibraryBig, Network, Sparkles, Users } from "lucide-react";
 
 const quickActions = [
   {
@@ -22,6 +22,15 @@ const quickActions = [
     description: "Save the games you want to play next and keep your picks organized.",
     href: "/games",
     cta: "Start wishlisting",
+  },
+  {
+    icon: Network,
+    iconColor: "text-cyan-600/70",
+    iconHoverColor: "group-hover:text-cyan-600",
+    title: "Join groups",
+    description: "Find or create groups to organize game nights with friends and new players.",
+    href: "/groups",
+    cta: "Browse groups",
   },
 ];
 
@@ -46,9 +55,9 @@ const features = [
     icon: Users,
     iconColor: "text-amber-600/70",
     iconHoverColor: "group-hover:text-amber-600",
-    title: "Player-friendly planning",
+    title: "Connect with friends",
     description:
-      "Find games by player count and playtime so each session matches your group.",
+      "Add friends, see their collections, and discover what games you have in common.",
   },
   {
     icon: Sparkles,
@@ -63,8 +72,9 @@ const features = [
 export default function HomePage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-20">
+      {/* Hero */}
       <section className="flex flex-col items-center gap-6 text-center">
-        <div className="flex items-center gap-3">
+        <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 flex items-center gap-3 duration-500">
           <span className="relative h-12 w-12">
             <Image
               src="/boardify-light.png"
@@ -87,32 +97,34 @@ export default function HomePage() {
             Boardify
           </h1>
         </div>
-        <p className="text-xl text-muted-foreground sm:text-2xl">
+        <p className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 text-xl text-muted-foreground duration-500 delay-150 fill-mode-both sm:text-2xl">
           Boardify your game nights.
         </p>
-        <p className="max-w-2xl text-muted-foreground">
-          Organize your board games with favorites, wishlist, and owned status. Discover games faster and keep every session planned.
+        <p className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 max-w-2xl text-muted-foreground duration-500 delay-300 fill-mode-both">
+          Organize your board games, connect with friends, and join groups. Track favorites, wishlists, and collections all in one place.
         </p>
       </section>
 
-      <section className="mt-14 grid gap-6 sm:grid-cols-2">
-        {quickActions.map((action) => (
+      {/* Quick actions */}
+      <section className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {quickActions.map((action, i) => (
           <Card
             key={action.title}
-            className="group rounded-2xl border shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:ring-1 hover:ring-border/80 dark:hover:shadow-black/35"
+            className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 group rounded-2xl border shadow-sm transition-all duration-300 fill-mode-both hover:-translate-y-1.5 hover:shadow-lg hover:ring-1 hover:ring-border/80 active:translate-y-0 dark:hover:shadow-black/35"
+            style={{ animationDelay: `${450 + i * 100}ms` }}
           >
             <CardHeader>
               <action.icon
-                className={`h-8 w-8 transition-all duration-200 group-hover:scale-110 ${action.iconColor} ${action.iconHoverColor}`}
+                className={`h-8 w-8 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6 ${action.iconColor} ${action.iconHoverColor}`}
               />
               <CardTitle className="mt-2">{action.title}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">{action.description}</p>
-              <Button asChild variant="outline" className="mt-4 cursor-pointer">
+              <Button asChild variant="outline" className="mt-4 cursor-pointer group/btn">
                 <Link href={action.href}>
                   {action.cta}
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover/btn:translate-x-0.5" />
                 </Link>
               </Button>
             </CardContent>
@@ -120,15 +132,17 @@ export default function HomePage() {
         ))}
       </section>
 
+      {/* Features */}
       <section className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {features.map((feature) => (
+        {features.map((feature, i) => (
           <Card
             key={feature.title}
-            className="group rounded-2xl border shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:ring-1 hover:ring-border/80 dark:hover:shadow-black/30"
+            className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 group rounded-2xl border shadow-sm transition-all duration-300 fill-mode-both hover:-translate-y-1 hover:shadow-lg hover:ring-1 hover:ring-border/80 active:translate-y-0 dark:hover:shadow-black/30"
+            style={{ animationDelay: `${750 + i * 80}ms` }}
           >
             <CardHeader>
               <feature.icon
-                className={`h-7 w-7 transition-all duration-200 group-hover:scale-110 ${feature.iconColor} ${feature.iconHoverColor}`}
+                className={`h-7 w-7 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6 ${feature.iconColor} ${feature.iconHoverColor}`}
               />
               <CardTitle className="mt-2 text-base">{feature.title}</CardTitle>
             </CardHeader>

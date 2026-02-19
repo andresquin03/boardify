@@ -4,7 +4,7 @@ import { ProfileHeader } from "@/components/profile/profile-header";
 import { ProfileGameCard } from "@/components/profile/profile-game-card";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Heart, Bookmark, CircleCheckBig, Check, UsersRound } from "lucide-react";
+import { Heart, Bookmark, CircleCheckBig, Check, UsersRound, Network } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -82,17 +82,23 @@ export default async function ProfilePage({
       })
     : [];
 
-  const friendCount = await prisma.friendship.count({
-    where: {
-      status: "ACCEPTED",
-      OR: [{ requesterId: user.id }, { addresseeId: user.id }],
-    },
-  });
+  const [friendCount, groupCount] = await Promise.all([
+    prisma.friendship.count({
+      where: {
+        status: "ACCEPTED",
+        OR: [{ requesterId: user.id }, { addresseeId: user.id }],
+      },
+    }),
+    prisma.groupMember.count({
+      where: { userId: user.id },
+    }),
+  ]);
 
   const favoriteGames = userGames.filter((ug) => ug.isFavorite).map((ug) => ug.game);
   const wishlistGames = userGames.filter((ug) => ug.isWishlist).map((ug) => ug.game);
   const ownedGames = userGames.filter((ug) => ug.isOwned).map((ug) => ug.game);
   const friendsListHref = isOwner ? "/friends" : isFriend ? `/u/${username}/friends` : undefined;
+  const groupsListHref = isOwner || isFriend ? `/u/${username}/groups` : undefined;
   const relationState = isFriend
     ? "FRIEND"
     : hasPendingRequest && relation?.addresseeId === viewerId
@@ -154,15 +160,30 @@ export default async function ProfilePage({
                   </div>
                 </div>
 
-                <div className="rounded-xl border bg-card/70 p-3 shadow-sm">
-                  <p className="text-xs font-medium text-muted-foreground">Friends</p>
-                  <div className="mt-2 grid grid-cols-1 gap-2">
-                    <StatCard
-                      icon={UsersRound}
-                      value={friendCount}
-                      tone="text-violet-500"
-                      href={friendsListHref}
-                    />
+                <div className="grid grid-cols-2 gap-3 sm:contents">
+                  <div className="rounded-xl border bg-card/70 p-3 shadow-sm">
+                    <p className="text-xs font-medium text-muted-foreground">Friends</p>
+                    <div className="mt-2 grid grid-cols-1 gap-2">
+                      <StatCard
+                        icon={UsersRound}
+                        value={friendCount}
+                        tone="text-violet-500"
+                        href={friendsListHref}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border bg-card/70 p-3 shadow-sm">
+                    <p className="text-xs font-medium text-muted-foreground">Groups</p>
+                    <div className="mt-2 grid grid-cols-1 gap-2">
+                      <StatCard
+                        icon={Network}
+                        value={groupCount}
+                        tone="text-sky-500"
+                        href={groupsListHref}
+                        accent="sky"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -216,6 +237,19 @@ export default async function ProfilePage({
   );
 }
 
+const accentStyles = {
+  violet: {
+    card: "border-violet-400/25 group-hover:-translate-y-0.5 group-hover:border-violet-400/55 group-hover:bg-violet-500/[0.06] group-hover:shadow-[0_4px_12px_-4px_rgba(139,92,246,0.7)] group-active:translate-y-0 group-active:scale-[0.98] group-active:border-violet-400/70 group-active:bg-violet-500/[0.1]",
+    chip: "group-hover:scale-105 group-hover:bg-violet-500/10 group-active:scale-95 group-active:bg-violet-500/15",
+    link: "group block cursor-pointer rounded-xl transition-all duration-200 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+  },
+  sky: {
+    card: "border-sky-400/25 group-hover:-translate-y-0.5 group-hover:border-sky-400/55 group-hover:bg-sky-500/[0.06] group-hover:shadow-[0_4px_12px_-4px_rgba(56,189,248,0.7)] group-active:translate-y-0 group-active:scale-[0.98] group-active:border-sky-400/70 group-active:bg-sky-500/[0.1]",
+    chip: "group-hover:scale-105 group-hover:bg-sky-500/10 group-active:scale-95 group-active:bg-sky-500/15",
+    link: "group block cursor-pointer rounded-xl transition-all duration-200 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+  },
+} as const;
+
 function StatCard({
   icon: Icon,
   value,
@@ -224,6 +258,7 @@ function StatCard({
   iconWrapClassName,
   filledIcon = true,
   href,
+  accent = "violet",
 }: {
   icon: React.ComponentType<{ className?: string }>;
   value: number;
@@ -232,15 +267,16 @@ function StatCard({
   iconWrapClassName?: string;
   filledIcon?: boolean;
   href?: string;
+  accent?: keyof typeof accentStyles;
 }) {
   const isInteractive = Boolean(href);
+  const colors = accentStyles[accent];
 
   const content = (
     <Card
       className={cn(
         "h-20 w-20 rounded-xl border shadow-sm transition-all duration-200 sm:h-24 sm:w-24",
-        isInteractive &&
-          "border-violet-400/25 group-hover:-translate-y-0.5 group-hover:border-violet-400/55 group-hover:bg-violet-500/[0.06] group-hover:shadow-[0_10px_20px_-14px_rgba(139,92,246,0.9)] group-active:translate-y-0 group-active:scale-[0.98] group-active:border-violet-400/70 group-active:bg-violet-500/[0.1]",
+        isInteractive && colors.card,
       )}
     >
       <CardContent className="flex h-full flex-col items-center justify-center p-2 text-center">
@@ -248,8 +284,7 @@ function StatCard({
           className={cn(
             "rounded-full bg-muted p-2 transition-all duration-200",
             chipClassName,
-            isInteractive &&
-              "group-hover:scale-105 group-hover:bg-violet-500/10 group-active:scale-95 group-active:bg-violet-500/15",
+            isInteractive && colors.chip,
           )}
         >
           {iconWrapClassName ? (
@@ -277,8 +312,8 @@ function StatCard({
   return (
     <Link
       href={href}
-      aria-label="View friends list"
-      className="group block cursor-pointer rounded-xl transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_10px_24px_-14px_rgba(139,92,246,0.75)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      aria-label={accent === "sky" ? "View groups" : "View friends list"}
+      className={colors.link}
     >
       {content}
     </Link>

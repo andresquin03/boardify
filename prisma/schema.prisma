@@ -25,6 +25,10 @@ model User {
   sentFriendships     Friendship[] @relation("FriendshipRequester")
   receivedFriendships Friendship[] @relation("FriendshipAddressee")
 
+  groupMemberships          GroupMember[]
+  sentGroupInvitations      GroupInvitation[] @relation("GroupInvitationSent")
+  receivedGroupInvitations  GroupInvitation[] @relation("GroupInvitationReceived")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -152,4 +156,109 @@ model UserGame {
 
   @@unique([userId, gameId])
   @@index([userId])
+}
+
+// ── Groups ──────────────────────────────────────────────
+
+enum GroupVisibility {
+  PUBLIC
+  INVITATION
+  PRIVATE
+}
+
+enum GroupRole {
+  ADMIN
+  MEMBER
+}
+
+enum GroupInvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum GroupIcon {
+  DOG
+  CAT
+  BIRD
+  FISH
+  BUG
+  RABBIT
+  SQUIRREL
+  TURTLE
+  SNAIL
+  DICE_1
+  DICE_2
+  DICE_3
+  DICE_4
+  DICE_5
+  DICE_6
+  SWORD
+  SWORDS
+  SHIELD
+  CROWN
+  CASTLE
+  GEM
+  FLAME
+  SKULL
+  GHOST
+  WAND
+  SPARKLES
+  TROPHY
+  TARGET
+  PUZZLE
+  ROCKET
+  COMPASS
+  MAP
+  ANCHOR
+  BOMB
+  ZAP
+  HEART
+  STAR
+  MOON
+  SUN
+}
+
+model Group {
+  id          String          @id @default(cuid())
+  name        String          @unique
+  description String?
+  icon        GroupIcon       @default(DICE_1)
+  visibility  GroupVisibility @default(INVITATION)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  members     GroupMember[]
+  invitations GroupInvitation[]
+}
+
+model GroupMember {
+  id       String    @id @default(cuid())
+  role     GroupRole @default(MEMBER)
+  joinedAt DateTime  @default(now())
+  userId   String
+  groupId  String
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+}
+
+model GroupInvitation {
+  id        String                @id @default(cuid())
+  status    GroupInvitationStatus @default(PENDING)
+  groupId   String
+  inviterId String
+  inviteeId String
+
+  group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  inviter User  @relation("GroupInvitationSent", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitee User  @relation("GroupInvitationReceived", fields: [inviteeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([groupId, inviteeId])
+  @@index([inviteeId, status])
 }
