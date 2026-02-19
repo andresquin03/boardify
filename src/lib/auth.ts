@@ -28,32 +28,11 @@ async function getUserSessionProfile(userId: string) {
   };
 }
 
-async function ensurePreOnboardingPrivacy(userId: string) {
-  await prisma.user.updateMany({
-    where: {
-      id: userId,
-      username: null,
-      visibility: { not: "PRIVATE" },
-    },
-    data: { visibility: "PRIVATE" },
-  });
-}
-
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: authSecret,
   adapter: PrismaAdapter(prisma),
   providers: [Google],
   session: { strategy: "jwt" },
-  events: {
-    async createUser({ user }) {
-      if (!user.id) return;
-      try {
-        await ensurePreOnboardingPrivacy(user.id);
-      } catch {
-        // Ignore post-create adjustments errors.
-      }
-    },
-  },
   cookies: {
     sessionToken: {
       name: sessionCookieName,
@@ -66,15 +45,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   callbacks: {
-    async signIn({ user }) {
-      if (!user.id) return true;
-      try {
-        await ensurePreOnboardingPrivacy(user.id);
-      } catch {
-        // Do not block sign-in if this post-processing fails.
-      }
-      return true;
-    },
     async jwt({ token, user }) {
       if (user?.id) {
         token.sub = user.id;
@@ -85,7 +55,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (!token.sub) return session;
       session.user.id = token.sub;
       try {
-        await ensurePreOnboardingPrivacy(token.sub);
         const profile = await getUserSessionProfile(token.sub);
         session.user.username = profile?.username ?? undefined;
         session.user.onboardingCompleted = profile?.onboardingCompleted ?? false;

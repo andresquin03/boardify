@@ -17,7 +17,7 @@ model User {
   image         String?
   username      String?   @unique
   bio           String?
-  visibility    ProfileVisibility @default(PUBLIC)
+  visibility    ProfileVisibility @default(PRIVATE)
 
   accounts            Account[]
   sessions            Session[]
