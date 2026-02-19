@@ -219,17 +219,42 @@ enum GroupIcon {
   SUN
 }
 
+enum GroupColor {
+  SKY
+  EMERALD
+  AMBER
+  ROSE
+  VIOLET
+  INDIGO
+  CYAN
+  LIME
+}
+
 model Group {
   id          String          @id @default(cuid())
-  name        String          @unique
+  name        String
+  slug        String          @unique
   description String?
   icon        GroupIcon       @default(DICE_1)
+  color       GroupColor      @default(SKY)
   visibility  GroupVisibility @default(INVITATION)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
   members     GroupMember[]
   invitations GroupInvitation[]
+  slugHistory GroupSlug[]
+}
+
+model GroupSlug {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  groupId   String
+  createdAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
 }
 
 model GroupMember {

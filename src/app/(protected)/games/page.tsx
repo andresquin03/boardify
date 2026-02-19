@@ -198,9 +198,9 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <div className="flex items-center gap-2.5">
+      <div className="group flex items-center gap-2.5">
         <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border/70 bg-card/70 text-sky-500 shadow-sm motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95">
-          <Dice5 className="h-5 w-5 motion-safe:animate-[pulse_2.8s_ease-in-out_infinite]" />
+          <Dice5 className="h-5 w-5 transition-all duration-300 motion-safe:animate-[pulse_2.8s_ease-in-out_infinite] group-hover:scale-110 group-hover:-rotate-6 group-active:scale-95" />
         </span>
         <h1 className="text-3xl font-bold">Games</h1>
       </div>

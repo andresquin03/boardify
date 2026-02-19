@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Globe, Lock, Mail, Network, Users } from "lucide-react";
+import { Globe, Lock, Mail, Network, Plus, Users } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { auth } from "@/lib/auth";
+import { GROUP_COLOR_CONFIG } from "@/lib/group-colors";
 import { prisma } from "@/lib/prisma";
 import { GROUP_ICON_MAP } from "@/lib/group-icons";
-import type { GroupVisibility } from "@/generated/prisma/client";
+import type { GroupColor, GroupVisibility } from "@/generated/prisma/client";
 
 const visibilityConfig = {
   PUBLIC: {
@@ -76,12 +77,14 @@ export default async function UserGroupsPage({
   });
 
   const displayName = targetUser.name ?? targetUser.username ?? "User";
+  const createGroupCta =
+    groups.length === 0 ? "Create your first group!" : "Create group";
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10">
-      <div className="flex items-center gap-2.5">
+    <div className="mx-auto max-w-4xl px-4 py-10 pb-24">
+      <div className="group flex items-center gap-2.5">
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/70 bg-card/70 text-sky-500 shadow-sm motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95">
-          <Network className="h-4.5 w-4.5 motion-safe:animate-[pulse_2.8s_ease-in-out_infinite]" />
+          <Network className="h-4.5 w-4.5 transition-all duration-300 motion-safe:animate-[pulse_2.8s_ease-in-out_infinite] group-hover:scale-110 group-hover:-rotate-6 group-active:scale-95" />
         </span>
         <h1 className="text-2xl font-bold">
           {isOwner ? "My groups" : `${displayName}\u2019s groups`}
@@ -111,15 +114,19 @@ export default async function UserGroupsPage({
           {groups.map(({ group }) => {
             const IconComponent = GROUP_ICON_MAP[group.icon];
             const vis = visibilityConfig[group.visibility as GroupVisibility];
+            const colorConfig = GROUP_COLOR_CONFIG[group.color as GroupColor];
             const VisibilityIcon = vis.icon;
 
             return (
-              <div
+              <Link
                 key={group.id}
-                className="flex flex-col gap-3 rounded-xl border bg-card/70 p-4 shadow-sm transition-colors hover:bg-accent/40"
+                href={`/groups/${group.slug}`}
+                className="pressable flex flex-col gap-3 rounded-xl border bg-card/70 p-4 shadow-sm transition-colors hover:bg-accent/40"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-muted/50 text-foreground">
+                  <span
+                    className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-muted/50 ${colorConfig.iconClassName}`}
+                  >
                     <IconComponent className="h-5 w-5" />
                   </span>
                   <Tooltip>
@@ -150,10 +157,20 @@ export default async function UserGroupsPage({
                     {group._count.members === 1 ? "member" : "members"}
                   </span>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
+      )}
+
+      {isOwner && (
+        <Link
+          href="/groups/new"
+          className="pressable fixed right-6 bottom-6 z-50 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/35 transition-colors hover:bg-emerald-500 active:bg-emerald-700 sm:right-8 sm:bottom-8"
+        >
+          <Plus className="h-4 w-4" />
+          {createGroupCta}
+        </Link>
       )}
     </div>
   );

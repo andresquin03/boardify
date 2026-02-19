@@ -2,6 +2,14 @@
 
 import { signIn, signOut, auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import {
+  GroupColor,
+  GroupIcon,
+  GroupVisibility,
+  type GroupColor as GroupColorValue,
+  type GroupIcon as GroupIconValue,
+  type GroupVisibility as GroupVisibilityValue,
+} from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -11,26 +19,113 @@ const CUID_RE = /^c[a-z0-9]{20,32}$/;
 const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{1,28}[a-z0-9]$/;
 const PROFILE_PATH_SEGMENT_RE = /^[a-z0-9._-]{3,50}$/;
 const GAME_ID_RE = /^[a-z0-9][a-z0-9._-]{0,99}$/;
+const GROUP_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._\- ]{1,28}[A-Za-z0-9]$/;
+const VALID_GROUP_VISIBILITIES = Object.values(GroupVisibility);
+const VALID_GROUP_ICONS = Object.values(GroupIcon);
+const VALID_GROUP_COLORS = Object.values(GroupColor);
+const RESERVED_GROUP_SLUGS = new Set(["new"]);
 
 function normalizeUsername(value: string) {
   return value.trim().toLowerCase();
 }
 
-function isUsernameUniqueConstraintError(error: unknown) {
-  if (!error || typeof error !== "object") return false;
-  const known = error as { code?: string; meta?: { target?: unknown } };
-  if (known.code !== "P2002") return false;
+function normalizeGroupName(value: string) {
+  return value.trim().replace(/\s+/g, " ");
+}
 
-  const target = known.meta?.target;
-  if (Array.isArray(target)) {
-    return target.some((item) => item === "username");
+function toBaseGroupSlug(groupName: string) {
+  return groupName.toLowerCase().replace(/\s+/g, "");
+}
+
+async function findAvailableGroupSlug(
+  baseSlug: string,
+  {
+    excludeGroupId,
+  }: {
+    excludeGroupId?: string;
+  } = {},
+) {
+  for (let suffix = 1; suffix <= 500; suffix += 1) {
+    const candidateSlug = suffix === 1 ? baseSlug : `${baseSlug}_${suffix}`;
+    if (RESERVED_GROUP_SLUGS.has(candidateSlug)) {
+      continue;
+    }
+
+    const [currentCollision, historyCollision] = await Promise.all([
+      prisma.group.findFirst({
+        where: excludeGroupId
+          ? { slug: candidateSlug, id: { not: excludeGroupId } }
+          : { slug: candidateSlug },
+        select: { id: true },
+      }),
+      prisma.groupSlug.findFirst({
+        where: excludeGroupId
+          ? { slug: candidateSlug, groupId: { not: excludeGroupId } }
+          : { slug: candidateSlug },
+        select: { id: true },
+      }),
+    ]);
+
+    if (!currentCollision && !historyCollision) {
+      return candidateSlug;
+    }
   }
 
-  if (typeof target === "string") {
-    return target.includes("username");
+  return null;
+}
+
+function isUniqueConstraintErrorOnField(error: unknown, field: string) {
+  let current: unknown = error;
+  const normalizedField = field.toLowerCase();
+
+  for (let depth = 0; depth < 8; depth += 1) {
+    if (!current || typeof current !== "object") return false;
+
+    const known = current as {
+      code?: string;
+      message?: string;
+      cause?: unknown;
+      meta?: { target?: unknown };
+    };
+
+    if (known.code === "P2002") {
+      const target = known.meta?.target;
+      if (Array.isArray(target)) {
+        const matched = target.some(
+          (item) => typeof item === "string" && item.toLowerCase().includes(normalizedField),
+        );
+        if (matched) return true;
+      }
+
+      if (typeof target === "string" && target.toLowerCase().includes(normalizedField)) {
+        return true;
+      }
+    }
+
+    if (typeof known.message === "string") {
+      const message = known.message.toLowerCase();
+      const fieldMentioned =
+        message.includes(normalizedField) ||
+        message.includes(`\`${normalizedField}\``) ||
+        message.includes(`(${normalizedField})`) ||
+        message.includes(`(\`${normalizedField}\`)`);
+      if (fieldMentioned && message.includes("unique constraint")) {
+        return true;
+      }
+    }
+
+    current = known.cause;
   }
 
   return false;
+}
+
+function isUsernameUniqueConstraintError(error: unknown) {
+  return isUniqueConstraintErrorOnField(error, "username");
+}
+
+function isGroupSlugUniqueConstraintError(error: unknown) {
+  return isUniqueConstraintErrorOnField(error, "slug");
 }
 
 function assertCuid(value: unknown, label: string): asserts value is string {
@@ -287,6 +382,457 @@ export async function unfriend(friendshipId: string, profileUsername: string) {
   });
 
   revalidateFriendshipProfiles(friendship);
+}
+
+// ── Groups ──────────────────────────────────────────────
+
+export type GroupFormState = {
+  errors?: {
+    name?: string;
+    description?: string;
+    icon?: string;
+    color?: string;
+    visibility?: string;
+    general?: string;
+  };
+  values?: {
+    name: string;
+    description: string;
+    icon: GroupIconValue;
+    color: GroupColorValue;
+    visibility: GroupVisibilityValue;
+  };
+} | null;
+
+type GroupInput = {
+  name: string;
+  description: string | null;
+  icon: GroupIconValue;
+  color: GroupColorValue;
+  visibility: GroupVisibilityValue;
+};
+
+type ParsedGroupFormData =
+  | {
+      errors: NonNullable<GroupFormState>["errors"];
+      values: NonNullable<GroupFormState>["values"];
+    }
+  | { data: GroupInput };
+
+function parseGroupFormData(formData: FormData): ParsedGroupFormData {
+  const rawName = formData.get("name");
+  const rawDescription = formData.get("description");
+  const rawIcon = formData.get("icon");
+  const rawColor = formData.get("color");
+  const rawVisibility = formData.get("visibility");
+  const name = typeof rawName === "string" ? normalizeGroupName(rawName) : "";
+  const description = typeof rawDescription === "string" ? rawDescription.trim() : "";
+  const icon =
+    typeof rawIcon === "string" && VALID_GROUP_ICONS.includes(rawIcon as GroupIconValue)
+      ? (rawIcon as GroupIconValue)
+      : "DICE_1";
+  const color =
+    typeof rawColor === "string" && VALID_GROUP_COLORS.includes(rawColor as GroupColorValue)
+      ? (rawColor as GroupColorValue)
+      : "SKY";
+  const visibility =
+    typeof rawVisibility === "string" &&
+    VALID_GROUP_VISIBILITIES.includes(rawVisibility as GroupVisibilityValue)
+      ? (rawVisibility as GroupVisibilityValue)
+      : "INVITATION";
+
+  const values: NonNullable<GroupFormState>["values"] = {
+    name,
+    description,
+    icon,
+    color,
+    visibility,
+  };
+  const errors: NonNullable<GroupFormState>["errors"] = {};
+
+  if (!GROUP_NAME_RE.test(name)) {
+    errors.name =
+      "Invalid group name. Use 3-30 letters, numbers, spaces, dots, underscores or hyphens.";
+  }
+
+  if (description !== "" && description.length > 160) {
+    errors.description = "Description must be 160 characters or less.";
+  }
+
+  if (
+    typeof rawIcon !== "string" ||
+    !VALID_GROUP_ICONS.includes(rawIcon as GroupIconValue)
+  ) {
+    errors.icon = "Invalid icon option.";
+  }
+
+  if (
+    typeof rawColor !== "string" ||
+    !VALID_GROUP_COLORS.includes(rawColor as GroupColorValue)
+  ) {
+    errors.color = "Invalid color option.";
+  }
+
+  if (
+    typeof rawVisibility !== "string" ||
+    !VALID_GROUP_VISIBILITIES.includes(rawVisibility as GroupVisibilityValue)
+  ) {
+    errors.visibility = "Invalid visibility option.";
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return { errors, values };
+  }
+
+  return {
+    data: {
+      name,
+      description: description ? description : null,
+      icon,
+      color,
+      visibility,
+    },
+  };
+}
+
+export async function createGroup(
+  _prev: GroupFormState,
+  formData: FormData,
+): Promise<GroupFormState> {
+  const userId = await getAuthUserId();
+  const parsed = parseGroupFormData(formData);
+
+  if ("errors" in parsed) {
+    return { errors: parsed.errors, values: parsed.values };
+  }
+
+  const baseSlug = toBaseGroupSlug(parsed.data.name);
+  if (!baseSlug) {
+    return {
+      errors: { name: "Group name must include letters or numbers." },
+      values: {
+        name: parsed.data.name,
+        description: parsed.data.description ?? "",
+        icon: parsed.data.icon,
+        color: parsed.data.color,
+        visibility: parsed.data.visibility,
+      },
+    };
+  }
+
+  let createdGroup: { slug: string } | null = null;
+  for (let attempt = 1; attempt <= 500; attempt += 1) {
+    const candidateSlug = await findAvailableGroupSlug(baseSlug);
+    if (!candidateSlug) {
+      break;
+    }
+
+    try {
+      createdGroup = await prisma.$transaction(async (tx) => {
+        const group = await tx.group.create({
+          data: {
+            name: parsed.data.name,
+            slug: candidateSlug,
+            description: parsed.data.description,
+            icon: parsed.data.icon,
+            color: parsed.data.color,
+            visibility: parsed.data.visibility,
+          },
+          select: { id: true, slug: true },
+        });
+
+        await tx.groupMember.create({
+          data: {
+            userId,
+            groupId: group.id,
+            role: "ADMIN",
+          },
+        });
+
+        return group;
+      });
+      break;
+    } catch (error) {
+      if (isGroupSlugUniqueConstraintError(error)) {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  if (!createdGroup) {
+    return {
+      errors: { general: "Could not generate a unique slug. Please try another name." },
+      values: {
+        name: parsed.data.name,
+        description: parsed.data.description ?? "",
+        icon: parsed.data.icon,
+        color: parsed.data.color,
+        visibility: parsed.data.visibility,
+      },
+    };
+  }
+
+  const currentUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { username: true },
+  });
+
+  revalidatePath("/groups");
+  if (currentUser?.username) {
+    revalidatePath(`/u/${currentUser.username}`);
+    revalidatePath(`/u/${currentUser.username}/groups`);
+  }
+
+  redirect(`/groups/${createdGroup.slug}`);
+}
+
+export async function updateGroup(
+  _prev: GroupFormState,
+  formData: FormData,
+): Promise<GroupFormState> {
+  const userId = await getAuthUserId();
+  const groupId = formData.get("groupId");
+  assertCuid(groupId, "groupId");
+  const parsed = parseGroupFormData(formData);
+
+  if ("errors" in parsed) {
+    return { errors: parsed.errors, values: parsed.values };
+  }
+
+  const baseSlug = toBaseGroupSlug(parsed.data.name);
+  if (!baseSlug) {
+    return {
+      errors: { name: "Group name must include letters or numbers." },
+      values: {
+        name: parsed.data.name,
+        description: parsed.data.description ?? "",
+        icon: parsed.data.icon,
+        color: parsed.data.color,
+        visibility: parsed.data.visibility,
+      },
+    };
+  }
+
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
+    select: { id: true, slug: true },
+  });
+  if (!group) {
+    return {
+      errors: { general: "Group not found." },
+      values: {
+        name: parsed.data.name,
+        description: parsed.data.description ?? "",
+        icon: parsed.data.icon,
+        color: parsed.data.color,
+        visibility: parsed.data.visibility,
+      },
+    };
+  }
+
+  const membership = await prisma.groupMember.findUnique({
+    where: { userId_groupId: { userId, groupId } },
+    select: { role: true },
+  });
+
+  if (membership?.role !== "ADMIN") {
+    throw new Error("Not authorized");
+  }
+
+  let nextSlug = group.slug;
+  let updated = false;
+
+  for (let attempt = 1; attempt <= 500; attempt += 1) {
+    const candidateSlug = await findAvailableGroupSlug(baseSlug, {
+      excludeGroupId: groupId,
+    });
+    if (!candidateSlug) {
+      break;
+    }
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.group.update({
+          where: { id: groupId },
+          data: {
+            name: parsed.data.name,
+            description: parsed.data.description,
+            icon: parsed.data.icon,
+            color: parsed.data.color,
+            visibility: parsed.data.visibility,
+            slug: candidateSlug,
+          },
+        });
+
+        if (candidateSlug !== group.slug) {
+          await tx.groupSlug.createMany({
+            data: [{ slug: group.slug, groupId }],
+            skipDuplicates: true,
+          });
+        }
+      });
+
+      nextSlug = candidateSlug;
+      updated = true;
+      break;
+    } catch (error) {
+      if (isGroupSlugUniqueConstraintError(error)) {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  if (!updated) {
+    return {
+      errors: { general: "Could not generate a unique slug. Please try another name." },
+      values: {
+        name: parsed.data.name,
+        description: parsed.data.description ?? "",
+        icon: parsed.data.icon,
+        color: parsed.data.color,
+        visibility: parsed.data.visibility,
+      },
+    };
+  }
+
+  const currentUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { username: true },
+  });
+
+  revalidatePath("/groups");
+  revalidatePath(`/groups/${group.slug}`);
+  revalidatePath(`/groups/${nextSlug}`);
+  if (currentUser?.username) {
+    revalidatePath(`/u/${currentUser.username}`);
+    revalidatePath(`/u/${currentUser.username}/groups`);
+  }
+
+  redirect(`/groups/${nextSlug}`);
+}
+
+export async function deleteGroup(groupId: string) {
+  assertCuid(groupId, "groupId");
+  const userId = await getAuthUserId();
+
+  const deleted = await prisma.$transaction(async (tx) => {
+    const group = await tx.group.findUnique({
+      where: { id: groupId },
+      select: {
+        id: true,
+        slug: true,
+        members: {
+          select: {
+            userId: true,
+            role: true,
+            user: {
+              select: { username: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!group) {
+      throw new Error("Group not found");
+    }
+
+    const membership = group.members.find((member) => member.userId === userId);
+    if (membership?.role !== "ADMIN") {
+      throw new Error("Not authorized");
+    }
+
+    await tx.group.delete({
+      where: { id: group.id },
+    });
+
+    return {
+      slug: group.slug,
+      memberUsernames: group.members
+        .map((member) => member.user.username)
+        .filter((username): username is string => Boolean(username)),
+    };
+  });
+
+  revalidatePath("/groups");
+  revalidatePath(`/groups/${deleted.slug}`);
+
+  for (const username of new Set(deleted.memberUsernames)) {
+    revalidatePath(`/u/${username}`);
+    revalidatePath(`/u/${username}/groups`);
+  }
+
+  redirect("/groups");
+}
+
+export async function leaveGroup(groupId: string) {
+  assertCuid(groupId, "groupId");
+  const userId = await getAuthUserId();
+
+  const leftGroup = await prisma.$transaction(async (tx) => {
+    const group = await tx.group.findUnique({
+      where: { id: groupId },
+      select: {
+        id: true,
+        slug: true,
+        members: {
+          select: {
+            userId: true,
+            role: true,
+            user: {
+              select: { username: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!group) {
+      throw new Error("Group not found");
+    }
+
+    const membership = group.members.find((member) => member.userId === userId);
+    if (!membership) {
+      throw new Error("Not a member");
+    }
+
+    const adminCount = group.members.reduce(
+      (total, member) => total + (member.role === "ADMIN" ? 1 : 0),
+      0,
+    );
+
+    if (membership.role === "ADMIN" && adminCount === 1) {
+      throw new Error("You are the only admin");
+    }
+
+    await tx.groupMember.delete({
+      where: {
+        userId_groupId: {
+          userId,
+          groupId: group.id,
+        },
+      },
+    });
+
+    return {
+      slug: group.slug,
+      memberUsernames: group.members
+        .map((member) => member.user.username)
+        .filter((username): username is string => Boolean(username)),
+    };
+  });
+
+  revalidatePath("/groups");
+  revalidatePath(`/groups/${leftGroup.slug}`);
+
+  for (const username of new Set(leftGroup.memberUsernames)) {
+    revalidatePath(`/u/${username}`);
+    revalidatePath(`/u/${username}/groups`);
+  }
+
+  redirect("/groups");
 }
 
 // ── Onboarding ──────────────────────────────────────────
