@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Globe, Lock, UsersRound } from "lucide-react";
+import { Globe, Handshake, Lock, UsersRound } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { FriendRequestActions } from "./friend-request-card";
@@ -60,7 +60,12 @@ export default async function FriendsPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="text-2xl font-bold">Friends</h1>
+      <div className="flex items-center gap-2.5">
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/70 bg-card/70 text-emerald-500 shadow-sm motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95">
+          <Handshake className="h-4.5 w-4.5 motion-safe:animate-[pulse_2.8s_ease-in-out_infinite]" />
+        </span>
+        <h1 className="text-2xl font-bold">Friends</h1>
+      </div>
 
       {receivedRequests.length > 0 && (
         <section className="mt-8">

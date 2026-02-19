@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Lock, Globe, UserCheck, UserPlus, UsersRound } from "lucide-react";
+import { Lock, Globe, Handshake, UserCheck, UserPlus, UsersRound } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -56,7 +56,9 @@ export default async function UserFriendsPage({
     select: { id: true },
   });
 
-  if (!relationWithTarget) notFound();
+  if (!relationWithTarget) {
+    redirect(`/u/${username}`);
+  }
 
   const acceptedFriendships = await prisma.friendship.findMany({
     where: {
@@ -110,7 +112,12 @@ export default async function UserFriendsPage({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="text-2xl font-bold">{displayName}&apos;s friends</h1>
+      <div className="flex items-center gap-2.5">
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/70 bg-card/70 text-amber-500 shadow-sm motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95">
+          <Handshake className="h-4.5 w-4.5 motion-safe:animate-[pulse_2.8s_ease-in-out_infinite]" />
+        </span>
+        <h1 className="text-2xl font-bold">{displayName}&apos;s friends</h1>
+      </div>
       <p className="mt-1 text-sm text-muted-foreground">
         {friendUsers.length} {friendUsers.length === 1 ? "friend" : "friends"}
       </p>

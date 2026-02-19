@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { LogOut, User, Bell } from "lucide-react";
+import { LogOut, User, Bell, UsersRound } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { signInWithGoogle, handleSignOut } from "@/lib/actions";
 import { prisma } from "@/lib/prisma";
@@ -63,14 +63,6 @@ export async function Navbar() {
                 Users
               </Link>
             )}
-            {session?.user && hasCompletedOnboarding && (
-              <Link
-                href="/friends"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Friends
-              </Link>
-            )}
           </nav>
         </div>
 
@@ -114,6 +106,15 @@ export async function Navbar() {
                     >
                       <User className="h-4 w-4" />
                       My profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href={hasCompletedOnboarding ? "/friends" : "/onboarding"}
+                      className="flex w-full items-center justify-center gap-2 text-center"
+                    >
+                      <UsersRound className="h-4 w-4" />
+                      My friends
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
