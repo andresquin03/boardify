@@ -6,7 +6,7 @@ const contentSecurityPolicy = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https://lh3.googleusercontent.com https://upload.wikimedia.org https://cdn.svc.asmodee.net",
+  "img-src 'self' data: https://lh3.googleusercontent.com https://upload.wikimedia.org https://cdn.svc.asmodee.net https://allsystemsgo.games https://cdn.prod.website-files.com https://gamewright.com https://www.explodingkittens.com https://acdn-us.mitiendanube.com https://f.fcdn.app",
   "font-src 'self' data:",
   "connect-src 'self'",
   "frame-ancestors 'none'",
@@ -48,6 +48,30 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "cdn.svc.asmodee.net",
+      },
+      {
+        protocol: "https",
+        hostname: "allsystemsgo.games",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.prod.website-files.com",
+      },
+      {
+        protocol: "https",
+        hostname: "gamewright.com",
+      },
+      {
+        protocol: "https",
+        hostname: "www.explodingkittens.com",
+      },
+      {
+        protocol: "https",
+        hostname: "acdn-us.mitiendanube.com",
+      },
+      {
+        protocol: "https",
+        hostname: "f.fcdn.app",
       },
     ],
   },

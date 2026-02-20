@@ -1,9 +1,9 @@
 import { Clock, Users } from "lucide-react";
 import { formatPlayerCount, formatPlaytime } from "@/lib/game-utils";
 import Link from "next/link";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { GameImageWithFallback } from "@/components/games/game-image-with-fallback";
 
 type SharedType = "favorite" | "wishlist" | "owned";
 
@@ -62,18 +62,15 @@ export function ProfileGameCard({ game, sharedType }: ProfileGameCardProps) {
           sharedStyle?.imageWrap,
         )}
       >
-        {game.image ? (
-          <Image
-            src={game.image}
-            alt={`Cover of ${game.title}`}
-            width={40}
-            height={40}
-            className="h-full w-full rounded-md object-contain p-0.5"
-            sizes="40px"
-          />
-        ) : (
-          <DiceIcon className="h-5 w-5 text-muted-foreground/40" />
-        )}
+        <GameImageWithFallback
+          src={game.image}
+          alt={`Cover of ${game.title}`}
+          width={40}
+          height={40}
+          className="h-full w-full rounded-md object-contain p-0.5"
+          sizes="40px"
+          diceClassName="h-5 w-5 text-muted-foreground/40"
+        />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
@@ -108,26 +105,5 @@ export function ProfileGameCard({ game, sharedType }: ProfileGameCardProps) {
         </div>
       </div>
     </Link>
-  );
-}
-
-function DiceIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-      <circle cx="9" cy="9" r="0.5" fill="currentColor" />
-      <circle cx="15" cy="9" r="0.5" fill="currentColor" />
-      <circle cx="9" cy="15" r="0.5" fill="currentColor" />
-      <circle cx="15" cy="15" r="0.5" fill="currentColor" />
-    </svg>
   );
 }
