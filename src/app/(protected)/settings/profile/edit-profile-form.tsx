@@ -97,7 +97,11 @@ export function EditProfileForm({
         <p className="text-sm text-destructive">{state.errors.general}</p>
       )}
 
-      <Button type="submit" className="w-full cursor-pointer" disabled={isPending}>
+      <Button
+        type="submit"
+        className="w-full cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700"
+        disabled={isPending}
+      >
         {isPending ? "Saving..." : "Save changes"}
       </Button>
     </form>

@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Globe, Lock, Mail, Network, Plus, Users } from "lucide-react";
+import { Globe, Lock, Mail, Network, Plus, UserCheck, Users } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { auth } from "@/lib/auth";
 import { GROUP_COLOR_CONFIG } from "@/lib/group-colors";
 import { prisma } from "@/lib/prisma";
 import { GROUP_ICON_MAP } from "@/lib/group-icons";
 import type { GroupColor, GroupVisibility } from "@/generated/prisma/client";
+import { cn } from "@/lib/utils";
 
 const visibilityConfig = {
   PUBLIC: {
@@ -69,6 +70,10 @@ export default async function UserGroupsPage({
     include: {
       group: {
         include: {
+          members: {
+            where: { userId: viewerId },
+            select: { id: true },
+          },
           _count: { select: { members: true } },
         },
       },
@@ -116,12 +121,18 @@ export default async function UserGroupsPage({
             const vis = visibilityConfig[group.visibility as GroupVisibility];
             const colorConfig = GROUP_COLOR_CONFIG[group.color as GroupColor];
             const VisibilityIcon = vis.icon;
+            const isViewerMember = group.members.length > 0;
 
             return (
               <Link
                 key={group.id}
                 href={`/groups/${group.slug}`}
-                className="pressable flex flex-col gap-3 rounded-xl border bg-card/70 p-4 shadow-sm transition-colors hover:bg-accent/40"
+                className={cn(
+                  "pressable flex flex-col gap-3 rounded-xl p-4 shadow-sm transition-colors",
+                  isViewerMember
+                    ? "border border-emerald-400/30 bg-emerald-500/[0.06] hover:border-emerald-400/45 hover:bg-emerald-500/[0.11]"
+                    : "border bg-card/70 hover:bg-accent/40",
+                )}
               >
                 <div className="flex items-start justify-between gap-2">
                   <span
@@ -129,16 +140,28 @@ export default async function UserGroupsPage({
                   >
                     <IconComponent className="h-5 w-5" />
                   </span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span
-                        className={`inline-flex h-7 w-7 items-center justify-center rounded-full border ${vis.className}`}
-                      >
-                        <VisibilityIcon className="h-3.5 w-3.5" />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">{vis.label}</TooltipContent>
-                  </Tooltip>
+                  <div className="flex items-center gap-1.5">
+                    {isViewerMember && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400">
+                            <UserCheck className="h-3.5 w-3.5" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">You are a member</TooltipContent>
+                      </Tooltip>
+                    )}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span
+                          className={`inline-flex h-7 w-7 items-center justify-center rounded-full border ${vis.className}`}
+                        >
+                          <VisibilityIcon className="h-3.5 w-3.5" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">{vis.label}</TooltipContent>
+                    </Tooltip>
+                  </div>
                 </div>
 
                 <div className="min-w-0">

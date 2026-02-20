@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { formatPlayerCount, formatPlaytime } from "@/lib/game-utils";
 import { GameActions } from "@/components/games/game-actions";
+import { ShareIconButton } from "@/components/ui/share-icon-button";
 import { Clock, Users, Star, CalendarDays, Shapes, Pencil, Thermometer } from "lucide-react";
 import Image from "next/image";
 
@@ -83,11 +84,19 @@ export default async function GameDetailPage({
           </div>
         </div>
 
-        {!!userId && (
-          <div className="flex w-full justify-center sm:w-auto sm:justify-end">
+        <div className="flex w-full items-center justify-center gap-3 sm:w-auto sm:justify-end">
+          {!!userId && (
             <GameActions gameId={game.id} userState={userState} />
-          </div>
-        )}
+          )}
+          <ShareIconButton
+            path={`/g/${game.slug}`}
+            message={`Let's play ${game.title} on Boardify:`}
+            tooltipLabel="Share game"
+            ariaLabel="Share game"
+            size="md"
+            className="ml-4"
+          />
+        </div>
       </div>
 
       {/* Stats */}

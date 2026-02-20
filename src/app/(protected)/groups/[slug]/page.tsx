@@ -9,6 +9,7 @@ import { GROUP_ICON_MAP } from "@/lib/group-icons";
 import { prisma } from "@/lib/prisma";
 import type { GroupColor, GroupVisibility } from "@/generated/prisma/client";
 import { GroupActionsMenu } from "@/components/groups/group-actions-menu";
+import { ShareIconButton } from "@/components/ui/share-icon-button";
 
 const visibilityConfig = {
   PUBLIC: {
@@ -116,6 +117,12 @@ export default async function GroupDetailPage({
           </div>
 
           <div className="flex items-center gap-2">
+            <ShareIconButton
+              path={`/groups/${group.slug}`}
+              message={isMember ? "Join my Boardify group:" : "Check out this Boardify group:"}
+              tooltipLabel="Share group"
+              ariaLabel="Share group"
+            />
             <GroupActionsMenu
               groupId={group.id}
               groupSlug={group.slug}

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { FormPendingButton } from "@/components/ui/form-pending-button";
@@ -8,7 +7,6 @@ import {
   Globe,
   Lock,
   UsersRound,
-  Pencil,
   UserPlus,
   Clock3,
   CircleHelp,
@@ -19,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { UnfriendDropdown } from "./unfriend-dropdown";
 import { FriendRequestActions } from "@/app/(protected)/friends/friend-request-card";
+import { ProfileActionsMenu } from "./profile-actions-menu";
 
 interface ProfileHeaderProps {
   user: {
@@ -134,14 +133,17 @@ export function ProfileHeader({
         </Avatar>
 
         <div className="flex flex-1 flex-col items-center gap-3 sm:items-start">
-          <div className="text-center sm:text-left">
-            <h1 className="text-3xl font-bold tracking-tight">{displayName}</h1>
-            {user.username && (
-              <p className="text-muted-foreground">@{user.username}</p>
-            )}
-            {user.bio && (
-              <p className="mt-1 text-sm text-muted-foreground">{user.bio}</p>
-            )}
+          <div className="flex w-full flex-col items-center gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="text-center sm:text-left">
+              <h1 className="text-3xl font-bold tracking-tight">{displayName}</h1>
+              {user.username && (
+                <p className="text-muted-foreground">@{user.username}</p>
+              )}
+              {user.bio && (
+                <p className="mt-1 text-sm text-muted-foreground">{user.bio}</p>
+              )}
+            </div>
+            <ProfileActionsMenu profileUsername={profilePathUsername} isOwner={isOwner} />
           </div>
 
           <div
@@ -153,20 +155,6 @@ export function ProfileHeader({
             <VisibilityIcon className="h-3.5 w-3.5" />
             {visibility.label}
           </div>
-
-          {isOwner && (
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="mt-0.5 cursor-pointer gap-1.5 transition-all hover:-translate-y-0.5 hover:shadow-sm"
-            >
-              <Link href="/settings/profile">
-                <Pencil className="h-3.5 w-3.5" />
-                Edit profile
-              </Link>
-            </Button>
-          )}
 
           {!isOwner && relationState === "FRIEND" && friendshipId && (
             <div className="mt-0.5 flex items-center gap-2">

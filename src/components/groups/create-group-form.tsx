@@ -223,7 +223,7 @@ export function CreateGroupForm() {
 
       <FormPendingButton
         type="submit"
-        className="w-full cursor-pointer"
+        className="w-full cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700"
         pendingText="Creating..."
       >
         Create group
