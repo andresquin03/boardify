@@ -45,11 +45,33 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
   const params = await searchParams;
   const query = normalizeSingleValue(params.q).trim();
 
+  const friendships = await prisma.friendship.findMany({
+    where: {
+      status: "ACCEPTED",
+      OR: [{ requesterId: viewerId }, { addresseeId: viewerId }],
+    },
+    select: { requesterId: true, addresseeId: true },
+  });
+
+  const friendIds = new Set<string>();
+  for (const friendship of friendships) {
+    friendIds.add(
+      friendship.requesterId === viewerId ? friendship.addresseeId : friendship.requesterId,
+    );
+  }
+  const friendIdsList = [...friendIds];
+
   const users = await prisma.user.findMany({
     where: {
       AND: [
-        { visibility: { not: "PRIVATE" } },
         { username: { not: null } },
+        {
+          OR: [
+            { id: viewerId },
+            { visibility: { not: "PRIVATE" } },
+            { id: { in: friendIdsList } },
+          ],
+        },
         ...(query
           ? [
               {
@@ -72,30 +94,6 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
     orderBy: [{ username: "asc" }],
   });
 
-  const otherUserIds = users
-    .map((user) => user.id)
-    .filter((userId) => userId !== viewerId);
-
-  const friendships = otherUserIds.length
-    ? await prisma.friendship.findMany({
-        where: {
-          status: "ACCEPTED",
-          OR: [
-            { requesterId: viewerId, addresseeId: { in: otherUserIds } },
-            { requesterId: { in: otherUserIds }, addresseeId: viewerId },
-          ],
-        },
-        select: { requesterId: true, addresseeId: true },
-      })
-    : [];
-
-  const friendIds = new Set<string>();
-  for (const friendship of friendships) {
-    friendIds.add(
-      friendship.requesterId === viewerId ? friendship.addresseeId : friendship.requesterId,
-    );
-  }
-
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <div className="group flex items-center gap-2.5">
@@ -105,7 +103,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
         <h1 className="text-2xl font-bold">Users</h1>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
-        Find players by name or username. Private profiles are hidden.
+        Find players by name or username.
       </p>
 
       <form className="mt-5 flex flex-col gap-2 sm:flex-row" method="get">
