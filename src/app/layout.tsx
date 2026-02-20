@@ -20,11 +20,11 @@ export const metadata: Metadata = {
   description: "Boardify your game nights.",
   icons: {
     icon: [
-      { url: "/boardify-light.png", media: "(prefers-color-scheme: light)" },
-      { url: "/boardify-dark.png", media: "(prefers-color-scheme: dark)" },
+      { url: "/favicon-circle.ico" },
+      { url: "/favicon-circle.png", type: "image/png" },
     ],
-    shortcut: "/boardify-light.png",
-    apple: "/boardify-light.png",
+    shortcut: "/favicon-circle.ico",
+    apple: "/favicon-circle.png",
   },
 };
 

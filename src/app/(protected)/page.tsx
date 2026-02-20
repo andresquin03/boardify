@@ -13,8 +13,21 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-const quickActions = [
+type QuickAction = {
+  icon: LucideIcon;
+  iconColor: string;
+  iconHoverColor: string;
+  title: string;
+  description: string;
+  href: string;
+  cta: string;
+  secondaryHref?: string;
+  secondaryCta?: string;
+};
+
+const quickActions: QuickAction[] = [
   {
     icon: LibraryBig,
     iconColor: "text-sky-600/70",
