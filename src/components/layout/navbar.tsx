@@ -10,7 +10,6 @@ import {
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Bell } from "lucide-react";
 import { auth } from "@/lib/auth";
-import { signInWithGoogle } from "@/lib/actions";
 import { prisma } from "@/lib/prisma";
 import { UserMenuContent } from "@/components/layout/user-menu-content";
 
@@ -24,6 +23,17 @@ export async function Navbar() {
       where: { addresseeId: session.user.id, status: "PENDING" },
     });
   }
+
+  const usersHref = session?.user
+    ? hasCompletedOnboarding
+      ? "/users"
+      : "/onboarding"
+    : "/signin?callbackUrl=%2Fusers";
+  const groupsHref = session?.user
+    ? hasCompletedOnboarding
+      ? "/groups"
+      : "/onboarding"
+    : "/signin?callbackUrl=%2Fgroups";
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-[var(--navbar-background)] backdrop-blur-sm">
@@ -55,22 +65,18 @@ export async function Navbar() {
             >
               Games
             </Link>
-            {session?.user && hasCompletedOnboarding && (
-              <>
-                <Link
-                  href="/users"
-                  className="pressable text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  Users
-                </Link>
-                <Link
-                  href="/groups"
-                  className="pressable text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  Groups
-                </Link>
-              </>
-            )}
+            <Link
+              href={usersHref}
+              className="pressable text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Users
+            </Link>
+            <Link
+              href={groupsHref}
+              className="pressable text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Groups
+            </Link>
           </nav>
         </div>
 
@@ -122,11 +128,11 @@ export async function Navbar() {
               </DropdownMenu>
             </>
           ) : (
-            <form action={signInWithGoogle}>
-              <Button variant="outline" size="sm" type="submit" className="cursor-pointer">
+            <Button asChild variant="outline" size="sm" className="cursor-pointer">
+              <Link href="/signin">
                 Sign in
-              </Button>
-            </form>
+              </Link>
+            </Button>
           )}
 
           <ThemeToggle />

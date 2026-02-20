@@ -29,7 +29,7 @@ const visibilityConfig = {
 
 export default async function GroupsPage() {
   const session = await auth();
-  if (!session?.user?.id) redirect("/");
+  if (!session?.user?.id) redirect("/signin?callbackUrl=%2Fgroups");
 
   const groups = await prisma.group.findMany({
     where: {

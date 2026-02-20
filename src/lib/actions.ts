@@ -12,6 +12,7 @@ import {
 } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getSafeRedirectPath } from "@/lib/safe-redirect";
 
 // ── Input validation ─────────────────────────────────────
 
@@ -153,6 +154,13 @@ function assertProfilePathSegment(value: unknown, label: string): asserts value 
 
 export async function signInWithGoogle() {
   await signIn("google", { redirectTo: "/" });
+}
+
+export async function signInWithGoogleRedirect(formData: FormData) {
+  const rawRedirect = formData.get("redirectTo");
+  const safeRedirect = getSafeRedirectPath(rawRedirect, "/");
+  const redirectTo = safeRedirect.startsWith("/signin") ? "/" : safeRedirect;
+  await signIn("google", { redirectTo });
 }
 
 export async function handleSignOut() {

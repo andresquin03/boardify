@@ -71,9 +71,12 @@ const features = [
 
 export default function HomePage() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-20">
-      {/* Hero */}
-      <section className="flex flex-col items-center gap-6 text-center">
+    <section className="relative isolate min-h-[calc(100vh-4rem)] overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_14%_18%,rgba(16,185,129,0.28),transparent_40%),radial-gradient(circle_at_86%_12%,rgba(56,189,248,0.26),transparent_40%),radial-gradient(circle_at_50%_92%,rgba(245,158,11,0.16),transparent_48%)] dark:bg-[radial-gradient(circle_at_14%_18%,rgba(16,185,129,0.32),transparent_42%),radial-gradient(circle_at_86%_12%,rgba(56,189,248,0.28),transparent_42%),radial-gradient(circle_at_50%_92%,rgba(245,158,11,0.18),transparent_50%)]" />
+
+      <div className="mx-auto max-w-6xl px-4 py-20">
+        {/* Hero */}
+        <section className="flex flex-col items-center gap-6 text-center">
         <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 flex items-center gap-3 duration-500">
           <span className="relative h-12 w-12">
             <Image
@@ -103,10 +106,10 @@ export default function HomePage() {
         <p className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 max-w-2xl text-muted-foreground duration-500 delay-300 fill-mode-both">
           Organize your board games, connect with friends, and join groups. Track favorites, wishlists, and collections all in one place.
         </p>
-      </section>
+        </section>
 
-      {/* Quick actions */}
-      <section className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Quick actions */}
+        <section className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {quickActions.map((action, i) => (
           <Card
             key={action.title}
@@ -130,10 +133,10 @@ export default function HomePage() {
             </CardContent>
           </Card>
         ))}
-      </section>
+        </section>
 
-      {/* Features */}
-      <section className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Features */}
+        <section className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {features.map((feature, i) => (
           <Card
             key={feature.title}
@@ -153,7 +156,8 @@ export default function HomePage() {
             </CardContent>
           </Card>
         ))}
-      </section>
-    </div>
+        </section>
+      </div>
+    </section>
   );
 }

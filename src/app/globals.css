@@ -153,7 +153,7 @@
   }
 
   body {
-    background-color: var(--app-background);
+    background: var(--app-background);
     @apply text-foreground;
   }
 }

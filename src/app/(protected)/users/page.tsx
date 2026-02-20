@@ -39,7 +39,7 @@ const visibilityConfig = {
 
 export default async function UsersPage({ searchParams }: UsersPageProps) {
   const session = await auth();
-  if (!session?.user?.id) redirect("/");
+  if (!session?.user?.id) redirect("/signin?callbackUrl=%2Fusers");
   const viewerId = session.user.id;
 
   const params = await searchParams;
