@@ -238,6 +238,14 @@ export async function toggleOwned(gameId: string) {
   const userId = await getAuthUserId();
   await assertGameExists(gameId);
   const existing = await getOrCreateUserGame(userId, gameId);
+  const groupMemberships = await prisma.groupMember.findMany({
+    where: { userId },
+    select: {
+      group: {
+        select: { slug: true },
+      },
+    },
+  });
 
   const newOwned = !existing.isOwned;
   await prisma.userGame.update({
@@ -250,6 +258,9 @@ export async function toggleOwned(gameId: string) {
 
   revalidatePath("/games");
   revalidatePath("/g", "layout");
+  for (const groupSlug of new Set(groupMemberships.map((membership) => membership.group.slug))) {
+    revalidatePath(`/groups/${groupSlug}`);
+  }
 }
 
 // ── Friendship ───────────────────────────────────────────

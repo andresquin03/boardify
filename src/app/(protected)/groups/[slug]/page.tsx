@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Globe, Lock, Mail, Network, Users } from "lucide-react";
+import { Globe, LibraryBig, Lock, Mail, Network, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { auth } from "@/lib/auth";
@@ -9,6 +9,7 @@ import { GROUP_ICON_MAP } from "@/lib/group-icons";
 import { prisma } from "@/lib/prisma";
 import type { GroupColor, GroupVisibility } from "@/generated/prisma/client";
 import { GroupActionsMenu } from "@/components/groups/group-actions-menu";
+import { GroupOwnedGameCard } from "@/components/groups/group-owned-game-card";
 import { ShareIconButton } from "@/components/ui/share-icon-button";
 
 const visibilityConfig = {
@@ -89,6 +90,62 @@ export default async function GroupDetailPage({
     0,
   );
   const isSoleAdmin = isAdmin && adminCount === 1;
+  const memberIds = group.members.map((member) => member.userId);
+
+  const ownedGamesRaw = isMember
+    ? await prisma.game.findMany({
+        where: {
+          userGames: {
+            some: {
+              isOwned: true,
+              userId: { in: memberIds },
+            },
+          },
+        },
+        include: {
+          userGames: {
+            where: {
+              isOwned: true,
+              userId: { in: memberIds },
+            },
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  name: true,
+                  image: true,
+                },
+              },
+            },
+          },
+        },
+      })
+    : [];
+
+  const ownedGames = ownedGamesRaw
+    .map((game) => ({
+      id: game.id,
+      slug: game.slug,
+      title: game.title,
+      minPlayers: game.minPlayers,
+      maxPlayers: game.maxPlayers,
+      minPlaytime: game.minPlaytime,
+      maxPlaytime: game.maxPlaytime,
+      image: game.image,
+      owners: game.userGames
+        .map((item) => item.user)
+        .sort((a, b) =>
+          getUserDisplayName(a).localeCompare(getUserDisplayName(b), undefined, {
+            sensitivity: "base",
+          }),
+        ),
+    }))
+    .sort((a, b) => {
+      const ownerDiff = b.owners.length - a.owners.length;
+      if (ownerDiff !== 0) return ownerDiff;
+      return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+    });
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
@@ -207,6 +264,38 @@ export default async function GroupDetailPage({
           </div>
         )}
       </div>
+
+      <div className="mt-6 rounded-xl border bg-card/70 p-5 shadow-sm">
+        <div className="flex items-center gap-2">
+          <LibraryBig className="h-4.5 w-4.5 text-emerald-500" />
+          <h2 className="text-lg font-semibold">Group library</h2>
+        </div>
+
+        {!isMember ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            Join this group to see which games members own.
+          </p>
+        ) : ownedGames.length === 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            No owned games in this group yet.
+          </p>
+        ) : (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {ownedGames.map((game) => (
+              <GroupOwnedGameCard
+                key={game.id}
+                game={game}
+                owners={game.owners}
+                memberCount={group._count.members}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
+}
+
+function getUserDisplayName(user: { name: string | null; username: string | null }) {
+  return user.name ?? user.username ?? "User";
 }
