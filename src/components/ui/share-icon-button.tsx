@@ -37,6 +37,8 @@ export function ShareIconButton({
   tooltipLabel = "Share",
   ariaLabel = "Share",
   size = "sm",
+  appearance = "icon",
+  label = "Share",
   className,
 }: {
   path: string;
@@ -44,6 +46,8 @@ export function ShareIconButton({
   tooltipLabel?: string;
   ariaLabel?: string;
   size?: "sm" | "md";
+  appearance?: "icon" | "button";
+  label?: string;
   className?: string;
 }) {
   const [copyState, setCopyState] = useState<CopyState>("idle");
@@ -81,6 +85,7 @@ export function ShareIconButton({
   const isCopied = copyState === "copied";
   const isError = copyState === "error";
   const isMedium = size === "md";
+  const isButton = appearance === "button";
   const noticeText = isCopied ? "Copied to clipboard" : "Could not copy";
 
   return (
@@ -107,7 +112,11 @@ export function ShareIconButton({
             onClick={onShareClick}
             className={cn(
               "group relative isolate inline-flex cursor-pointer items-center justify-center overflow-hidden border",
-              isMedium ? "rounded-lg p-2.5" : "size-8 rounded-md p-2",
+              isButton
+                ? "h-10 gap-2 rounded-xl px-3.5 text-sm font-medium"
+                : isMedium
+                  ? "rounded-lg p-2.5"
+                  : "size-8 rounded-md p-2",
               "transition-all duration-[260ms] motion-reduce:transition-none",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60",
               "active:scale-95",
@@ -125,7 +134,7 @@ export function ShareIconButton({
               aria-hidden
               className={cn(
                 "pointer-events-none absolute inset-0 opacity-0",
-                isMedium ? "rounded-lg" : "rounded-md",
+                isButton ? "rounded-xl" : isMedium ? "rounded-lg" : "rounded-md",
                 isAnimating && "toggle-glow",
                 isError ? "bg-destructive/35" : "bg-emerald-500/35",
               )}
@@ -134,7 +143,7 @@ export function ShareIconButton({
               <Check
                 className={cn(
                   "relative z-10 text-emerald-500 transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-6",
-                  isMedium ? "h-6 w-6" : "h-4 w-4",
+                  isButton ? "h-4 w-4" : isMedium ? "h-6 w-6" : "h-4 w-4",
                   isAnimating && "toggle-bump",
                 )}
               />
@@ -142,11 +151,12 @@ export function ShareIconButton({
               <Share2
                 className={cn(
                   "relative z-10 transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-6",
-                  isMedium ? "h-6 w-6" : "h-4 w-4",
+                  isButton ? "h-4 w-4" : isMedium ? "h-6 w-6" : "h-4 w-4",
                   isAnimating && "toggle-bump",
                 )}
               />
             )}
+            {isButton && <span className="relative z-10">{isCopied ? "Copied" : label}</span>}
           </button>
         </TooltipTrigger>
         <TooltipContent side="top">{tooltipText}</TooltipContent>

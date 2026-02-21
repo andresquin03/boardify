@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
+  CalendarDays,
   Check,
   Globe,
   LibraryBig,
@@ -12,7 +13,6 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FormPendingButton } from "@/components/ui/form-pending-button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { auth } from "@/lib/auth";
 import { GROUP_COLOR_CONFIG } from "@/lib/group-colors";
 import { GROUP_ICON_MAP } from "@/lib/group-icons";
@@ -273,6 +273,7 @@ export default async function GroupDetailPage({
     viewerInvitation?.status === "PENDING" ? viewerInvitation : null;
   const pendingOwnJoinRequest =
     viewerJoinRequest?.status === "PENDING" ? viewerJoinRequest : null;
+  const hasPendingInvitation = pendingInvitation !== null;
   const pendingJoinRequesterIds = new Set(
     pendingJoinRequests.map((request) => request.requester.id),
   );
@@ -301,17 +302,26 @@ export default async function GroupDetailPage({
         )
     : [];
 
-  const membershipLine = isMember
-    ? "You are a member"
-    : pendingInvitation
-      ? "You have a pending invitation"
-      : pendingOwnJoinRequest
-        ? "Your join request is pending"
-        : group.visibility === "PUBLIC"
-          ? "Open group: join anytime"
-          : group.visibility === "INVITATION"
-            ? "Request required to join"
-            : "Private group: admin invitation required";
+  const membershipBadgeLabel = isMember ? "Joined" : "Not joined";
+  const createdAtLabel = new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(
+    group.createdAt,
+  );
+  const pendingOwnJoinRequestId = pendingOwnJoinRequest?.id ?? null;
+  const showRequestToJoinBubble =
+    !isMember &&
+    group.visibility === "INVITATION" &&
+    !hasPendingInvitation &&
+    !pendingOwnJoinRequest;
+  const showCancelRequestBubble =
+    !isMember &&
+    !hasPendingInvitation &&
+    pendingOwnJoinRequestId !== null;
+  const showJoinGroupBubble = !isMember && group.visibility === "PUBLIC";
+  const showPendingInvitationBubble = !isMember && hasPendingInvitation && !showJoinGroupBubble;
+  const showBottomInviteActions = hasPendingInvitation && !showJoinGroupBubble;
+  const showBottomPrivateNotice =
+    group.visibility === "PRIVATE" && !showCancelRequestBubble && !hasPendingInvitation;
+  const showBottomNonMemberActions = !isMember && (showBottomInviteActions || showBottomPrivateNotice);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
@@ -323,65 +333,238 @@ export default async function GroupDetailPage({
         Back to groups
       </Link>
 
-      <div className="mt-4 rounded-2xl border bg-card/70 p-6 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
+      <div className="mt-4 rounded-2xl border bg-card/70 p-4 shadow-sm sm:p-6">
+        <div className="sm:hidden">
+          <div className="flex flex-col items-center text-center">
             <span
-              className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-muted/50 ${colorConfig.iconClassName}`}
+              className={`inline-flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-border/70 bg-muted/50 ${colorConfig.iconClassName}`}
             >
-              <IconComponent className="h-6 w-6" />
+              <IconComponent className="h-9 w-9" />
             </span>
-            <div className="min-w-0">
-              <h1 className="truncate text-2xl font-bold">{group.name}</h1>
-              {group.description && (
-                <p className="mt-1 text-sm text-muted-foreground">{group.description}</p>
-              )}
+            <h1 className="mt-3 break-words text-4xl font-bold leading-tight">{group.name}</h1>
+            {group.description && (
+              <p className="mt-1 text-lg text-muted-foreground">{group.description}</p>
+            )}
+            <span
+              className={`mt-4 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium ${visibility.className}`}
+            >
+              <VisibilityIcon className="h-4 w-4" />
+              {visibility.label}
+            </span>
+          </div>
+
+          <div className="mt-5 border-t border-border/60 pt-4">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/30 px-3 py-1.5 text-base text-muted-foreground">
+              <CalendarDays className="h-4 w-4" />
+              {createdAtLabel}
+            </span>
+            <div className="mt-3 space-y-2">
+              <div>
+                {showJoinGroupBubble ? (
+                  <form action={joinPublicGroup.bind(null, group.id)} className="w-full">
+                    <FormPendingButton
+                      type="submit"
+                      variant="outline"
+                      size="sm"
+                      pendingText="Joining..."
+                      className="h-11 w-full justify-center gap-1.5 rounded-full border-border/70 bg-muted/40 px-4 text-base font-semibold text-foreground hover:bg-muted/55"
+                    >
+                      <Users className="h-4 w-4" />
+                      Join group
+                    </FormPendingButton>
+                  </form>
+                ) : showRequestToJoinBubble ? (
+                  <form action={requestToJoinGroup.bind(null, group.id)} className="w-full">
+                    <FormPendingButton
+                      type="submit"
+                      variant="outline"
+                      size="sm"
+                      pendingText="Sending..."
+                      className="h-11 w-full justify-center gap-1.5 rounded-full border-amber-400/40 bg-amber-500/10 px-4 text-base font-semibold text-amber-600 hover:bg-amber-500/20 dark:text-amber-400"
+                    >
+                      <Mail className="h-4 w-4" />
+                      Request to join
+                    </FormPendingButton>
+                  </form>
+                ) : showCancelRequestBubble ? (
+                  <form
+                    action={cancelGroupJoinRequest.bind(null, pendingOwnJoinRequestId!)}
+                    className="w-full"
+                  >
+                    <FormPendingButton
+                      type="submit"
+                      variant="outline"
+                      size="sm"
+                      pendingText="Cancelling..."
+                      className="h-11 w-full justify-center gap-1.5 rounded-full border-border/70 bg-muted/40 px-4 text-base font-semibold text-muted-foreground hover:bg-muted/55"
+                    >
+                      <X className="h-4 w-4" />
+                      Cancel request
+                    </FormPendingButton>
+                  </form>
+                ) : showPendingInvitationBubble ? (
+                  <span className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-500/10 px-4 text-base font-semibold text-amber-600 dark:text-amber-400">
+                    <Mail className="h-4 w-4" />
+                    Invitation pending
+                  </span>
+                ) : (
+                  <span
+                    className={`inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-full border px-4 text-base font-semibold ${
+                      isMember
+                        ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        : "border-border/70 bg-muted/40 text-muted-foreground"
+                    }`}
+                  >
+                    {isMember ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                    {membershipBadgeLabel}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <span className="inline-flex h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-sky-400/35 bg-sky-500/10 px-4 text-base font-semibold text-sky-600 dark:text-sky-400">
+                  <Users className="h-4 w-4" />
+                  {group._count.members}
+                </span>
+                <div className="flex shrink-0 items-center gap-2">
+                  <ShareIconButton
+                    path={`/groups/${group.slug}`}
+                    message={isMember ? "Join my Boardify group:" : "Check out this Boardify group:"}
+                    tooltipLabel="Share group"
+                    ariaLabel="Share group"
+                    className="size-11 rounded-full"
+                  />
+                  {isMember && (
+                    <GroupActionsMenu
+                      groupId={group.id}
+                      groupSlug={group.slug}
+                      isMember={isMember}
+                      isAdmin={isAdmin}
+                      isSoleAdmin={isSoleAdmin}
+                      triggerClassName="size-11 rounded-full"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="hidden sm:block">
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+            <div className="flex min-w-0 items-center gap-3">
+              <span
+                className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-muted/50 ${colorConfig.iconClassName}`}
+              >
+                <IconComponent className="h-6 w-6" />
+              </span>
+              <div className="min-w-0">
+                <div className="flex min-w-0 items-center gap-2">
+                  <h1 className="min-w-0 truncate text-2xl font-bold">{group.name}</h1>
+                  <span
+                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${visibility.className}`}
+                  >
+                    <VisibilityIcon className="h-3.5 w-3.5" />
+                    {visibility.label}
+                  </span>
+                </div>
+                {group.description && (
+                  <p className="mt-1 text-sm text-muted-foreground">{group.description}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <ShareIconButton
+                path={`/groups/${group.slug}`}
+                message={isMember ? "Join my Boardify group:" : "Check out this Boardify group:"}
+                tooltipLabel="Share group"
+                ariaLabel="Share group"
+              />
+              <GroupActionsMenu
+                groupId={group.id}
+                groupSlug={group.slug}
+                isMember={isMember}
+                isAdmin={isAdmin}
+                isSoleAdmin={isSoleAdmin}
+              />
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <ShareIconButton
-              path={`/groups/${group.slug}`}
-              message={isMember ? "Join my Boardify group:" : "Check out this Boardify group:"}
-              tooltipLabel="Share group"
-              ariaLabel="Share group"
-            />
-            <GroupActionsMenu
-              groupId={group.id}
-              groupSlug={group.slug}
-              isMember={isMember}
-              isAdmin={isAdmin}
-              isSoleAdmin={isSoleAdmin}
-            />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span
-                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full border ${visibility.className}`}
-                >
-                  <VisibilityIcon className="h-4 w-4" />
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/30 px-3 py-1.5 text-muted-foreground">
+              <CalendarDays className="h-3.5 w-3.5" />
+              Created {createdAtLabel}
+            </span>
+            <div className="flex items-center gap-1.5 sm:ml-auto">
+              {showJoinGroupBubble ? (
+                <form action={joinPublicGroup.bind(null, group.id)}>
+                  <FormPendingButton
+                    type="submit"
+                    variant="outline"
+                    size="sm"
+                    pendingText="Joining..."
+                    className="h-10 gap-1.5 rounded-full border-border/70 bg-muted/40 px-3.5 text-base font-medium text-foreground hover:bg-muted/55"
+                  >
+                    <Users className="h-4 w-4" />
+                    Join group
+                  </FormPendingButton>
+                </form>
+              ) : showRequestToJoinBubble ? (
+                <form action={requestToJoinGroup.bind(null, group.id)}>
+                  <FormPendingButton
+                    type="submit"
+                    variant="outline"
+                    size="sm"
+                    pendingText="Sending..."
+                    className="h-10 gap-1.5 rounded-full border-amber-400/40 bg-amber-500/10 px-3.5 text-base font-medium text-amber-600 hover:bg-amber-500/20 dark:text-amber-400"
+                  >
+                    <Mail className="h-4 w-4" />
+                    Request to join
+                  </FormPendingButton>
+                </form>
+              ) : showCancelRequestBubble ? (
+                <form action={cancelGroupJoinRequest.bind(null, pendingOwnJoinRequestId!)}>
+                  <FormPendingButton
+                    type="submit"
+                    variant="outline"
+                    size="sm"
+                    pendingText="Cancelling..."
+                    className="h-10 gap-1.5 rounded-full border-border/70 bg-muted/40 px-3.5 text-base font-medium text-muted-foreground hover:bg-muted/55"
+                  >
+                    <X className="h-4 w-4" />
+                    Cancel request
+                  </FormPendingButton>
+                </form>
+              ) : showPendingInvitationBubble ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-500/10 px-3.5 py-1.5 text-base font-medium text-amber-600 dark:text-amber-400">
+                  <Mail className="h-4 w-4" />
+                  Invitation pending
                 </span>
-              </TooltipTrigger>
-              <TooltipContent side="top">{visibility.label}</TooltipContent>
-            </Tooltip>
+              ) : (
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-base font-medium ${
+                    isMember
+                      ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                      : "border-border/70 bg-muted/40 text-muted-foreground"
+                  }`}
+                >
+                  {isMember ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                  {membershipBadgeLabel}
+                </span>
+              )}
+              <span className="inline-flex min-w-9 items-center justify-center gap-1.5 rounded-full border border-sky-400/35 bg-sky-500/10 px-3.5 py-1.5 text-base font-semibold text-sky-600 dark:text-sky-400">
+                <Users className="h-4 w-4" />
+                {group._count.members}
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5">
-            <Users className="h-4 w-4" />
-            {group._count.members} {group._count.members === 1 ? "member" : "members"}
-          </span>
-          <span>
-            Created{" "}
-            {new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(group.createdAt)}
-          </span>
-          <span>{membershipLine}</span>
-        </div>
-
-        {!isMember && (
+        {showBottomNonMemberActions && (
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            {pendingInvitation ? (
-              <>
+            {showBottomInviteActions ? (
+              <div className="flex w-full flex-wrap items-center justify-center gap-2 sm:justify-start">
                 <form action={acceptGroupInvitation.bind(null, pendingInvitation.id)}>
                   <FormPendingButton
                     type="submit"
@@ -400,59 +583,18 @@ export default async function GroupDetailPage({
                     variant="outline"
                     size="sm"
                     pendingText="Rejecting..."
-                    className="cursor-pointer gap-1"
+                    className="cursor-pointer gap-1 border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20"
                   >
                     <X className="h-3.5 w-3.5" />
                     Reject invitation
                   </FormPendingButton>
                 </form>
-              </>
-            ) : group.visibility === "PUBLIC" ? (
-              <form action={joinPublicGroup.bind(null, group.id)}>
-                <FormPendingButton
-                  type="submit"
-                  variant="outline"
-                  size="sm"
-                  pendingText="Joining..."
-                  className="cursor-pointer gap-1"
-                >
-                  <Users className="h-3.5 w-3.5" />
-                  Join group
-                </FormPendingButton>
-              </form>
-            ) : group.visibility === "INVITATION" ? (
-              pendingOwnJoinRequest ? (
-                <form action={cancelGroupJoinRequest.bind(null, pendingOwnJoinRequest.id)}>
-                  <FormPendingButton
-                    type="submit"
-                    variant="outline"
-                    size="sm"
-                    pendingText="Cancelling..."
-                    className="cursor-pointer gap-1"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                    Cancel request
-                  </FormPendingButton>
-                </form>
-              ) : (
-                <form action={requestToJoinGroup.bind(null, group.id)}>
-                  <FormPendingButton
-                    type="submit"
-                    variant="outline"
-                    size="sm"
-                    pendingText="Sending..."
-                    className="cursor-pointer gap-1"
-                  >
-                    <Mail className="h-3.5 w-3.5" />
-                    Request to join
-                  </FormPendingButton>
-                </form>
-              )
-            ) : (
+              </div>
+            ) : showBottomPrivateNotice ? (
               <p className="text-sm text-muted-foreground">
                 This group is private. Ask an admin for an invitation.
               </p>
-            )}
+            ) : null}
           </div>
         )}
       </div>
@@ -622,24 +764,26 @@ export default async function GroupDetailPage({
                           </div>
                         </Link>
 
-                        {canCancelInvitation ? (
-                          <form action={cancelGroupInvitation.bind(null, invitation.id)}>
-                            <FormPendingButton
-                              type="submit"
-                              variant="outline"
-                              size="sm"
-                              pendingText="Cancelling..."
-                              className="cursor-pointer gap-1"
-                            >
-                              <X className="h-3.5 w-3.5" />
-                              Cancel
-                            </FormPendingButton>
-                          </form>
-                        ) : (
-                          <span className="inline-flex items-center rounded-full border border-border/70 bg-background px-2 py-0.5 text-xs text-muted-foreground">
-                            Pending
-                          </span>
-                        )}
+                        <div className="flex w-full justify-center sm:w-auto sm:justify-end">
+                          {canCancelInvitation ? (
+                            <form action={cancelGroupInvitation.bind(null, invitation.id)}>
+                              <FormPendingButton
+                                type="submit"
+                                variant="outline"
+                                size="sm"
+                                pendingText="Cancelling..."
+                                className="cursor-pointer gap-1"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                                Cancel
+                              </FormPendingButton>
+                            </form>
+                          ) : (
+                            <span className="inline-flex items-center rounded-full border border-border/70 bg-background px-2 py-0.5 text-xs text-muted-foreground">
+                              Pending
+                            </span>
+                          )}
+                        </div>
                       </div>
                     );
                   })}

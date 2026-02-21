@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { FormPendingButton } from "@/components/ui/form-pending-button";
+import { cn } from "@/lib/utils";
 
 export function GroupActionsMenu({
   groupId,
@@ -30,12 +31,16 @@ export function GroupActionsMenu({
   isMember,
   isAdmin,
   isSoleAdmin,
+  triggerClassName,
+  triggerLabel,
 }: {
   groupId: string;
   groupSlug: string;
   isMember: boolean;
   isAdmin: boolean;
   isSoleAdmin: boolean;
+  triggerClassName?: string;
+  triggerLabel?: string;
 }) {
   const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false);
   const canLeave = isMember && !isSoleAdmin;
@@ -48,11 +53,18 @@ export function GroupActionsMenu({
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
-            size="icon-sm"
-            className="cursor-pointer border-border/70 bg-card text-muted-foreground hover:bg-accent/60 hover:text-foreground active:bg-accent/75"
+            size={triggerLabel ? "sm" : "icon-sm"}
+            className={cn(
+              "cursor-pointer border-border/70 bg-card text-muted-foreground hover:bg-accent/60 hover:text-foreground active:bg-accent/75",
+              triggerClassName,
+            )}
           >
             <Ellipsis className="h-4 w-4" />
-            <span className="sr-only">Group actions</span>
+            {triggerLabel ? (
+              <span>{triggerLabel}</span>
+            ) : (
+              <span className="sr-only">Group actions</span>
+            )}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">

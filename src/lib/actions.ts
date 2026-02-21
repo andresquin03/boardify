@@ -1033,11 +1033,23 @@ export async function leaveGroup(groupId: string) {
 export async function joinPublicGroup(groupId: string) {
   assertCuid(groupId, "groupId");
   const userId = await getAuthUserId();
-  const [group, user] = await Promise.all([
+  const [group, user, existingInvitation] = await Promise.all([
     getGroupActionContext(groupId),
     prisma.user.findUnique({
       where: { id: userId },
       select: { username: true },
+    }),
+    prisma.groupInvitation.findUnique({
+      where: {
+        groupId_inviteeId: {
+          groupId,
+          inviteeId: userId,
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+      },
     }),
   ]);
 
@@ -1077,6 +1089,22 @@ export async function joinPublicGroup(groupId: string) {
       handledById: userId,
     },
   });
+
+  if (existingInvitation?.status === "PENDING") {
+    const cancelledInvitation = await prisma.groupInvitation.updateMany({
+      where: {
+        id: existingInvitation.id,
+        inviteeId: userId,
+        status: "PENDING",
+      },
+      data: {
+        status: "CANCELLED",
+      },
+    });
+    if (cancelledInvitation.count > 0) {
+      await softDeleteGroupInviteReceivedNotification(userId, existingInvitation.id);
+    }
+  }
 
   await notifyGroupMemberJoined({
     recipientIds: group.members.map((member) => member.userId),
