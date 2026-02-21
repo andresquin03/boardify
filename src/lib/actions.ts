@@ -1922,6 +1922,7 @@ export async function rejectGroupInvitation(invitationId: string) {
 // ── Onboarding ──────────────────────────────────────────
 
 const VALID_VISIBILITIES = ["PUBLIC", "FRIENDS", "PRIVATE"] as const;
+const VALID_USER_LANGUAGES = ["EN", "ES"] as const;
 
 type ProfileFormState = {
   errors?: {
@@ -1937,6 +1938,16 @@ type ProfileFormState = {
     bio: string;
     visibility: "PUBLIC" | "FRIENDS" | "PRIVATE";
   };
+} | null;
+
+type SettingsFormState = {
+  errors?: {
+    language?: string;
+    visibility?: string;
+    notifications?: string;
+    general?: string;
+  };
+  success?: string;
 } | null;
 
 type ProfileInput = {
@@ -2075,7 +2086,6 @@ export async function updateProfileSettings(
   const userId = await getAuthUserId();
   const name = formData.get("name");
   const bio = formData.get("bio");
-  const visibility = formData.get("visibility");
   const errors: NonNullable<ProfileFormState>["errors"] = {};
 
   if (typeof name !== "string" || name.trim().length === 0 || name.length > 50) {
@@ -2084,10 +2094,6 @@ export async function updateProfileSettings(
 
   if (bio !== null && bio !== "" && (typeof bio !== "string" || bio.length > 160)) {
     errors.bio = "Bio must be 160 characters or less.";
-  }
-
-  if (typeof visibility !== "string" || !VALID_VISIBILITIES.includes(visibility as typeof VALID_VISIBILITIES[number])) {
-    errors.visibility = "Invalid visibility option.";
   }
 
   if (Object.keys(errors).length > 0) {
@@ -2104,7 +2110,6 @@ export async function updateProfileSettings(
     data: {
       name: (name as string).trim(),
       bio: bio ? (bio as string).trim() : null,
-      visibility: visibility as "PUBLIC" | "FRIENDS" | "PRIVATE",
     },
   });
 
@@ -2112,7 +2117,123 @@ export async function updateProfileSettings(
     revalidatePath(`/u/${currentUser.username}`);
     redirect(`/u/${currentUser.username}`);
   }
-  revalidatePath("/settings/profile");
+  revalidatePath("/profile/edit");
 
   redirect("/");
+}
+
+export async function updateUserSettings(
+  section: "language" | "visibility" | "notifications",
+  _prev: SettingsFormState,
+  formData: FormData,
+): Promise<SettingsFormState> {
+  const userId = await getAuthUserId();
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { username: true },
+  });
+
+  if (!user) {
+    return {
+      errors: {
+        general: "User not found.",
+      },
+    };
+  }
+
+  if (section === "language") {
+    const language = formData.get("language");
+    if (
+      typeof language !== "string" ||
+      !VALID_USER_LANGUAGES.includes(language as typeof VALID_USER_LANGUAGES[number])
+    ) {
+      return {
+        errors: {
+          language: "Invalid language option.",
+        },
+      };
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        language: language as "EN" | "ES",
+      },
+    });
+
+    revalidatePath("/settings");
+    return { success: "Language updated." };
+  }
+
+  if (section === "visibility") {
+    const visibility = formData.get("visibility");
+    if (
+      typeof visibility !== "string" ||
+      !VALID_VISIBILITIES.includes(visibility as typeof VALID_VISIBILITIES[number])
+    ) {
+      return {
+        errors: {
+          visibility: "Invalid visibility option.",
+        },
+      };
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        visibility: visibility as "PUBLIC" | "FRIENDS" | "PRIVATE",
+      },
+    });
+
+    revalidatePath("/settings");
+    if (user.username) {
+      revalidatePath(`/u/${user.username}`);
+    }
+    return { success: "Visibility updated." };
+  }
+
+  if (section === "notifications") {
+    const notifyFriendshipEvents = formData.has("notifyFriendshipEvents");
+    const notifyGroupEvents = formData.has("notifyGroupEvents");
+    const notifySystemEvents = formData.has("notifySystemEvents");
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        notifyFriendshipEvents,
+        notifyGroupEvents,
+        notifySystemEvents,
+      },
+    });
+
+    revalidatePath("/settings");
+    return { success: "Notification preferences updated." };
+  }
+
+  return {
+    errors: {
+      general: "Invalid settings section.",
+    },
+  };
+}
+
+export async function updateLanguageSettings(
+  prev: SettingsFormState,
+  formData: FormData,
+): Promise<SettingsFormState> {
+  return updateUserSettings("language", prev, formData);
+}
+
+export async function updateVisibilitySettings(
+  prev: SettingsFormState,
+  formData: FormData,
+): Promise<SettingsFormState> {
+  return updateUserSettings("visibility", prev, formData);
+}
+
+export async function updateNotificationSettings(
+  prev: SettingsFormState,
+  formData: FormData,
+): Promise<SettingsFormState> {
+  return updateUserSettings("notifications", prev, formData);
 }

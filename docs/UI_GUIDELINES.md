@@ -118,6 +118,7 @@ Patrón:
 
 Usar para acciones secundarias/contextuales (menú de perfil o grupo), no para confirmar riesgo.
 En listas de miembros, el menu de `...` es el lugar para acciones de moderacion (`Promote to admin`, `Kick from group`).
+En el menu de perfil del owner, priorizar acciones separadas: `Edit profile` (perfil publico) y `Configure profile` (settings).
 
 ### 6.3 Popup de contenido (Add members)
 

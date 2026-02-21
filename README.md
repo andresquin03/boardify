@@ -15,6 +15,7 @@ Boardify baja esa friccion con flujos simples de perfil, amigos, grupos y notifi
 
 - Biblioteca personal de juegos (favoritos, wishlist y owned).
 - Descubrimiento de usuarios con perfiles publicos y comparacion de compatibilidad.
+- Edicion de perfil publico en `/profile/edit` y configuracion unificada en `/settings` (idioma, visibilidad y preferencias de notificaciones).
 - Sistema de amistad con solicitud, aceptacion, cancelacion y unfriend.
 - Grupos con visibilidad `PUBLIC`, `INVITATION` y `PRIVATE`.
 - Invitaciones a grupos entre amigos y solicitudes de ingreso para grupos por invitacion.
@@ -82,10 +83,10 @@ pnpm dev
 ## Arquitectura (resumen)
 
 - `src/app`: rutas App Router (publicas y protegidas).
-- `src/app/(protected)`: dominio principal autenticado (games, users, friends, groups, notifications).
+- `src/app/(protected)`: dominio principal autenticado (games, users, friends, groups, profile, settings, notifications).
 - `src/lib/actions.ts`: server actions con mutaciones de dominio.
-- `src/lib/notifications.ts`: logica de notificaciones (crear, listar, marcar vistas, borrar).
-- `prisma/schema.prisma`: modelos de auth, juegos, amistad, grupos y notificaciones.
+- `src/lib/notifications.ts`: logica de notificaciones (crear, listar, marcar vistas, borrar) basada en catalogo de eventos y scopes.
+- `prisma/schema.prisma`: modelos de auth, juegos, amistad, grupos, settings de usuario y notificaciones.
 
 ## Verificacion rapida (smoke check)
 

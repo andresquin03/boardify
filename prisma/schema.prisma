@@ -17,7 +17,11 @@ model User {
   image         String?
   username      String?   @unique
   bio           String?
+  language      UserLanguage @default(EN)
   visibility    ProfileVisibility @default(PRIVATE)
+  notifyFriendshipEvents Boolean @default(true)
+  notifyGroupEvents      Boolean @default(true)
+  notifySystemEvents     Boolean @default(true)
 
   accounts            Account[]
   sessions            Session[]
@@ -35,6 +39,11 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum UserLanguage {
+  EN
+  ES
 }
 
 enum ProfileVisibility {
@@ -63,6 +72,19 @@ enum NotificationEventKey {
   GROUP_MEMBER_REMOVED
 }
 
+enum NotificationScope {
+  FRIENDSHIP @map("friendship")
+  GROUP      @map("group")
+  SYSTEM     @map("system")
+}
+
+model NotificationEvent {
+  id    NotificationEventKey @id
+  scope NotificationScope
+
+  notifications Notification[]
+}
+
 model Friendship {
   id          String           @id @default(cuid())
   requesterId String
@@ -85,8 +107,6 @@ model Notification {
   userId     String
   actorId    String?
   eventKey   NotificationEventKey
-  scope      String
-  entityType String?
   entityId   String?
   payload    Json?
   isSeen     Boolean   @default(false)
@@ -94,13 +114,14 @@ model Notification {
   deletedAt  DateTime?
   createdAt  DateTime  @default(now())
 
+  event NotificationEvent @relation(fields: [eventKey], references: [id], onDelete: Restrict)
   user  User  @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
   actor User? @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
   @@index([userId, deletedAt, isSeen])
-  @@index([userId, scope, deletedAt, isSeen])
-  @@index([entityType, entityId])
+  @@index([userId, eventKey, deletedAt, isSeen])
+  @@index([eventKey, entityId])
 }
 
 model Account {

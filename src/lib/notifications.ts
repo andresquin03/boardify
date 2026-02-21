@@ -1,11 +1,7 @@
-import { NotificationEventKey, type Prisma } from "@/generated/prisma/client";
+import { NotificationEventKey, NotificationScope, type Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
-export const NOTIFICATION_SCOPE = {
-  FRIENDSHIP: "friendship",
-  GROUP: "group",
-  SYSTEM: "system",
-} as const;
+export const NOTIFICATION_SCOPE = NotificationScope;
 
 export const NOTIFICATION_EVENT_KEY = {
   FRIEND_REQUEST_RECEIVED: NotificationEventKey.FRIEND_REQUEST_RECEIVED,
@@ -23,30 +19,115 @@ type NotificationCreateInput = {
   userId: string;
   actorId?: string | null;
   eventKey: NotificationEventKey;
-  scope?: string;
-  entityType?: string | null;
   entityId?: string | null;
   payload?: Prisma.InputJsonValue;
   createdAt?: Date;
 };
 
+const NOTIFICATION_EVENT_SCOPE_CACHE_TTL_MS = 60_000;
+
+type NotificationEventScopeCache = {
+  loadedAt: number;
+  byEventKey: Map<NotificationEventKey, NotificationScope>;
+  byScope: Map<NotificationScope, NotificationEventKey[]>;
+};
+
+let notificationEventScopeCache: NotificationEventScopeCache | null = null;
+
+async function getNotificationEventScopeCache(): Promise<NotificationEventScopeCache> {
+  const now = Date.now();
+  const cacheIsValid = Boolean(
+    notificationEventScopeCache &&
+      now - notificationEventScopeCache.loadedAt < NOTIFICATION_EVENT_SCOPE_CACHE_TTL_MS,
+  );
+
+  if (!cacheIsValid) {
+    const rows = await prisma.notificationEvent.findMany({
+      select: {
+        id: true,
+        scope: true,
+      },
+    });
+
+    const byScope = new Map<NotificationScope, NotificationEventKey[]>(
+      Object.values(NotificationScope).map((scope) => [scope, []]),
+    );
+    for (const row of rows) {
+      const bucket = byScope.get(row.scope);
+      if (bucket) {
+        bucket.push(row.id);
+      } else {
+        byScope.set(row.scope, [row.id]);
+      }
+    }
+
+    notificationEventScopeCache = {
+      loadedAt: now,
+      byEventKey: new Map(rows.map((row) => [row.id, row.scope])),
+      byScope,
+    };
+  }
+
+  if (!notificationEventScopeCache) {
+    throw new Error("Notification event scope cache is unavailable.");
+  }
+
+  return notificationEventScopeCache;
+}
+
+async function getNotificationScopeByEventKey(eventKey: NotificationEventKey) {
+  const cache = await getNotificationEventScopeCache();
+
+  const scope = cache.byEventKey.get(eventKey);
+  if (!scope) {
+    throw new Error(`Missing notification event config for ${eventKey}`);
+  }
+
+  return scope;
+}
+
+async function getNotificationEventKeysByScopes(scopes: NotificationScope[]) {
+  const cache = await getNotificationEventScopeCache();
+  return scopes.flatMap((scope) => cache.byScope.get(scope) ?? []);
+}
+
+async function isScopeEnabledForUser(userId: string, scope: NotificationScope) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      notifyFriendshipEvents: true,
+      notifyGroupEvents: true,
+      notifySystemEvents: true,
+    },
+  });
+
+  if (!user) return false;
+  if (scope === NOTIFICATION_SCOPE.FRIENDSHIP) return user.notifyFriendshipEvents;
+  if (scope === NOTIFICATION_SCOPE.GROUP) return user.notifyGroupEvents;
+  if (scope === NOTIFICATION_SCOPE.SYSTEM) return user.notifySystemEvents;
+
+  return true;
+}
+
 export async function createNotification({
   userId,
   actorId = null,
   eventKey,
-  scope = NOTIFICATION_SCOPE.SYSTEM,
-  entityType = null,
   entityId = null,
   payload,
   createdAt,
 }: NotificationCreateInput) {
+  const scope = await getNotificationScopeByEventKey(eventKey);
+  const isEnabled = await isScopeEnabledForUser(userId, scope);
+  if (!isEnabled) {
+    return null;
+  }
+
   return prisma.notification.create({
     data: {
       userId,
       actorId,
       eventKey,
-      scope,
-      entityType,
       entityId,
       payload,
       ...(createdAt ? { createdAt } : {}),
@@ -54,13 +135,20 @@ export async function createNotification({
   });
 }
 
-export async function countUnreadNotifications(userId: string, scopes?: string[]) {
+export async function countUnreadNotifications(userId: string, scopes?: NotificationScope[]) {
+  const scopedEventKeys =
+    scopes && scopes.length > 0 ? await getNotificationEventKeysByScopes(scopes) : null;
+
+  if (scopedEventKeys && scopedEventKeys.length === 0) {
+    return 0;
+  }
+
   return prisma.notification.count({
     where: {
       userId,
       isSeen: false,
       deletedAt: null,
-      ...(scopes && scopes.length > 0 ? { scope: { in: scopes } } : {}),
+      ...(scopedEventKeys ? { eventKey: { in: scopedEventKeys } } : {}),
     },
   });
 }
@@ -78,6 +166,11 @@ export async function listNotifications(userId: string, limit = 100) {
           name: true,
           username: true,
           image: true,
+        },
+      },
+      event: {
+        select: {
+          scope: true,
         },
       },
     },
@@ -101,8 +194,13 @@ export async function markAllNotificationsSeen(userId: string) {
   });
 }
 
-export async function markNotificationsSeenByScopes(userId: string, scopes: string[]) {
+export async function markNotificationsSeenByScopes(userId: string, scopes: NotificationScope[]) {
   if (scopes.length === 0) {
+    return { count: 0 };
+  }
+
+  const scopedEventKeys = await getNotificationEventKeysByScopes(scopes);
+  if (scopedEventKeys.length === 0) {
     return { count: 0 };
   }
 
@@ -110,7 +208,7 @@ export async function markNotificationsSeenByScopes(userId: string, scopes: stri
   return prisma.notification.updateMany({
     where: {
       userId,
-      scope: { in: scopes },
+      eventKey: { in: scopedEventKeys },
       deletedAt: null,
       isSeen: false,
     },
@@ -122,16 +220,20 @@ export async function markNotificationsSeenByScopes(userId: string, scopes: stri
 }
 
 export async function markGroupNotificationsSeen(userId: string, groupId: string) {
+  const groupEventKeys = await getNotificationEventKeysByScopes([NOTIFICATION_SCOPE.GROUP]);
+  if (groupEventKeys.length === 0) {
+    return { count: 0 };
+  }
+
   const now = new Date();
   return prisma.notification.updateMany({
     where: {
       userId,
-      scope: NOTIFICATION_SCOPE.GROUP,
+      eventKey: { in: groupEventKeys },
       deletedAt: null,
       isSeen: false,
       OR: [
         {
-          entityType: "group",
           entityId: groupId,
         },
         {
@@ -182,7 +284,6 @@ export async function softDeleteFriendRequestReceivedNotification(
     where: {
       userId: addresseeId,
       eventKey: NOTIFICATION_EVENT_KEY.FRIEND_REQUEST_RECEIVED,
-      entityType: "friendship",
       entityId: friendshipId,
       deletedAt: null,
     },
@@ -205,8 +306,6 @@ export async function notifyFriendRequestReceived({
     userId: addresseeId,
     actorId: requesterId,
     eventKey: NOTIFICATION_EVENT_KEY.FRIEND_REQUEST_RECEIVED,
-    scope: NOTIFICATION_SCOPE.FRIENDSHIP,
-    entityType: "friendship",
     entityId: friendshipId,
     payload: { status: "PENDING" },
   });
@@ -225,8 +324,6 @@ export async function notifyFriendRequestAccepted({
     userId: requesterId,
     actorId: addresseeId,
     eventKey: NOTIFICATION_EVENT_KEY.FRIEND_REQUEST_ACCEPTED,
-    scope: NOTIFICATION_SCOPE.FRIENDSHIP,
-    entityType: "friendship",
     entityId: friendshipId,
     payload: { status: "ACCEPTED" },
   });
@@ -251,8 +348,6 @@ export async function notifyGroupInviteReceived({
     userId: inviteeId,
     actorId: inviterId,
     eventKey: NOTIFICATION_EVENT_KEY.GROUP_INVITE_RECEIVED,
-    scope: NOTIFICATION_SCOPE.GROUP,
-    entityType: "group_invitation",
     entityId: invitationId,
     payload: {
       status: "PENDING",
@@ -282,8 +377,6 @@ export async function notifyGroupInviteAccepted({
     userId: inviterId,
     actorId: inviteeId,
     eventKey: NOTIFICATION_EVENT_KEY.GROUP_INVITE_ACCEPTED,
-    scope: NOTIFICATION_SCOPE.GROUP,
-    entityType: "group_invitation",
     entityId: invitationId,
     payload: {
       status: "ACCEPTED",
@@ -302,7 +395,6 @@ export async function softDeleteGroupInviteReceivedNotification(
     where: {
       userId: inviteeId,
       eventKey: NOTIFICATION_EVENT_KEY.GROUP_INVITE_RECEIVED,
-      entityType: "group_invitation",
       entityId: invitationId,
       deletedAt: null,
     },
@@ -316,7 +408,6 @@ export async function softDeleteGroupJoinRequestReceivedNotifications(joinReques
   return prisma.notification.updateMany({
     where: {
       eventKey: NOTIFICATION_EVENT_KEY.GROUP_JOIN_REQUEST_RECEIVED,
-      entityType: "group_join_request",
       entityId: joinRequestId,
       deletedAt: null,
     },
@@ -352,8 +443,6 @@ export async function notifyGroupJoinRequestReceived({
         userId: adminId,
         actorId: requesterId,
         eventKey: NOTIFICATION_EVENT_KEY.GROUP_JOIN_REQUEST_RECEIVED,
-        scope: NOTIFICATION_SCOPE.GROUP,
-        entityType: "group_join_request",
         entityId: joinRequestId,
         payload: {
           status: "PENDING",
@@ -385,8 +474,6 @@ export async function notifyGroupJoinRequestAccepted({
     userId: requesterId,
     actorId: adminId,
     eventKey: NOTIFICATION_EVENT_KEY.GROUP_JOIN_REQUEST_ACCEPTED,
-    scope: NOTIFICATION_SCOPE.GROUP,
-    entityType: "group_join_request",
     entityId: joinRequestId,
     payload: {
       status: "ACCEPTED",
@@ -421,8 +508,6 @@ export async function notifyGroupMemberJoined({
         userId: recipientId,
         actorId,
         eventKey: NOTIFICATION_EVENT_KEY.GROUP_MEMBER_JOINED,
-        scope: NOTIFICATION_SCOPE.GROUP,
-        entityType: "group",
         entityId: groupId,
         payload: {
           groupId,
@@ -451,8 +536,6 @@ export async function notifyGroupMemberPromotedToAdmin({
     userId: memberId,
     actorId: adminId,
     eventKey: NOTIFICATION_EVENT_KEY.GROUP_MEMBER_PROMOTED_TO_ADMIN,
-    scope: NOTIFICATION_SCOPE.GROUP,
-    entityType: "group",
     entityId: groupId,
     payload: {
       groupId,
@@ -479,8 +562,6 @@ export async function notifyGroupMemberRemoved({
     userId: memberId,
     actorId: adminId,
     eventKey: NOTIFICATION_EVENT_KEY.GROUP_MEMBER_REMOVED,
-    scope: NOTIFICATION_SCOPE.GROUP,
-    entityType: "group",
     entityId: groupId,
     payload: {
       groupId,

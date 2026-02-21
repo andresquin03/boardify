@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Ellipsis, Pencil } from "lucide-react";
+import { Ellipsis, Pencil, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ShareIconButton } from "@/components/ui/share-icon-button";
@@ -43,11 +44,18 @@ export function ProfileActionsMenu({
               <span className="sr-only">Profile actions</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuItem asChild className="cursor-pointer gap-2">
-              <Link href="/settings/profile">
+              <Link href="/profile/edit">
                 <Pencil className="h-4 w-4" />
                 Edit profile
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild className="cursor-pointer gap-2">
+              <Link href="/settings">
+                <SlidersHorizontal className="h-4 w-4" />
+                Configure profile
               </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>

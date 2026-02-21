@@ -83,7 +83,7 @@ Abrir: `http://localhost:3000`
 │   └── games/
 ├── src/
 │   ├── app/
-│   │   ├── (protected)/                     # rutas autenticadas (games, users, friends, groups, notifications)
+│   │   ├── (protected)/                     # rutas autenticadas (games, users, friends, groups, profile, settings, notifications)
 │   │   ├── about/
 │   │   ├── api/
 │   │   │   ├── auth/[...nextauth]/
@@ -117,12 +117,12 @@ Abrir: `http://localhost:3000`
 - Acceso: `src/app/(protected)/layout.tsx` obliga onboarding completo; paginas de dominio aplican checks server-side y usan `redirect()` / `notFound()` segun permisos.
 - Mutaciones: `src/lib/actions.ts` concentra server actions para auth, onboarding, perfil, amistades, grupos, invitaciones/solicitudes y estado de juegos.
 - Mutaciones de grupos incluyen moderacion de miembros por admins (`promote to admin`, `kick member`), con checks de permiso server-side.
-- Notificaciones: `src/lib/notifications.ts` centraliza creacion/listado/contador no leidas, marcado como vistas por scope o por grupo, y borrado logico (`deletedAt`). Incluye eventos de membresia/rol en grupos (join, promoted to admin, kicked). El badge de la campana consume `/api/notifications/unread-count`.
+- Notificaciones: `src/lib/notifications.ts` centraliza creacion/listado/contador no leidas, marcado como vistas por scope o por grupo, y borrado logico (`deletedAt`). El mapeo `eventKey -> scope` se define en DB mediante `NotificationEvent` y se usa para aplicar preferencias de usuario por scope. Incluye eventos de membresia/rol en grupos (join, promoted to admin, kicked). El badge de la campana consume `/api/notifications/unread-count`.
 - Integridad: validacion defensiva de inputs (regex/enums), checks de autorizacion y `revalidatePath` despues de cambios.
 - Dominio de datos (Prisma):
   - Auth: `User`, `Account`, `Session`, `VerificationToken`.
   - Catalogo: `Game`, `Category`, `GameCategory`, `UserGame`.
-  - Social: `Friendship`, `Notification`, `NotificationEventKey`.
+  - Social: `Friendship`, `Notification`, `NotificationEvent`, `NotificationEventKey`, `NotificationScope`.
   - Grupos: `Group`, `GroupMember`, `GroupInvitation`, `GroupJoinRequest`, `GroupSlug`.
 - Seguridad web: `next.config.ts` agrega headers de seguridad globales, CSP/HSTS en produccion y allowlist explicita para imagenes remotas.
 - Persistencia: Prisma corre sobre `pg.Pool` + `PrismaPg` (`src/lib/prisma.ts`) y la semilla `prisma/seed.ts` usa `upsert` para juegos y categorias.

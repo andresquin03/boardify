@@ -92,13 +92,29 @@ export default async function NotificationsPage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-start gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage
-                        src={notification.actor?.image ?? undefined}
-                        alt={details.actorDisplayName}
-                      />
-                      <AvatarFallback>{details.actorInitials}</AvatarFallback>
-                    </Avatar>
+                    {details.actorProfileHref ? (
+                      <Link
+                        href={details.actorProfileHref}
+                        className="pressable inline-flex rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        aria-label={`Open ${details.actorDisplayName} profile`}
+                      >
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage
+                            src={notification.actor?.image ?? undefined}
+                            alt={details.actorDisplayName}
+                          />
+                          <AvatarFallback>{details.actorInitials}</AvatarFallback>
+                        </Avatar>
+                      </Link>
+                    ) : (
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage
+                          src={notification.actor?.image ?? undefined}
+                          alt={details.actorDisplayName}
+                        />
+                        <AvatarFallback>{details.actorInitials}</AvatarFallback>
+                      </Avatar>
+                    )}
 
                     <div className="min-w-0">
                       <p className="text-sm font-semibold">{details.title}</p>
@@ -163,8 +179,10 @@ type NotificationsList = Awaited<ReturnType<typeof listNotifications>>;
 type NotificationItem = NotificationsList[number];
 
 function getNotificationDetails(notification: NotificationItem) {
+  const scope = notification.event.scope;
   const actorName = notification.actor?.name ?? notification.actor?.username ?? "Someone";
-  const actorHref = notification.actor?.username ? `/u/${notification.actor.username}` : "/friends";
+  const actorProfileHref = notification.actor?.username ? `/u/${notification.actor.username}` : null;
+  const actorHref = actorProfileHref ?? "/friends";
   const actorInitials = actorName
     .split(" ")
     .map((part) => part[0])
@@ -195,8 +213,9 @@ function getNotificationDetails(notification: NotificationItem) {
       message: `${actorName} sent you a friend request.`,
       href: "/friends",
       actorDisplayName: actorName,
+      actorProfileHref,
       actorInitials,
-      scope: NOTIFICATION_SCOPE.FRIENDSHIP,
+      scope,
     };
   }
 
@@ -206,8 +225,9 @@ function getNotificationDetails(notification: NotificationItem) {
       message: `${actorName} accepted your friend request.`,
       href: actorHref,
       actorDisplayName: actorName,
+      actorProfileHref,
       actorInitials,
-      scope: NOTIFICATION_SCOPE.FRIENDSHIP,
+      scope,
     };
   }
 
@@ -217,8 +237,9 @@ function getNotificationDetails(notification: NotificationItem) {
       message: `${actorName} invited you to join ${groupName}.`,
       href: groupSlug ? `/groups/${groupSlug}` : "/groups",
       actorDisplayName: actorName,
+      actorProfileHref,
       actorInitials,
-      scope: NOTIFICATION_SCOPE.GROUP,
+      scope,
     };
   }
 
@@ -228,8 +249,9 @@ function getNotificationDetails(notification: NotificationItem) {
       message: `${actorName} accepted your invitation to ${groupName}.`,
       href: groupSlug ? `/groups/${groupSlug}` : "/groups",
       actorDisplayName: actorName,
+      actorProfileHref,
       actorInitials,
-      scope: NOTIFICATION_SCOPE.GROUP,
+      scope,
     };
   }
 
@@ -239,8 +261,9 @@ function getNotificationDetails(notification: NotificationItem) {
       message: `${actorName} requested to join ${groupName}.`,
       href: groupSlug ? `/groups/${groupSlug}` : "/groups",
       actorDisplayName: actorName,
+      actorProfileHref,
       actorInitials,
-      scope: NOTIFICATION_SCOPE.GROUP,
+      scope,
     };
   }
 
@@ -250,8 +273,9 @@ function getNotificationDetails(notification: NotificationItem) {
       message: `${actorName} accepted your request to join ${groupName}.`,
       href: groupSlug ? `/groups/${groupSlug}` : "/groups",
       actorDisplayName: actorName,
+      actorProfileHref,
       actorInitials,
-      scope: NOTIFICATION_SCOPE.GROUP,
+      scope,
     };
   }
 
@@ -261,8 +285,9 @@ function getNotificationDetails(notification: NotificationItem) {
       message: `${actorName} joined ${groupName}.`,
       href: groupSlug ? `/groups/${groupSlug}` : "/groups",
       actorDisplayName: actorName,
+      actorProfileHref,
       actorInitials,
-      scope: NOTIFICATION_SCOPE.GROUP,
+      scope,
     };
   }
 
@@ -272,8 +297,9 @@ function getNotificationDetails(notification: NotificationItem) {
       message: `${actorName} promoted you to admin in ${groupName}.`,
       href: groupSlug ? `/groups/${groupSlug}` : "/groups",
       actorDisplayName: actorName,
+      actorProfileHref,
       actorInitials,
-      scope: NOTIFICATION_SCOPE.GROUP,
+      scope,
     };
   }
 
@@ -283,8 +309,9 @@ function getNotificationDetails(notification: NotificationItem) {
       message: `${actorName} kicked you out of ${groupName}.`,
       href: groupSlug ? `/groups/${groupSlug}` : "/groups",
       actorDisplayName: actorName,
+      actorProfileHref,
       actorInitials,
-      scope: NOTIFICATION_SCOPE.GROUP,
+      scope,
     };
   }
 
@@ -293,7 +320,8 @@ function getNotificationDetails(notification: NotificationItem) {
     message: `${actorName} triggered ${notification.eventKey}.`,
     href: null,
     actorDisplayName: actorName,
+    actorProfileHref,
     actorInitials,
-    scope: notification.scope,
+    scope,
   };
 }
