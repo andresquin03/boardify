@@ -10,9 +10,11 @@ import {
   type GroupIcon as GroupIconValue,
   type GroupVisibility as GroupVisibilityValue,
 } from "@/generated/prisma/client";
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSafeRedirectPath } from "@/lib/safe-redirect";
+import { LANGUAGE_COOKIE_NAME, mapUserLanguageToLocale } from "@/lib/locale";
 import {
   deleteAllNotificationsForUser,
   deleteNotificationForUser,
@@ -2076,6 +2078,17 @@ export async function completeOnboarding(
       where: { id: userId },
       data: parsed.data,
     });
+
+    const cookieStore = await cookies();
+    cookieStore.set({
+      name: LANGUAGE_COOKIE_NAME,
+      value: mapUserLanguageToLocale(parsed.data.language) ?? "en",
+      path: "/",
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: false,
+      maxAge: 60 * 60 * 24 * 365,
+    });
   } catch (error) {
     if (isUsernameUniqueConstraintError(error)) {
       return {
@@ -2179,6 +2192,17 @@ export async function updateUserSettings(
       data: {
         language: language as "EN" | "ES",
       },
+    });
+
+    const cookieStore = await cookies();
+    cookieStore.set({
+      name: LANGUAGE_COOKIE_NAME,
+      value: mapUserLanguageToLocale(language as "EN" | "ES") ?? "en",
+      path: "/",
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: false,
+      maxAge: 60 * 60 * 24 * 365,
     });
 
     revalidatePath("/settings");

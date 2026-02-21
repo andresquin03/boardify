@@ -1,6 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,27 +15,56 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { completeOnboarding } from "@/lib/actions";
+import { LANGUAGE_COOKIE_NAME, mapUserLanguageToLocale } from "@/lib/locale";
 
-const visibilityConfig = {
-  PUBLIC: {
-    label: "🌐 Public profile",
-  },
-  FRIENDS: {
-    label: "👥 Friends only",
-  },
-  PRIVATE: {
-    label: "🔒 Private profile",
-  },
-} as const;
+const ONBOARDING_DRAFT_STORAGE_KEY = "boardify_onboarding_draft_v1";
 
-const languageConfig = {
-  EN: {
-    label: "English",
-  },
-  ES: {
-    label: "Spanish",
-  },
-} as const;
+type LanguageValue = "EN" | "ES";
+type VisibilityValue = "PUBLIC" | "FRIENDS" | "PRIVATE";
+type OnboardingDraft = {
+  username: string;
+  name: string;
+  bio: string;
+  language: LanguageValue;
+  visibility: VisibilityValue;
+};
+
+function isLanguageValue(value: string): value is LanguageValue {
+  return value === "EN" || value === "ES";
+}
+
+function isVisibilityValue(value: string): value is VisibilityValue {
+  return value === "PUBLIC" || value === "FRIENDS" || value === "PRIVATE";
+}
+
+function parseStoredDraft(value: string | null): OnboardingDraft | null {
+  if (!value) return null;
+
+  try {
+    const parsed = JSON.parse(value) as Partial<OnboardingDraft>;
+    if (
+      typeof parsed.username !== "string" ||
+      typeof parsed.name !== "string" ||
+      typeof parsed.bio !== "string" ||
+      !parsed.language ||
+      !isLanguageValue(parsed.language) ||
+      !parsed.visibility ||
+      !isVisibilityValue(parsed.visibility)
+    ) {
+      return null;
+    }
+
+    return {
+      username: parsed.username,
+      name: parsed.name,
+      bio: parsed.bio,
+      language: parsed.language,
+      visibility: parsed.visibility,
+    };
+  } catch {
+    return null;
+  }
+}
 
 export function OnboardingForm({
   defaultUsername,
@@ -48,44 +79,84 @@ export function OnboardingForm({
   defaultLanguage: "EN" | "ES";
   defaultVisibility: "PUBLIC" | "FRIENDS" | "PRIVATE";
 }) {
+  const t = useTranslations("OnboardingForm");
+  const locale = useLocale();
+  const router = useRouter();
   const [state, action, isPending] = useActionState(completeOnboarding, null);
-  const initialValues = state?.values ?? {
+  const initialValues: OnboardingDraft = state?.values ?? {
     username: defaultUsername,
     name: defaultName,
     bio: defaultBio,
     language: defaultLanguage,
     visibility: defaultVisibility,
   };
-  const formKey = `${initialValues.username}|${initialValues.name}|${initialValues.bio}|${initialValues.language}|${initialValues.visibility}`;
+  const [draft, setDraft] = useState<OnboardingDraft>(() => {
+    if (typeof window === "undefined") {
+      return initialValues;
+    }
+
+    return parseStoredDraft(sessionStorage.getItem(ONBOARDING_DRAFT_STORAGE_KEY)) ?? initialValues;
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem(ONBOARDING_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+  }, [draft]);
+
+  function handleLanguagePreviewChange(value: string) {
+    if (!isLanguageValue(value)) {
+      return;
+    }
+
+    setDraft((previous) => ({
+      ...previous,
+      language: value,
+    }));
+
+    const nextLocale = mapUserLanguageToLocale(value) ?? "en";
+    if (nextLocale === locale) {
+      return;
+    }
+
+    document.cookie = `${LANGUAGE_COOKIE_NAME}=${nextLocale}; Path=/; Max-Age=31536000; SameSite=Lax`;
+    router.refresh();
+  }
 
   return (
-    <form key={formKey} action={action} className="space-y-4" noValidate>
+    <form action={action} className="space-y-4" noValidate>
       <div className="space-y-2">
-        <Label htmlFor="username">Username</Label>
+        <Label htmlFor="username">{t("username.label")}</Label>
         <Input
           id="username"
           name="username"
-          defaultValue={initialValues.username}
-          placeholder="your-username"
+          value={draft.username}
+          onChange={(event) =>
+            setDraft((previous) => ({
+              ...previous,
+              username: event.target.value,
+            }))}
+          placeholder={t("username.placeholder")}
           maxLength={30}
         />
         {state?.errors?.username && (
           <p className="text-sm text-destructive">{state.errors.username}</p>
         )}
         {!state?.errors?.username && (
-          <p className="text-xs text-muted-foreground">
-            3-30 characters. Lowercase letters, numbers, dots, underscores and hyphens.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("username.helper")}</p>
         )}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="name">Display name</Label>
+        <Label htmlFor="name">{t("name.label")}</Label>
         <Input
           id="name"
           name="name"
-          defaultValue={initialValues.name}
-          placeholder="Your Name"
+          value={draft.name}
+          onChange={(event) =>
+            setDraft((previous) => ({
+              ...previous,
+              name: event.target.value,
+            }))}
+          placeholder={t("name.placeholder")}
           maxLength={50}
         />
         {state?.errors?.name && (
@@ -94,30 +165,39 @@ export function OnboardingForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="bio">Bio</Label>
+        <Label htmlFor="bio">{t("bio.label")}</Label>
         <Textarea
           id="bio"
           name="bio"
-          defaultValue={initialValues.bio}
-          placeholder="Tell us about yourself..."
+          value={draft.bio}
+          onChange={(event) =>
+            setDraft((previous) => ({
+              ...previous,
+              bio: event.target.value,
+            }))}
+          placeholder={t("bio.placeholder")}
           maxLength={160}
           rows={3}
         />
         {state?.errors?.bio && (
           <p className="text-sm text-destructive">{state.errors.bio}</p>
         )}
-        <p className="text-xs text-muted-foreground">Optional. Max 160 characters.</p>
+        <p className="text-xs text-muted-foreground">{t("bio.helper")}</p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="language">Language</Label>
-        <Select name="language" defaultValue={initialValues.language}>
+        <Label htmlFor="language">{t("language.label")}</Label>
+        <Select
+          name="language"
+          value={draft.language}
+          onValueChange={handleLanguagePreviewChange}
+        >
           <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="EN">{languageConfig.EN.label}</SelectItem>
-            <SelectItem value="ES">{languageConfig.ES.label}</SelectItem>
+            <SelectItem value="EN">{t("language.english")}</SelectItem>
+            <SelectItem value="ES">{t("language.spanish")}</SelectItem>
           </SelectContent>
         </Select>
         {state?.errors?.language && (
@@ -126,15 +206,25 @@ export function OnboardingForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="visibility">Profile visibility</Label>
-        <Select name="visibility" defaultValue={initialValues.visibility}>
+        <Label htmlFor="visibility">{t("visibility.label")}</Label>
+        <Select
+          name="visibility"
+          value={draft.visibility}
+          onValueChange={(value) => {
+            if (!isVisibilityValue(value)) return;
+            setDraft((previous) => ({
+              ...previous,
+              visibility: value,
+            }));
+          }}
+        >
           <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="PUBLIC">{visibilityConfig.PUBLIC.label}</SelectItem>
-            <SelectItem value="FRIENDS">{visibilityConfig.FRIENDS.label}</SelectItem>
-            <SelectItem value="PRIVATE">{visibilityConfig.PRIVATE.label}</SelectItem>
+            <SelectItem value="PUBLIC">{t("visibility.public")}</SelectItem>
+            <SelectItem value="FRIENDS">{t("visibility.friends")}</SelectItem>
+            <SelectItem value="PRIVATE">{t("visibility.private")}</SelectItem>
           </SelectContent>
         </Select>
         {state?.errors?.visibility && (
@@ -147,7 +237,7 @@ export function OnboardingForm({
       )}
 
       <Button type="submit" className="w-full cursor-pointer" disabled={isPending}>
-        {isPending ? "Saving..." : "Continue"}
+        {isPending ? t("actions.saving") : t("actions.continue")}
       </Button>
     </form>
   );

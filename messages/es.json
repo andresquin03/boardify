@@ -1,0 +1,37 @@
+{
+  "OnboardingPage": {
+    "title": "Bienvenido a Boardify",
+    "subtitle": "Configura tu perfil para comenzar."
+  },
+  "OnboardingForm": {
+    "username": {
+      "label": "Usuario",
+      "placeholder": "tu-usuario",
+      "helper": "3-30 caracteres. Letras minúsculas, números, puntos, guiones bajos y guiones."
+    },
+    "name": {
+      "label": "Nombre visible",
+      "placeholder": "Tu nombre"
+    },
+    "bio": {
+      "label": "Bio",
+      "placeholder": "Cuéntanos sobre ti...",
+      "helper": "Opcional. Máximo 160 caracteres."
+    },
+    "language": {
+      "label": "Idioma",
+      "english": "Inglés",
+      "spanish": "Español"
+    },
+    "visibility": {
+      "label": "Visibilidad del perfil",
+      "public": "🌐 Perfil público",
+      "friends": "👥 Solo amigos",
+      "private": "🔒 Perfil privado"
+    },
+    "actions": {
+      "continue": "Continuar",
+      "saving": "Guardando..."
+    }
+  }
+}

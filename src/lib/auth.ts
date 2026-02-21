@@ -17,13 +17,14 @@ const sessionCookieName = isProd
 async function getUserSessionProfile(userId: string) {
   const dbUser = await prisma.user.findUnique({
     where: { id: userId },
-    select: { username: true },
+    select: { username: true, language: true },
   });
 
   if (!dbUser) return null;
 
   return {
     username: dbUser.username,
+    language: dbUser.language,
     onboardingCompleted: Boolean(dbUser.username),
   };
 }
@@ -65,9 +66,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       try {
         const profile = await getUserSessionProfile(token.sub);
         session.user.username = profile?.username ?? undefined;
+        session.user.language = profile?.language ?? null;
         session.user.onboardingCompleted = profile?.onboardingCompleted ?? false;
       } catch {
         session.user.username = undefined;
+        session.user.language = null;
         session.user.onboardingCompleted = false;
       }
       return session;
