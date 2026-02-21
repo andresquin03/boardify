@@ -33,5 +33,369 @@
       "continue": "Continue",
       "saving": "Saving..."
     }
+  },
+  "Navbar": {
+    "links": {
+      "games": "Games",
+      "users": "Users",
+      "groups": "Groups"
+    },
+    "actions": {
+      "signIn": "Sign in",
+      "openNotifications": "Open notifications"
+    }
+  },
+  "UserMenu": {
+    "profile": "My profile",
+    "friends": "My friends",
+    "groups": "My groups",
+    "signOut": "Sign out",
+    "signOutDialog": {
+      "title": "Sign out?",
+      "description": "You can sign back in at any time with your Google account.",
+      "cancel": "Cancel",
+      "confirm": "Yes, sign out",
+      "pending": "Signing out..."
+    }
+  },
+  "Footer": {
+    "about": "About",
+    "contact": "Contact"
+  },
+  "ShareButton": {
+    "share": "Share",
+    "copied": "Copied",
+    "copyFailed": "Copy failed",
+    "copiedToClipboard": "Copied to clipboard",
+    "couldNotCopy": "Could not copy"
+  },
+  "ThemeToggle": {
+    "toggleTheme": "Toggle theme"
+  },
+  "UsersPage": {
+    "title": "Users",
+    "description": "Find players by name or username.",
+    "search": {
+      "placeholder": "Search users..."
+    },
+    "actions": {
+      "search": "Search",
+      "clear": "Clear"
+    },
+    "results": "{count, plural, one {# user found} other {# users found}}",
+    "empty": "No users match your search.",
+    "fallbackUser": "User",
+    "badges": {
+      "you": "You",
+      "myProfile": "My profile"
+    },
+    "relations": {
+      "friends": "Friends",
+      "pendingReceived": "Sent you a request",
+      "pendingSent": "Request sent",
+      "none": "Add friend"
+    },
+    "visibility": {
+      "public": "Public profile",
+      "friends": "Friends only",
+      "private": "Private profile"
+    }
+  },
+  "SignInPage": {
+    "title": "Log in to continue",
+    "subtitle": "To access {destination}, sign in with Google.",
+    "destinations": {
+      "usersProfiles": "users and profiles",
+      "groupsCommunities": "groups and communities",
+      "allFeatures": "all Boardify features"
+    },
+    "cards": {
+      "players": {
+        "title": "Connect with players",
+        "description": "Find profiles, add friends, and compare collections."
+      },
+      "groups": {
+        "title": "Join groups",
+        "description": "Create and manage groups for your game nights."
+      },
+      "collections": {
+        "title": "Build your collections",
+        "description": "Add games to favorites, wishlist, and owned lists."
+      }
+    },
+    "actions": {
+      "continueWithGoogle": "Continue with Google"
+    },
+    "footer": {
+      "note": "We only use Google authentication. No extra password required.",
+      "backHome": "Back home"
+    }
+  },
+  "UserProfilePage": {
+    "stats": {
+      "games": "Games",
+      "friends": "Friends",
+      "groups": "Groups",
+      "cards": {
+        "favoritesAria": "Go to favorites list",
+        "wishlistAria": "Go to wishlist list",
+        "ownedAria": "Go to owned games list",
+        "friendsAria": "View friends list",
+        "groupsAria": "View groups list"
+      }
+    },
+    "friendsOnlyNotice": "This profile is visible to friends only. Send a friend request to unlock games and stats.",
+    "collections": {
+      "match": {
+        "badge": "{percent}% match",
+        "unavailable": "Start adding games to your profile to track compatibility."
+      },
+      "favorite": {
+        "title": "Favorites",
+        "empty": "No favorite games yet.",
+        "matchBothEmpty": "Both of you have no favorite games yet, counted as 100% match.",
+        "matchShared": "{shared}/{union} shared in favorites."
+      },
+      "wishlist": {
+        "title": "Wishlist",
+        "empty": "No games in wishlist.",
+        "matchBothEmpty": "Both of you have no wishlist games yet, counted as 100% match.",
+        "matchShared": "{shared}/{union} shared in wishlist."
+      },
+      "owned": {
+        "title": "Owned",
+        "empty": "No owned games yet.",
+        "matchBothEmpty": "Both of you have no owned games yet, counted as 100% match.",
+        "matchShared": "{shared}/{union} shared in owned."
+      },
+      "exploreGames": "Explore games"
+    }
+  },
+  "UserProfileHeader": {
+    "fallbackUser": "User",
+    "visibility": {
+      "public": "Public profile",
+      "friends": "Friends only",
+      "private": "Private profile"
+    },
+    "friendRequest": {
+      "send": "Send request",
+      "pending": "Sending..."
+    },
+    "compatibility": {
+      "unavailable": "Start adding games to your profile to track compatibility.",
+      "incompatible": {
+        "label": "Incompatible",
+        "tooltip": "For now..."
+      },
+      "compatible": {
+        "label": "Compatible",
+        "tooltip": "You will find common ground."
+      },
+      "veryCompatible": {
+        "label": "Very compatible",
+        "tooltip": "Amazing chemistry!"
+      },
+      "bestMatch": {
+        "label": "Best match",
+        "tooltip": "You're made for each other!"
+      }
+    }
+  },
+  "UserProfileGameCard": {
+    "imageAlt": "Cover of {title}",
+    "inCommon": "In common",
+    "exactCategoryMatch": "Exact category match."
+  },
+  "UserProfileActionsMenu": {
+    "shareMessageOwner": "Let's boardify together:",
+    "shareMessageOther": "Check out this Boardify user:",
+    "shareProfile": "Share profile",
+    "profileActions": "Profile actions",
+    "editProfile": "Edit profile",
+    "configureProfile": "Configure profile"
+  },
+  "UserProfileUnfriend": {
+    "friends": "Friends",
+    "unfriend": "Unfriend",
+    "dialog": {
+      "title": "Unfriend {targetName}?",
+      "description": "You will stop seeing each other as friends. You can send a new request later.",
+      "cancel": "Cancel",
+      "pending": "Unfriending...",
+      "confirm": "Yes, unfriend"
+    }
+  },
+  "FriendRequestActions": {
+    "actions": {
+      "accept": "Accept",
+      "reject": "Reject",
+      "cancel": "Cancel"
+    },
+    "pending": {
+      "accepting": "Accepting...",
+      "rejecting": "Rejecting...",
+      "cancelling": "Cancelling..."
+    }
+  },
+  "UserProfileNotFound": {
+    "eyebrow": "USER NOT FOUND",
+    "title": "Profile not available",
+    "description": "We could not find a user with that username.",
+    "actions": {
+      "browseUsers": "Browse users",
+      "backHome": "Back home"
+    }
+  },
+  "UserProfileFriendsPage": {
+    "backToProfile": "Back to profile",
+    "title": "{name}'s friends",
+    "results": "{count, plural, one {# friend} other {# friends}}",
+    "empty": "No friends yet."
+  },
+  "UserProfileGroupsPage": {
+    "fallbackUser": "User",
+    "backToProfile": "Back to profile",
+    "titleOwn": "My groups",
+    "titleOther": "{name}'s groups",
+    "results": "{count, plural, one {# group} other {# groups}}",
+    "visibility": {
+      "public": "Public group",
+      "invitation": "Invitation only",
+      "private": "Private group"
+    },
+    "sentRequests": {
+      "title": "Sent requests",
+      "description": "Invitations you sent and join requests you submitted.",
+      "invitesTitle": "Group invitations sent",
+      "joinRequestsTitle": "Join requests sent",
+      "forUser": "for {name}"
+    },
+    "receivedRequests": {
+      "title": "Received requests",
+      "description": "Invitations you received and requests sent to groups you admin.",
+      "groupInvitationsTitle": "Group invitations received",
+      "requestsToYourGroupsTitle": "Requests to your groups",
+      "fromUser": "from {name}",
+      "wantsToJoin": "wants to join"
+    },
+    "empty": {
+      "title": "No groups yet.",
+      "descriptionOwn": "Browse groups to join one, or create your own.",
+      "descriptionOther": "{name} hasn't joined any groups yet."
+    },
+    "memberBadge": "You are a member",
+    "membersCount": "{count, plural, one {# member} other {# members}}",
+    "actions": {
+      "createFirstGroup": "Create your first group!",
+      "createGroup": "Create group",
+      "browseGroups": "Browse groups",
+      "cancel": "Cancel",
+      "accept": "Accept",
+      "reject": "Reject",
+      "pendingCancelling": "Cancelling...",
+      "pendingAccepting": "Accepting...",
+      "pendingRejecting": "Rejecting..."
+    }
+  },
+  "HomePage": {
+    "hero": {
+      "tagline": "Boardify your game nights."
+    },
+    "quickActions": {
+      "browseGames": {
+        "title": "Browse games",
+        "description": "Explore the catalog, open game details, and filter by players or category.",
+        "cta": "Open catalog"
+      },
+      "connectFriends": {
+        "title": "Connect with friends",
+        "description": "Find players, send requests, and grow your board game circle.",
+        "cta": "Find users"
+      },
+      "joinGroups": {
+        "title": "Join groups",
+        "description": "Find or create groups to organize game nights with friends and new players.",
+        "cta": "Browse groups"
+      }
+    },
+    "features": {
+      "collection": {
+        "title": "Track your collection",
+        "description": "Keep your list of owned games up to date and know what is ready for game night."
+      },
+      "favorites": {
+        "title": "Manage favorites",
+        "description": "Highlight your all-time picks and quickly revisit the games you love most."
+      },
+      "planning": {
+        "title": "Plan game nights",
+        "description": "Use group libraries and collections to quickly decide what everyone can play."
+      },
+      "wishlist": {
+        "title": "Build your wishlist",
+        "description": "Save the games you want to play next and keep your picks organized."
+      },
+      "details": {
+        "title": "Detailed game pages",
+        "description": "Open rich game sheets with categories, ratings, difficulty, and your own status at a glance."
+      }
+    }
+  },
+  "AboutPage": {
+    "metadata": {
+      "title": "About | Boardify",
+      "description": "Learn what Boardify is and how it helps you organize game nights."
+    },
+    "header": {
+      "title": "About Boardify",
+      "description": "Boardify helps you decide what to play faster by organizing your games, friends, and groups in one place."
+    },
+    "cards": {
+      "solve": {
+        "title": "What It Solves",
+        "description": "Stop guessing what everyone can play. Boardify surfaces shared options quickly."
+      },
+      "flow": {
+        "title": "How It Works",
+        "description": "Build your library, connect with friends, and join groups to compare collections."
+      },
+      "privacy": {
+        "title": "Privacy First",
+        "description": "Profile visibility and invitation flows are designed so you control who sees what."
+      }
+    },
+    "author": {
+      "title": "From The Author",
+      "paragraph1": "I built Boardify after repeating the same pre-game ritual every week: endless chat messages, unclear player counts, and lots of last-minute what can we actually play moments.",
+      "paragraph2": "The goal was not just to list games, but to reduce friction before meeting friends. Boardify brings collections, availability, and group context together so choosing a game feels quick, fair, and collaborative instead of chaotic."
+    }
+  },
+  "ContactPage": {
+    "metadata": {
+      "title": "Contact | Boardify",
+      "description": "Get in touch with the Boardify team for support, bugs, or feature ideas."
+    },
+    "header": {
+      "title": "Contact",
+      "description": "Need help, found a bug, or want to suggest a feature? Reach out and include as much context as possible."
+    },
+    "cards": {
+      "support": {
+        "title": "General Support",
+        "description": "Account issues, onboarding, or questions about how Boardify works.",
+        "cta": "Email support"
+      },
+      "bugs": {
+        "title": "Bug Reports",
+        "description": "Share steps, expected result, and actual result so we can reproduce quickly.",
+        "cta": "Report a bug"
+      },
+      "features": {
+        "title": "Feature Requests",
+        "description": "Tell us the problem you want solved and how you currently work around it.",
+        "cta": "Suggest a feature"
+      }
+    }
   }
 }

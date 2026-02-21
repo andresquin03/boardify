@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -14,6 +15,7 @@ import { countUnreadNotifications } from "@/lib/notifications";
 import { NotificationBell } from "@/components/layout/notification-bell";
 
 export async function Navbar() {
+  const t = await getTranslations("Navbar");
   const session = await auth();
   const hasCompletedOnboarding = Boolean(session?.user?.username);
 
@@ -61,19 +63,19 @@ export async function Navbar() {
               href="/games"
               className="pressable text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
-              Games
+              {t("links.games")}
             </Link>
             <Link
               href={usersHref}
               className="pressable text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
-              Users
+              {t("links.users")}
             </Link>
             <Link
               href={groupsHref}
               className="pressable text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
-              Groups
+              {t("links.groups")}
             </Link>
           </nav>
         </div>
@@ -84,6 +86,7 @@ export async function Navbar() {
               <NotificationBell
                 href={hasCompletedOnboarding ? "/notifications" : "/onboarding"}
                 initialUnreadCount={unreadNotificationCount}
+                ariaLabel={t("actions.openNotifications")}
               />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -114,7 +117,7 @@ export async function Navbar() {
           ) : (
             <Button asChild variant="outline" size="sm" className="cursor-pointer">
               <Link href="/signin">
-                Sign in
+                {t("actions.signIn")}
               </Link>
             </Button>
           )}

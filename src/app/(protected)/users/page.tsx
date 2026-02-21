@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import {
   CircleHelp,
   Clock3,
@@ -29,25 +30,8 @@ function normalizeSingleValue(value?: string | string[]) {
   return value ?? "";
 }
 
-const visibilityConfig = {
-  PUBLIC: {
-    label: "Public profile",
-    icon: Globe,
-    className: "border-sky-400/30 bg-sky-500/10 text-sky-500 dark:text-sky-400",
-  },
-  FRIENDS: {
-    label: "Friends only",
-    icon: UsersRound,
-    className: "border-amber-400/30 bg-amber-500/10 text-amber-500 dark:text-amber-400",
-  },
-  PRIVATE: {
-    label: "Private profile",
-    icon: Lock,
-    className: "border-violet-400/30 bg-violet-500/10 text-violet-500 dark:text-violet-400",
-  },
-} as const;
-
 export default async function UsersPage({ searchParams }: UsersPageProps) {
+  const t = await getTranslations("UsersPage");
   const session = await auth();
   if (!session?.user?.id) redirect("/signin?callbackUrl=%2Fusers");
   const viewerId = session.user.id;
@@ -135,16 +119,34 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
     orderBy: [{ username: "asc" }],
   });
 
+  const visibilityConfig = {
+    PUBLIC: {
+      label: t("visibility.public"),
+      icon: Globe,
+      className: "border-sky-400/30 bg-sky-500/10 text-sky-500 dark:text-sky-400",
+    },
+    FRIENDS: {
+      label: t("visibility.friends"),
+      icon: UsersRound,
+      className: "border-amber-400/30 bg-amber-500/10 text-amber-500 dark:text-amber-400",
+    },
+    PRIVATE: {
+      label: t("visibility.private"),
+      icon: Lock,
+      className: "border-violet-400/30 bg-violet-500/10 text-violet-500 dark:text-violet-400",
+    },
+  } as const;
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <div className="group flex items-center gap-2.5">
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/70 bg-card/70 text-violet-500 shadow-sm motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95">
           <Users className="h-4.5 w-4.5 transition-all duration-300 motion-safe:animate-[pulse_2.8s_ease-in-out_infinite] group-hover:scale-110 group-hover:-rotate-6 group-active:scale-95" />
         </span>
-        <h1 className="text-2xl font-bold">Users</h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
-        Find players by name or username.
+        {t("description")}
       </p>
 
       <form className="mt-5 flex flex-col gap-2 sm:flex-row" method="get">
@@ -153,33 +155,33 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
           <Input
             name="q"
             defaultValue={query}
-            placeholder="Search users..."
+            placeholder={t("search.placeholder")}
             className="pl-9"
             maxLength={50}
           />
         </div>
         <Button type="submit" className="cursor-pointer">
-          Search
+          {t("actions.search")}
         </Button>
         {query && (
           <Button asChild type="button" variant="ghost" className="cursor-pointer">
-            <Link href="/users">Clear</Link>
+            <Link href="/users">{t("actions.clear")}</Link>
           </Button>
         )}
       </form>
 
       <p className="mt-4 text-sm text-muted-foreground">
-        {users.length} {users.length === 1 ? "user" : "users"} found
+        {t("results", { count: users.length })}
       </p>
 
       {users.length === 0 ? (
-        <p className="mt-6 text-sm text-muted-foreground">No users match your search.</p>
+        <p className="mt-6 text-sm text-muted-foreground">{t("empty")}</p>
       ) : (
         <div className="mt-4 grid gap-2">
           {users.map((user) => {
             const isCurrentUser = user.id === viewerId;
             const relationState = relationStateByUserId.get(user.id) ?? "NONE";
-            const displayName = user.name ?? user.username ?? "User";
+            const displayName = user.name ?? user.username ?? t("fallbackUser");
             const initials = displayName
               .split(" ")
               .map((part) => part[0])
@@ -198,27 +200,27 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
               relationState === "FRIEND"
                 ? {
                     icon: UserCheck,
-                    tooltip: "Friends",
+                    tooltip: t("relations.friends"),
                     className:
                       "border-emerald-400/30 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400",
                   }
                 : relationState === "PENDING_RECEIVED"
                   ? {
                       icon: CircleHelp,
-                      tooltip: "Sent you a request",
+                      tooltip: t("relations.pendingReceived"),
                       className:
                         "border-amber-400/30 bg-amber-500/10 text-amber-500 dark:text-amber-400",
                     }
                   : relationState === "PENDING_SENT"
                     ? {
                         icon: Clock3,
-                        tooltip: "Request sent",
+                        tooltip: t("relations.pendingSent"),
                         className:
                           "border-sky-400/30 bg-sky-500/10 text-sky-500 dark:text-sky-400",
                       }
                     : {
                         icon: UserPlus,
-                        tooltip: "Add friend",
+                        tooltip: t("relations.none"),
                         className:
                           "border-muted-foreground/25 bg-muted/70 text-muted-foreground",
                       };
@@ -242,7 +244,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
                       {displayName}
                       {isCurrentUser && (
                         <span className="ml-2 rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-                          You
+                          {t("badges.you")}
                         </span>
                       )}
                     </p>
@@ -251,7 +253,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   {isCurrentUser && (
-                    <span className="shrink-0 text-xs font-medium text-primary">My profile</span>
+                    <span className="shrink-0 text-xs font-medium text-primary">{t("badges.myProfile")}</span>
                   )}
                   {!isCurrentUser && (
                     <Tooltip>

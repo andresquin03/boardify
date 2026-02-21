@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import {
   ArrowLeft,
   Check,
@@ -32,29 +33,12 @@ import {
   rejectGroupJoinRequest,
 } from "@/lib/actions";
 
-const visibilityConfig = {
-  PUBLIC: {
-    label: "Public group",
-    icon: Globe,
-    className: "border-sky-400/30 bg-sky-500/10 text-sky-500 dark:text-sky-400",
-  },
-  INVITATION: {
-    label: "Invitation only",
-    icon: Mail,
-    className: "border-amber-400/30 bg-amber-500/10 text-amber-500 dark:text-amber-400",
-  },
-  PRIVATE: {
-    label: "Private group",
-    icon: Lock,
-    className: "border-violet-400/30 bg-violet-500/10 text-violet-500 dark:text-violet-400",
-  },
-} as const;
-
 export default async function UserGroupsPage({
   params,
 }: {
   params: Promise<{ username: string }>;
 }) {
+  const t = await getTranslations("UserProfileGroupsPage");
   const session = await auth();
   if (!session?.user?.id) redirect("/");
   const viewerId = session.user.id;
@@ -209,9 +193,27 @@ export default async function UserGroupsPage({
       ])
     : [[], [], [], []];
 
-  const displayName = targetUser.name ?? targetUser.username ?? "User";
+  const displayName = targetUser.name ?? targetUser.username ?? t("fallbackUser");
+  const fallbackUserName = t("fallbackUser");
+  const visibilityConfig = {
+    PUBLIC: {
+      label: t("visibility.public"),
+      icon: Globe,
+      className: "border-sky-400/30 bg-sky-500/10 text-sky-500 dark:text-sky-400",
+    },
+    INVITATION: {
+      label: t("visibility.invitation"),
+      icon: Mail,
+      className: "border-amber-400/30 bg-amber-500/10 text-amber-500 dark:text-amber-400",
+    },
+    PRIVATE: {
+      label: t("visibility.private"),
+      icon: Lock,
+      className: "border-violet-400/30 bg-violet-500/10 text-violet-500 dark:text-violet-400",
+    },
+  } as const;
   const createGroupCta =
-    groups.length === 0 ? "Create your first group!" : "Create group";
+    groups.length === 0 ? t("actions.createFirstGroup") : t("actions.createGroup");
   const hasSentGroupRequests =
     sentGroupInvitations.length > 0 || sentJoinRequests.length > 0;
   const hasIncomingGroupRequests =
@@ -224,7 +226,7 @@ export default async function UserGroupsPage({
         className="pressable inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to profile
+        {t("backToProfile")}
       </Link>
 
       <div className="group mt-4 flex items-center gap-2.5">
@@ -232,11 +234,11 @@ export default async function UserGroupsPage({
           <Network className="h-4.5 w-4.5 transition-all duration-300 motion-safe:animate-[pulse_2.8s_ease-in-out_infinite] group-hover:scale-110 group-hover:-rotate-6 group-active:scale-95" />
         </span>
         <h1 className="text-2xl font-bold">
-          {isOwner ? "My groups" : `${displayName}\u2019s groups`}
+          {isOwner ? t("titleOwn") : t("titleOther", { name: displayName })}
         </h1>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
-        {groups.length} {groups.length === 1 ? "group" : "groups"}
+        {t("results", { count: groups.length })}
       </p>
 
       {isOwner && hasSentGroupRequests && (
@@ -244,24 +246,24 @@ export default async function UserGroupsPage({
           <div className="rounded-xl border bg-card/70 p-4 shadow-sm">
             <h2 className="flex items-center gap-2 text-base font-semibold">
               <SendHorizontal className="h-4 w-4 text-sky-500" />
-              Sent requests
+              {t("sentRequests.title")}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Invitations you sent and join requests you submitted.
+              {t("sentRequests.description")}
             </p>
 
             <div className="mt-3 grid gap-3">
               {sentGroupInvitations.length > 0 && (
                 <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
                   <p className="text-sm font-medium">
-                    Group invitations sent
+                    {t("sentRequests.invitesTitle")}
                     <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                       {sentGroupInvitations.length}
                     </span>
                   </p>
                   <div className="mt-2 space-y-2">
                     {sentGroupInvitations.map((invitation) => {
-                      const inviteeName = invitation.invitee.name ?? invitation.invitee.username ?? "User";
+                      const inviteeName = invitation.invitee.name ?? invitation.invitee.username ?? fallbackUserName;
                       return (
                         <div
                           key={invitation.id}
@@ -272,7 +274,7 @@ export default async function UserGroupsPage({
                               <Link href={`/groups/${invitation.group.slug}`} className="font-medium hover:underline">
                                 {invitation.group.name}
                               </Link>{" "}
-                              <span className="text-muted-foreground">for {inviteeName}</span>
+                              <span className="text-muted-foreground">{t("sentRequests.forUser", { name: inviteeName })}</span>
                             </p>
                           </div>
                           <div className="flex w-full justify-center sm:w-auto sm:justify-end">
@@ -281,11 +283,11 @@ export default async function UserGroupsPage({
                                 type="submit"
                                 variant="outline"
                                 size="sm"
-                                pendingText="Cancelling..."
+                                pendingText={t("actions.pendingCancelling")}
                                 className="cursor-pointer gap-1"
                               >
                                 <X className="h-3.5 w-3.5" />
-                                Cancel
+                                {t("actions.cancel")}
                               </FormPendingButton>
                             </form>
                           </div>
@@ -299,7 +301,7 @@ export default async function UserGroupsPage({
               {sentJoinRequests.length > 0 && (
                 <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
                   <p className="text-sm font-medium">
-                    Join requests sent
+                    {t("sentRequests.joinRequestsTitle")}
                     <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                       {sentJoinRequests.length}
                     </span>
@@ -321,11 +323,11 @@ export default async function UserGroupsPage({
                               type="submit"
                               variant="outline"
                               size="sm"
-                              pendingText="Cancelling..."
+                              pendingText={t("actions.pendingCancelling")}
                               className="cursor-pointer gap-1"
                             >
                               <X className="h-3.5 w-3.5" />
-                              Cancel
+                              {t("actions.cancel")}
                             </FormPendingButton>
                           </form>
                         </div>
@@ -344,24 +346,24 @@ export default async function UserGroupsPage({
           <div className="rounded-xl border bg-card/70 p-4 shadow-sm">
             <h2 className="flex items-center gap-2 text-base font-semibold">
               <Mail className="h-4 w-4 text-amber-500" />
-              Received requests
+              {t("receivedRequests.title")}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Invitations you received and requests sent to groups you admin.
+              {t("receivedRequests.description")}
             </p>
 
             <div className="mt-3 grid gap-3">
               {receivedGroupInvitations.length > 0 && (
                 <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
                   <p className="text-sm font-medium">
-                    Group invitations received
+                    {t("receivedRequests.groupInvitationsTitle")}
                     <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                       {receivedGroupInvitations.length}
                     </span>
                   </p>
                   <div className="mt-2 space-y-2">
                     {receivedGroupInvitations.map((invitation) => {
-                      const inviterName = invitation.inviter.name ?? invitation.inviter.username ?? "User";
+                      const inviterName = invitation.inviter.name ?? invitation.inviter.username ?? fallbackUserName;
 
                       return (
                         <div
@@ -372,7 +374,7 @@ export default async function UserGroupsPage({
                             <Link href={`/groups/${invitation.group.slug}`} className="font-medium hover:underline">
                               {invitation.group.name}
                             </Link>{" "}
-                            <span className="text-muted-foreground">from {inviterName}</span>
+                            <span className="text-muted-foreground">{t("receivedRequests.fromUser", { name: inviterName })}</span>
                           </p>
                           <div className="flex w-full items-center justify-center gap-1.5 sm:w-auto sm:justify-end">
                             <form action={acceptGroupInvitation.bind(null, invitation.id)}>
@@ -380,11 +382,11 @@ export default async function UserGroupsPage({
                                 type="submit"
                                 variant="outline"
                                 size="sm"
-                                pendingText="Accepting..."
+                                pendingText={t("actions.pendingAccepting")}
                                 className="cursor-pointer gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400"
                               >
                                 <Check className="h-3.5 w-3.5" />
-                                Accept
+                                {t("actions.accept")}
                               </FormPendingButton>
                             </form>
                             <form action={rejectGroupInvitation.bind(null, invitation.id)}>
@@ -392,11 +394,11 @@ export default async function UserGroupsPage({
                                 type="submit"
                                 variant="outline"
                                 size="sm"
-                                pendingText="Rejecting..."
+                                pendingText={t("actions.pendingRejecting")}
                                 className="cursor-pointer gap-1 border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive dark:hover:text-destructive"
                               >
                                 <X className="h-3.5 w-3.5" />
-                                Reject
+                                {t("actions.reject")}
                               </FormPendingButton>
                             </form>
                           </div>
@@ -410,14 +412,14 @@ export default async function UserGroupsPage({
               {adminPendingJoinRequests.length > 0 && (
                 <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
                   <p className="text-sm font-medium">
-                    Requests to your groups
+                    {t("receivedRequests.requestsToYourGroupsTitle")}
                     <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                       {adminPendingJoinRequests.length}
                     </span>
                   </p>
                   <div className="mt-2 space-y-2">
                     {adminPendingJoinRequests.map((request) => {
-                      const requesterName = request.requester.name ?? request.requester.username ?? "User";
+                      const requesterName = request.requester.name ?? request.requester.username ?? fallbackUserName;
                       return (
                         <div
                           key={request.id}
@@ -438,7 +440,7 @@ export default async function UserGroupsPage({
                             <div className="min-w-0">
                               <p className="truncate text-sm font-medium">{requesterName}</p>
                               <p className="truncate text-xs text-muted-foreground">
-                                wants to join{" "}
+                                {t("receivedRequests.wantsToJoin")}{" "}
                                 <Link href={`/groups/${request.group.slug}`} className="hover:underline">
                                   {request.group.name}
                                 </Link>
@@ -452,11 +454,11 @@ export default async function UserGroupsPage({
                                 type="submit"
                                 variant="outline"
                                 size="sm"
-                                pendingText="Accepting..."
+                                pendingText={t("actions.pendingAccepting")}
                                 className="cursor-pointer gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400"
                               >
                                 <Check className="h-3.5 w-3.5" />
-                                Accept
+                                {t("actions.accept")}
                               </FormPendingButton>
                             </form>
                             <form action={rejectGroupJoinRequest.bind(null, request.id)}>
@@ -464,11 +466,11 @@ export default async function UserGroupsPage({
                                 type="submit"
                                 variant="outline"
                                 size="sm"
-                                pendingText="Rejecting..."
+                                pendingText={t("actions.pendingRejecting")}
                                 className="cursor-pointer gap-1 border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive dark:hover:text-destructive"
                               >
                                 <X className="h-3.5 w-3.5" />
-                                Reject
+                                {t("actions.reject")}
                               </FormPendingButton>
                             </form>
                           </div>
@@ -487,12 +489,12 @@ export default async function UserGroupsPage({
         <section className="mt-6 rounded-xl border bg-card/70 p-5 shadow-sm">
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <Network className="h-4 w-4" />
-            No groups yet.
+            {t("empty.title")}
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
             {isOwner
-              ? "Browse groups to join one, or create your own."
-              : `${displayName} hasn\u2019t joined any groups yet.`}
+              ? t("empty.descriptionOwn")
+              : t("empty.descriptionOther", { name: displayName })}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Link
@@ -500,7 +502,7 @@ export default async function UserGroupsPage({
               className="pressable inline-flex items-center gap-2 rounded-md border border-border/70 bg-card px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent/60 active:bg-accent/75"
             >
               <Network className="h-3.5 w-3.5" />
-              Browse groups
+              {t("actions.browseGroups")}
             </Link>
             {isOwner && (
               <Link
@@ -508,7 +510,7 @@ export default async function UserGroupsPage({
                 className="pressable inline-flex items-center gap-2 rounded-md border border-border/70 bg-card px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent/60 active:bg-accent/75"
               >
                 <Plus className="h-3.5 w-3.5" />
-                Create group
+                {t("actions.createGroup")}
               </Link>
             )}
           </div>
@@ -547,7 +549,7 @@ export default async function UserGroupsPage({
                             <UserCheck className="h-3.5 w-3.5" />
                           </span>
                         </TooltipTrigger>
-                        <TooltipContent side="top">You are a member</TooltipContent>
+                        <TooltipContent side="top">{t("memberBadge")}</TooltipContent>
                       </Tooltip>
                     )}
                     <Tooltip>
@@ -575,8 +577,7 @@ export default async function UserGroupsPage({
                 <div className="mt-auto flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Users className="h-3.5 w-3.5" />
                   <span>
-                    {group._count.members}{" "}
-                    {group._count.members === 1 ? "member" : "members"}
+                    {t("membersCount", { count: group._count.members })}
                   </span>
                 </div>
               </Link>

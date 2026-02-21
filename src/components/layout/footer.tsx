@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
-export function Footer() {
+export async function Footer() {
+  const t = await getTranslations("Footer");
   const year = new Date().getFullYear();
 
   return (
@@ -12,13 +14,13 @@ export function Footer() {
             href="/about"
             className="pressable font-medium transition-colors hover:text-foreground"
           >
-            About
+            {t("about")}
           </Link>
           <Link
             href="/contact"
             className="pressable font-medium transition-colors hover:text-foreground"
           >
-            Contact
+            {t("contact")}
           </Link>
         </nav>
       </div>

@@ -1,7 +1,7 @@
 {
   "OnboardingPage": {
     "title": "Bienvenido a Boardify",
-    "subtitle": "Configura tu perfil para comenzar."
+    "subtitle": "Configurá tu perfil para arrancar."
   },
   "OnboardingForm": {
     "username": {
@@ -15,7 +15,7 @@
     },
     "bio": {
       "label": "Bio",
-      "placeholder": "Cuéntanos sobre ti...",
+      "placeholder": "Contanos sobre vos...",
       "helper": "Opcional. Máximo 160 caracteres."
     },
     "language": {
@@ -32,6 +32,370 @@
     "actions": {
       "continue": "Continuar",
       "saving": "Guardando..."
+    }
+  },
+  "Navbar": {
+    "links": {
+      "games": "Juegos",
+      "users": "Usuarios",
+      "groups": "Grupos"
+    },
+    "actions": {
+      "signIn": "Iniciar sesión",
+      "openNotifications": "Abrir notificaciones"
+    }
+  },
+  "UserMenu": {
+    "profile": "Mi perfil",
+    "friends": "Mis amigos",
+    "groups": "Mis grupos",
+    "signOut": "Cerrar sesión",
+    "signOutDialog": {
+      "title": "¿Cerrar sesión?",
+      "description": "Podés volver a iniciar sesión cuando quieras con tu cuenta de Google.",
+      "cancel": "Cancelar",
+      "confirm": "Sí, cerrar sesión",
+      "pending": "Cerrando sesión..."
+    }
+  },
+  "Footer": {
+    "about": "Acerca de",
+    "contact": "Contacto"
+  },
+  "ShareButton": {
+    "share": "Compartir",
+    "copied": "Copiado",
+    "copyFailed": "Error al copiar",
+    "copiedToClipboard": "Copiado al portapapeles",
+    "couldNotCopy": "No se pudo copiar"
+  },
+  "ThemeToggle": {
+    "toggleTheme": "Cambiar tema"
+  },
+  "UsersPage": {
+    "title": "Usuarios",
+    "description": "Encontrá jugadores por nombre o usuario.",
+    "search": {
+      "placeholder": "Buscar usuarios..."
+    },
+    "actions": {
+      "search": "Buscar",
+      "clear": "Limpiar"
+    },
+    "results": "{count, plural, one {# usuario encontrado} other {# usuarios encontrados}}",
+    "empty": "No hay usuarios que coincidan con tu búsqueda.",
+    "fallbackUser": "Usuario",
+    "badges": {
+      "you": "Vos",
+      "myProfile": "Mi perfil"
+    },
+    "relations": {
+      "friends": "Amigos",
+      "pendingReceived": "Te envió una solicitud",
+      "pendingSent": "Solicitud enviada",
+      "none": "Agregar amigo"
+    },
+    "visibility": {
+      "public": "Perfil público",
+      "friends": "Solo amigos",
+      "private": "Perfil privado"
+    }
+  },
+  "SignInPage": {
+    "title": "Iniciá sesión para continuar",
+    "subtitle": "Para acceder a {destination}, iniciá sesión con Google.",
+    "destinations": {
+      "usersProfiles": "usuarios y perfiles",
+      "groupsCommunities": "grupos y comunidades",
+      "allFeatures": "todas las funcionalidades de Boardify"
+    },
+    "cards": {
+      "players": {
+        "title": "Conectá con jugadores",
+        "description": "Encontrá perfiles, agregá amigos y compará colecciones."
+      },
+      "groups": {
+        "title": "Sumate a grupos",
+        "description": "Creá y gestioná grupos para tus noches de juego."
+      },
+      "collections": {
+        "title": "Armá tus colecciones",
+        "description": "Agregá juegos a favoritos, wishlist y propios."
+      }
+    },
+    "actions": {
+      "continueWithGoogle": "Continuar con Google"
+    },
+    "footer": {
+      "note": "Solo usamos autenticación con Google. No necesitás contraseña extra.",
+      "backHome": "Volver al inicio"
+    }
+  },
+  "UserProfilePage": {
+    "stats": {
+      "games": "Juegos",
+      "friends": "Amigos",
+      "groups": "Grupos",
+      "cards": {
+        "favoritesAria": "Ir a la lista de favoritos",
+        "wishlistAria": "Ir a la lista de wishlist",
+        "ownedAria": "Ir a la lista de juegos propios",
+        "friendsAria": "Ver lista de amigos",
+        "groupsAria": "Ver lista de grupos"
+      }
+    },
+    "friendsOnlyNotice": "Este perfil es visible solo para amigos. Enviá una solicitud de amistad para desbloquear juegos y estadísticas.",
+    "collections": {
+      "match": {
+        "badge": "{percent}% de compatibilidad",
+        "unavailable": "Empezá a sumar juegos a tu perfil para seguir la compatibilidad."
+      },
+      "favorite": {
+        "title": "Favoritos",
+        "empty": "Todavía no tiene juegos favoritos.",
+        "matchBothEmpty": "Todavía ninguno de los dos tiene juegos favoritos; se cuenta como 100% de compatibilidad.",
+        "matchShared": "{shared}/{union} en común en favoritos."
+      },
+      "wishlist": {
+        "title": "Wishlist",
+        "empty": "No hay juegos en la wishlist.",
+        "matchBothEmpty": "Todavía ninguno de los dos tiene juegos en wishlist; se cuenta como 100% de compatibilidad.",
+        "matchShared": "{shared}/{union} en común en wishlist."
+      },
+      "owned": {
+        "title": "Propios",
+        "empty": "Todavía no tiene juegos propios.",
+        "matchBothEmpty": "Todavía ninguno de los dos tiene juegos propios; se cuenta como 100% de compatibilidad.",
+        "matchShared": "{shared}/{union} en común en juegos propios."
+      },
+      "exploreGames": "Explorar juegos"
+    }
+  },
+  "UserProfileHeader": {
+    "fallbackUser": "Usuario",
+    "visibility": {
+      "public": "Perfil público",
+      "friends": "Solo amigos",
+      "private": "Perfil privado"
+    },
+    "friendRequest": {
+      "send": "Enviar solicitud",
+      "pending": "Enviando..."
+    },
+    "compatibility": {
+      "unavailable": "Empezá a sumar juegos a tu perfil para seguir la compatibilidad.",
+      "incompatible": {
+        "label": "Incompatibles",
+        "tooltip": "Por ahora..."
+      },
+      "compatible": {
+        "label": "Compatibles",
+        "tooltip": "Van a encontrar puntos en común."
+      },
+      "veryCompatible": {
+        "label": "Muy compatibles",
+        "tooltip": "¡Hay química!"
+      },
+      "bestMatch": {
+        "label": "Mejor match",
+        "tooltip": "¡Están hechos el uno para el otro!"
+      }
+    }
+  },
+  "UserProfileGameCard": {
+    "imageAlt": "Portada de {title}",
+    "inCommon": "En común",
+    "exactCategoryMatch": "Coincidencia exacta de categoría."
+  },
+  "UserProfileActionsMenu": {
+    "shareMessageOwner": "Sumate a Boardify conmigo:",
+    "shareMessageOther": "Mirá este usuario de Boardify:",
+    "shareProfile": "Compartir perfil",
+    "profileActions": "Acciones del perfil",
+    "editProfile": "Editar perfil",
+    "configureProfile": "Configurar perfil"
+  },
+  "UserProfileUnfriend": {
+    "friends": "Amigos",
+    "unfriend": "Eliminar amistad",
+    "dialog": {
+      "title": "¿Eliminar amistad con {targetName}?",
+      "description": "Van a dejar de verse como amigos. Podés enviar una nueva solicitud más adelante.",
+      "cancel": "Cancelar",
+      "pending": "Eliminando...",
+      "confirm": "Sí, eliminar"
+    }
+  },
+  "FriendRequestActions": {
+    "actions": {
+      "accept": "Aceptar",
+      "reject": "Rechazar",
+      "cancel": "Cancelar"
+    },
+    "pending": {
+      "accepting": "Aceptando...",
+      "rejecting": "Rechazando...",
+      "cancelling": "Cancelando..."
+    }
+  },
+  "UserProfileNotFound": {
+    "eyebrow": "USUARIO NO ENCONTRADO",
+    "title": "Perfil no disponible",
+    "description": "No encontramos un usuario con ese nombre.",
+    "actions": {
+      "browseUsers": "Ver usuarios",
+      "backHome": "Volver al inicio"
+    }
+  },
+  "UserProfileFriendsPage": {
+    "backToProfile": "Volver al perfil",
+    "title": "Amigos de {name}",
+    "results": "{count, plural, one {# amigo} other {# amigos}}",
+    "empty": "Todavía no tiene amigos."
+  },
+  "UserProfileGroupsPage": {
+    "fallbackUser": "Usuario",
+    "backToProfile": "Volver al perfil",
+    "titleOwn": "Mis grupos",
+    "titleOther": "Grupos de {name}",
+    "results": "{count, plural, one {# grupo} other {# grupos}}",
+    "visibility": {
+      "public": "Grupo público",
+      "invitation": "Solo por invitación",
+      "private": "Grupo privado"
+    },
+    "sentRequests": {
+      "title": "Solicitudes enviadas",
+      "description": "Invitaciones que enviaste y solicitudes de ingreso que mandaste.",
+      "invitesTitle": "Invitaciones a grupos enviadas",
+      "joinRequestsTitle": "Solicitudes de ingreso enviadas",
+      "forUser": "para {name}"
+    },
+    "receivedRequests": {
+      "title": "Solicitudes recibidas",
+      "description": "Invitaciones que recibiste y solicitudes enviadas a grupos donde sos admin.",
+      "groupInvitationsTitle": "Invitaciones a grupos recibidas",
+      "requestsToYourGroupsTitle": "Solicitudes a tus grupos",
+      "fromUser": "de {name}",
+      "wantsToJoin": "quiere unirse a"
+    },
+    "empty": {
+      "title": "Todavía no hay grupos.",
+      "descriptionOwn": "Explorá grupos para sumarte o creá el tuyo.",
+      "descriptionOther": "{name} todavía no se unió a ningún grupo."
+    },
+    "memberBadge": "Sos miembro",
+    "membersCount": "{count, plural, one {# miembro} other {# miembros}}",
+    "actions": {
+      "createFirstGroup": "¡Creá tu primer grupo!",
+      "createGroup": "Crear grupo",
+      "browseGroups": "Explorar grupos",
+      "cancel": "Cancelar",
+      "accept": "Aceptar",
+      "reject": "Rechazar",
+      "pendingCancelling": "Cancelando...",
+      "pendingAccepting": "Aceptando...",
+      "pendingRejecting": "Rechazando..."
+    }
+  },
+  "HomePage": {
+    "hero": {
+      "tagline": "Organizá tus noches de juego con Boardify."
+    },
+    "quickActions": {
+      "browseGames": {
+        "title": "Explorar juegos",
+        "description": "Explorá el catálogo, abrí fichas de juego y filtrá por jugadores o categoría.",
+        "cta": "Abrir catálogo"
+      },
+      "connectFriends": {
+        "title": "Conectar con amigos",
+        "description": "Encontrá jugadores, enviá solicitudes y agrandá tu círculo de juegos de mesa.",
+        "cta": "Buscar usuarios"
+      },
+      "joinGroups": {
+        "title": "Sumarte a grupos",
+        "description": "Encontrá o creá grupos para organizar noches de juego con amigos y gente nueva.",
+        "cta": "Ver grupos"
+      }
+    },
+    "features": {
+      "collection": {
+        "title": "Controla tu colección",
+        "description": "Mantené actualizada tu lista de juegos propios y sabé qué está listo para la próxima partida."
+      },
+      "favorites": {
+        "title": "Gestioná favoritos",
+        "description": "Destacá tus juegos preferidos y vuelve rápido a los que más te gustan."
+      },
+      "planning": {
+        "title": "Planificá noches de juego",
+        "description": "Usá bibliotecas de grupo y colecciones para decidir rápido qué pueden jugar entre todos."
+      },
+      "wishlist": {
+        "title": "Armá tu wishlist",
+        "description": "Guardá los juegos que querés probar y mantené tus próximos picks organizados."
+      },
+      "details": {
+        "title": "Fichas de juego detalladas",
+        "description": "Abrí fichas completas con categorías, ratings, dificultad y tu estado de un vistazo."
+      }
+    }
+  },
+  "AboutPage": {
+    "metadata": {
+      "title": "Acerca de | Boardify",
+      "description": "Conocé qué es Boardify y cómo te ayuda a organizar noches de juego."
+    },
+    "header": {
+      "title": "Acerca de Boardify",
+      "description": "Boardify te ayuda a decidir más rápido qué jugar, organizando tus juegos, amigos y grupos en un solo lugar."
+    },
+    "cards": {
+      "solve": {
+        "title": "Qué resuelve",
+        "description": "Dejá de adivinar qué puede jugar cada persona. Boardify muestra opciones compartidas rápidamente."
+      },
+      "flow": {
+        "title": "Cómo funciona",
+        "description": "Armá tu biblioteca, conéctate con amigos y únete a grupos para comparar colecciones."
+      },
+      "privacy": {
+        "title": "Privacidad primero",
+        "description": "La visibilidad del perfil y los flujos de invitación están diseñados para que vos controles quién ve qué."
+      }
+    },
+    "author": {
+      "title": "Sobre el autor",
+      "paragraph1": "Construí Boardify después de repetir el mismo ritual antes de cada partida: chats interminables, cantidad de jugadores poco clara y muchos momentos de último minuto de qué podemos jugar realmente.",
+      "paragraph2": "El objetivo no era solo listar juegos, sino reducir fricción antes de juntarse con amigos. Boardify reúne colecciones, disponibilidad y contexto de grupo para que elegir un juego sea rápido, justo y colaborativo en lugar de caótico."
+    }
+  },
+  "ContactPage": {
+    "metadata": {
+      "title": "Contacto | Boardify",
+      "description": "Contactate con el equipo de Boardify para soporte, bugs o ideas de funcionalidades."
+    },
+    "header": {
+      "title": "Contacto",
+      "description": "¿Necesitás ayuda, encontraste un bug o querés sugerir una funcionalidad? Escribinos e incluí todo el contexto posible."
+    },
+    "cards": {
+      "support": {
+        "title": "Soporte general",
+        "description": "Problemas de cuenta, onboarding o dudas sobre cómo funciona Boardify.",
+        "cta": "Mandar mail a soporte"
+      },
+      "bugs": {
+        "title": "Reporte de bugs",
+        "description": "Compartí pasos, resultado esperado y resultado actual para reproducirlo rápido.",
+        "cta": "Reportar bug"
+      },
+      "features": {
+        "title": "Pedido de funcionalidades",
+        "description": "Contanos qué problema querés resolver y cómo lo estás resolviendo hoy.",
+        "cta": "Sugerir funcionalidad"
+      }
     }
   }
 }

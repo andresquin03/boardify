@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Check, Share2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -34,11 +35,11 @@ async function copyText(text: string) {
 export function ShareIconButton({
   path,
   message,
-  tooltipLabel = "Share",
-  ariaLabel = "Share",
+  tooltipLabel,
+  ariaLabel,
   size = "sm",
   appearance = "icon",
-  label = "Share",
+  label,
   className,
 }: {
   path: string;
@@ -50,8 +51,12 @@ export function ShareIconButton({
   label?: string;
   className?: string;
 }) {
+  const t = useTranslations("ShareButton");
   const [copyState, setCopyState] = useState<CopyState>("idle");
   const [isAnimating, setIsAnimating] = useState(false);
+  const baseTooltipLabel = tooltipLabel ?? t("share");
+  const baseAriaLabel = ariaLabel ?? t("share");
+  const baseLabel = label ?? t("share");
 
   const absoluteUrl = useMemo(() => buildAbsoluteUrl(path), [path]);
   const shareText = useMemo(() => {
@@ -78,15 +83,15 @@ export function ShareIconButton({
   };
 
   const tooltipText = copyState === "copied"
-    ? "Copied!"
+    ? t("copied")
     : copyState === "error"
-      ? "Copy failed"
-      : tooltipLabel;
+      ? t("copyFailed")
+      : baseTooltipLabel;
   const isCopied = copyState === "copied";
   const isError = copyState === "error";
   const isMedium = size === "md";
   const isButton = appearance === "button";
-  const noticeText = isCopied ? "Copied to clipboard" : "Could not copy";
+  const noticeText = isCopied ? t("copiedToClipboard") : t("couldNotCopy");
 
   return (
     <div className="relative inline-flex">
@@ -128,7 +133,7 @@ export function ShareIconButton({
               isAnimating && "toggle-press scale-105 shadow-lg",
               className,
             )}
-            aria-label={ariaLabel}
+            aria-label={baseAriaLabel}
           >
             <span
               aria-hidden
@@ -156,7 +161,7 @@ export function ShareIconButton({
                 )}
               />
             )}
-            {isButton && <span className="relative z-10">{isCopied ? "Copied" : label}</span>}
+            {isButton && <span className="relative z-10">{isCopied ? t("copied") : baseLabel}</span>}
           </button>
         </TooltipTrigger>
         <TooltipContent side="top">{tooltipText}</TooltipContent>

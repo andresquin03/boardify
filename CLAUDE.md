@@ -7,6 +7,7 @@
 ## Stack principal
 - Framework: Next.js 16 (App Router) + React 19 + TypeScript estricto.
 - UI: Tailwind CSS v4 + shadcn/ui (estilo `new-york`) + Radix primitives + `lucide-react`.
+- Internacionalizacion: `next-intl` con catalogos `messages/en.json` y `messages/es.json`.
 - Autenticacion: Auth.js / NextAuth v5 (beta) con Google Provider y `@auth/prisma-adapter`.
 - Base de datos: PostgreSQL + Prisma ORM (con `@prisma/adapter-pg` y cliente generado en `src/generated/prisma`).
 - Runtime y tooling: Node.js, `pnpm`, ESLint 9 con `eslint-config-next`.
@@ -71,6 +72,8 @@ Abrir: `http://localhost:3000`
 - Uso de imports absolutos (`@/lib/...`, `@/components/...`).
 - Validaciones de entrada en server actions antes de tocar DB.
 - Revalidacion de rutas con `revalidatePath` tras mutaciones.
+- Evitar textos hardcodeados en componentes: usar keys de `next-intl` en `messages/*.json`.
+- Convencion de microcopy en espanol: variante rioplatense (Uruguay/Argentina), consistente en toda la app.
 
 ## Estructura de carpetas
 ```text
@@ -113,9 +116,13 @@ Abrir: `http://localhost:3000`
 ## Notas arquitectonicas
 - Auth: centralizada en `src/lib/auth.ts` con NextAuth + Google + Prisma Adapter.
 - Sesion: estrategia JWT, extendida con `user.id`, `username` y estado de onboarding.
+- Sesion de idioma: `Session.user.language` puede ser `null` hasta completar onboarding.
 - Layout global: `src/app/layout.tsx` compone `Navbar` + `<main />` + `Footer`; el footer expone links a `/about` y `/contact`.
 - Acceso: `src/app/(protected)/layout.tsx` obliga onboarding completo; paginas de dominio aplican checks server-side y usan `redirect()` / `notFound()` segun permisos.
 - Mutaciones: `src/lib/actions.ts` concentra server actions para auth, onboarding, perfil, amistades, grupos, invitaciones/solicitudes y estado de juegos.
+- i18n runtime: `src/i18n/request.ts` resuelve locale en este orden: `user.language` -> cookie `boardify_lang` -> header `Accept-Language` -> `en`.
+- i18n bootstrap visitante: `src/proxy.ts` crea `boardify_lang` para no autenticados segun navegador.
+- Onboarding/settings: al cambiar idioma se sincroniza `User.language` y cookie `boardify_lang`.
 - Mutaciones de grupos incluyen moderacion de miembros por admins (`promote to admin`, `kick member`), con checks de permiso server-side.
 - Notificaciones: `src/lib/notifications.ts` centraliza creacion/listado/contador no leidas, marcado como vistas por scope o por grupo, y borrado logico (`deletedAt`). El mapeo `eventKey -> scope` se define en DB mediante `NotificationEvent` y se usa para aplicar preferencias de usuario por scope. Incluye eventos de membresia/rol en grupos (join, promoted to admin, kicked). El badge de la campana consume `/api/notifications/unread-count`.
 - TODO (future review): el `payload` de notificaciones guarda snapshot de metadatos de grupo (`groupName/groupSlug`); tras renames puede verse stale y, si el grupo se elimina, algunos links historicos pueden terminar en `notFound`.

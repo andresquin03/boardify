@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   ArrowLeft,
@@ -16,29 +17,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-const visibilityConfig = {
-  PUBLIC: {
-    label: "Public profile",
-    icon: Globe,
-    className: "border-sky-400/30 bg-sky-500/10 text-sky-500 dark:text-sky-400",
-  },
-  FRIENDS: {
-    label: "Friends only",
-    icon: UsersRound,
-    className: "border-amber-400/30 bg-amber-500/10 text-amber-500 dark:text-amber-400",
-  },
-  PRIVATE: {
-    label: "Private profile",
-    icon: Lock,
-    className: "border-violet-400/30 bg-violet-500/10 text-violet-500 dark:text-violet-400",
-  },
-} as const;
-
 export default async function UserFriendsPage({
   params,
 }: {
   params: Promise<{ username: string }>;
 }) {
+  const t = await getTranslations("UserProfileFriendsPage");
+  const tUsers = await getTranslations("UsersPage");
   const session = await auth();
   if (!session?.user?.id) redirect("/");
   const viewerId = session.user.id;
@@ -130,7 +115,24 @@ export default async function UserFriendsPage({
     );
   }
 
-  const displayName = targetUser.name ?? targetUser.username ?? "User";
+  const displayName = targetUser.name ?? targetUser.username ?? tUsers("fallbackUser");
+  const visibilityConfig = {
+    PUBLIC: {
+      label: tUsers("visibility.public"),
+      icon: Globe,
+      className: "border-sky-400/30 bg-sky-500/10 text-sky-500 dark:text-sky-400",
+    },
+    FRIENDS: {
+      label: tUsers("visibility.friends"),
+      icon: UsersRound,
+      className: "border-amber-400/30 bg-amber-500/10 text-amber-500 dark:text-amber-400",
+    },
+    PRIVATE: {
+      label: tUsers("visibility.private"),
+      icon: Lock,
+      className: "border-violet-400/30 bg-violet-500/10 text-violet-500 dark:text-violet-400",
+    },
+  } as const;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -139,21 +141,21 @@ export default async function UserFriendsPage({
         className="pressable inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to profile
+        {t("backToProfile")}
       </Link>
 
       <div className="mt-4 flex items-center gap-2.5">
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/70 bg-card/70 text-amber-500 shadow-sm motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95">
           <Handshake className="h-4.5 w-4.5 motion-safe:animate-[pulse_2.8s_ease-in-out_infinite]" />
         </span>
-        <h1 className="text-2xl font-bold">{displayName}&apos;s friends</h1>
+        <h1 className="text-2xl font-bold">{t("title", { name: displayName })}</h1>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
-        {friendUsers.length} {friendUsers.length === 1 ? "friend" : "friends"}
+        {t("results", { count: friendUsers.length })}
       </p>
 
       {friendUsers.length === 0 ? (
-        <p className="mt-6 text-sm text-muted-foreground">No friends yet.</p>
+        <p className="mt-6 text-sm text-muted-foreground">{t("empty")}</p>
       ) : (
         <div className="mt-4 space-y-2">
           {friendUsers.map((friend) => {
@@ -167,7 +169,7 @@ export default async function UserFriendsPage({
                   : "PUBLIC";
             const visibility = visibilityConfig[visibilityKey];
             const VisibilityIcon = visibility.icon;
-            const friendDisplayName = friend.name ?? friend.username ?? "User";
+            const friendDisplayName = friend.name ?? friend.username ?? tUsers("fallbackUser");
             const initials = friendDisplayName
               .split(" ")
               .map((part) => part[0])
@@ -178,27 +180,27 @@ export default async function UserFriendsPage({
               relationState === "FRIEND"
                 ? {
                     icon: UserCheck,
-                    tooltip: "Friends",
+                    tooltip: tUsers("relations.friends"),
                     className:
                       "border-emerald-400/30 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400",
                   }
                 : relationState === "PENDING_RECEIVED"
                   ? {
                       icon: CircleHelp,
-                      tooltip: "Sent you a request",
+                      tooltip: tUsers("relations.pendingReceived"),
                       className:
                         "border-amber-400/30 bg-amber-500/10 text-amber-500 dark:text-amber-400",
                     }
                   : relationState === "PENDING_SENT"
                     ? {
                         icon: Clock3,
-                        tooltip: "Request sent",
+                        tooltip: tUsers("relations.pendingSent"),
                         className:
                           "border-sky-400/30 bg-sky-500/10 text-sky-500 dark:text-sky-400",
                       }
                     : {
                         icon: UserPlus,
-                        tooltip: "Add friend",
+                        tooltip: tUsers("relations.none"),
                         className:
                           "border-muted-foreground/25 bg-muted/70 text-muted-foreground",
                       };
@@ -222,7 +224,7 @@ export default async function UserFriendsPage({
                       {friendDisplayName}
                       {isCurrentUser && (
                         <span className="ml-2 rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-                          You
+                          {tUsers("badges.you")}
                         </span>
                       )}
                     </p>
@@ -231,7 +233,7 @@ export default async function UserFriendsPage({
                 </div>
                 <div className="flex items-center gap-2">
                   {isCurrentUser && (
-                    <span className="shrink-0 text-xs font-medium text-primary">My profile</span>
+                    <span className="shrink-0 text-xs font-medium text-primary">{tUsers("badges.myProfile")}</span>
                   )}
                   {!isCurrentUser && (
                     <Tooltip>

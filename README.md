@@ -16,6 +16,7 @@ Boardify baja esa friccion con flujos simples de perfil, amigos, grupos y notifi
 - Biblioteca personal de juegos (favoritos, wishlist y owned).
 - Descubrimiento de usuarios con perfiles publicos y comparacion de compatibilidad.
 - Edicion de perfil publico en `/profile/edit` y configuracion unificada en `/settings` (idioma, visibilidad y preferencias de notificaciones).
+- Internacionalizacion con `next-intl` (idiomas `en` y `es`) y persistencia de preferencia de idioma por usuario.
 - Sistema de amistad con solicitud, aceptacion, cancelacion y unfriend.
 - Grupos con visibilidad `PUBLIC`, `INVITATION` y `PRIVATE`.
 - Invitaciones a grupos entre amigos y solicitudes de ingreso para grupos por invitacion.
@@ -30,6 +31,7 @@ Proyecto en desarrollo activo. El MVP social esta funcional y ya incluye autenti
 
 - Next.js 16 (App Router) + React 19 + TypeScript (`strict`).
 - Tailwind CSS v4 + shadcn/ui + Radix + `lucide-react`.
+- Internacionalizacion: `next-intl` + catalogos `messages/*.json`.
 - Auth.js / NextAuth v5 (Google OAuth) + Prisma Adapter.
 - PostgreSQL + Prisma ORM.
 - `pnpm` + ESLint 9 (`eslint-config-next`).
@@ -86,6 +88,11 @@ pnpm dev
 - `src/app/(protected)`: dominio principal autenticado (games, users, friends, groups, profile, settings, notifications).
 - `src/lib/actions.ts`: server actions con mutaciones de dominio.
 - `src/lib/notifications.ts`: logica de notificaciones (crear, listar, marcar vistas, borrar) basada en catalogo de eventos y scopes.
+- `src/i18n/request.ts`: resolucion de locale por request con prioridad `user.language` -> cookie `boardify_lang` -> `Accept-Language` -> `en`.
+- `src/lib/locale.ts`: normalizacion de locales (`en`, `es`) y mapeo entre locale UI y `User.language` (`EN`/`ES`).
+- `src/proxy.ts`: inicializa cookie de idioma para visitantes no autenticados segun `Accept-Language`.
+- `messages/en.json` y `messages/es.json`: fuente de verdad para textos UI por namespace.
+- Convencion de copy: en `es` se usa registro rioplatense (Uruguay/Argentina).
 - `TODO (future review)`: `Notification.payload` guarda snapshot de `groupName/groupSlug`; puede quedar desactualizado tras rename y el link puede fallar si el grupo se elimina.
 - `prisma/schema.prisma`: modelos de auth, juegos, amistad, grupos, settings de usuario y notificaciones.
 

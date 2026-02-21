@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { LogOut } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
@@ -16,6 +17,7 @@ import { FormPendingButton } from "@/components/ui/form-pending-button";
 import { handleSignOut } from "@/lib/actions";
 
 export function SignOutMenuItem() {
+  const t = useTranslations("UserMenu");
   const [open, setOpen] = useState(false);
 
   return (
@@ -29,27 +31,27 @@ export function SignOutMenuItem() {
         }}
       >
         <LogOut className="h-4 w-4" />
-        Sign out
+        {t("signOut")}
       </DropdownMenuItem>
 
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Sign out?</AlertDialogTitle>
+            <AlertDialogTitle>{t("signOutDialog.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              You can sign back in at any time with your Google account.
+              {t("signOutDialog.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("signOutDialog.cancel")}</AlertDialogCancel>
             <form action={handleSignOut}>
               <FormPendingButton
                 type="submit"
                 variant="destructive"
-                pendingText="Signing out..."
+                pendingText={t("signOutDialog.pending")}
                 className="w-full sm:w-auto"
               >
-                Yes, sign out
+                {t("signOutDialog.confirm")}
               </FormPendingButton>
             </form>
           </AlertDialogFooter>

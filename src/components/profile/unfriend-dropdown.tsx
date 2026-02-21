@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -30,6 +31,7 @@ export function UnfriendDropdown({
   profileUsername: string;
   profileDisplayName?: string;
 }) {
+  const t = useTranslations("UserProfileUnfriend");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const targetName = profileDisplayName ?? `@${profileUsername}`;
 
@@ -43,7 +45,7 @@ export function UnfriendDropdown({
             className="mt-0.5 cursor-pointer gap-1.5 border-emerald-500/40 bg-emerald-500/10 text-emerald-500 transition-all hover:-translate-y-0.5 hover:bg-emerald-500/20 hover:text-emerald-500 hover:shadow-sm"
           >
             <UserCheck className="h-3.5 w-3.5" />
-            Friends
+            {t("friends")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-44">
@@ -56,7 +58,7 @@ export function UnfriendDropdown({
             }}
           >
             <UserMinus className="h-3.5 w-3.5" />
-            Unfriend
+            {t("unfriend")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -64,21 +66,21 @@ export function UnfriendDropdown({
       <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Unfriend {targetName}?</AlertDialogTitle>
+            <AlertDialogTitle>{t("dialog.title", { targetName })}</AlertDialogTitle>
             <AlertDialogDescription>
-              You will stop seeing each other as friends. You can send a new request later.
+              {t("dialog.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("dialog.cancel")}</AlertDialogCancel>
             <form action={unfriend.bind(null, friendshipId, profileUsername)}>
               <FormPendingButton
                 type="submit"
                 variant="destructive"
-                pendingText="Unfriending..."
+                pendingText={t("dialog.pending")}
                 className="w-full sm:w-auto"
               >
-                Yes, unfriend
+                {t("dialog.confirm")}
               </FormPendingButton>
             </form>
           </AlertDialogFooter>

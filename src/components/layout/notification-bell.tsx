@@ -8,9 +8,11 @@ import { Bell } from "lucide-react";
 export function NotificationBell({
   href,
   initialUnreadCount,
+  ariaLabel,
 }: {
   href: string;
   initialUnreadCount: number;
+  ariaLabel: string;
 }) {
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
@@ -68,6 +70,8 @@ export function NotificationBell({
   return (
     <Link
       href={href}
+      aria-label={ariaLabel}
+      title={ariaLabel}
       className="group pressable relative inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent hover:text-foreground active:translate-y-0 active:scale-95 active:bg-amber-500/20 active:text-amber-400"
     >
       <Bell

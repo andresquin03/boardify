@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FormPendingButton } from "@/components/ui/form-pending-button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -38,30 +39,14 @@ interface ProfileHeaderProps {
   generalMatchUnavailable?: boolean;
 }
 
-const visibilityConfig = {
-  PUBLIC: {
-    label: "Public profile",
-    icon: Globe,
-    className: "border-sky-400/30 bg-sky-500/10 text-sky-400",
-  },
-  FRIENDS: {
-    label: "Friends only",
-    icon: UsersRound,
-    className: "border-amber-400/30 bg-amber-500/10 text-amber-400",
-  },
-  PRIVATE: {
-    label: "Private profile",
-    icon: Lock,
-    className: "border-violet-400/30 bg-violet-500/10 text-violet-400",
-  },
-} as const;
+type TranslateFn = (key: string, values?: Record<string, string | number>) => string;
 
-function getMatchMeta(percent: number) {
+function getMatchMeta(percent: number, t: TranslateFn) {
   if (percent <= 25) {
     return {
       icon: CircleHelp,
-      label: "Incompatible",
-      tooltip: "For now...",
+      label: t("compatibility.incompatible.label"),
+      tooltip: t("compatibility.incompatible.tooltip"),
       className: "border-zinc-400/35 bg-zinc-500/10 text-zinc-500 dark:text-zinc-300",
       iconWrapClassName: "bg-zinc-500/15",
       tooltipClassName: "text-zinc-200 dark:text-zinc-700",
@@ -71,8 +56,8 @@ function getMatchMeta(percent: number) {
   if (percent <= 50) {
     return {
       icon: UserRound,
-      label: "Compatible",
-      tooltip: "You will find common ground.",
+      label: t("compatibility.compatible.label"),
+      tooltip: t("compatibility.compatible.tooltip"),
       className: "border-sky-400/35 bg-sky-500/10 text-sky-500 dark:text-sky-300",
       iconWrapClassName: "bg-sky-500/15",
       tooltipClassName: "text-sky-200 dark:text-sky-700",
@@ -82,8 +67,8 @@ function getMatchMeta(percent: number) {
   if (percent <= 75) {
     return {
       icon: PartyPopper,
-      label: "Very compatible",
-      tooltip: "Amazing chemistry!",
+      label: t("compatibility.veryCompatible.label"),
+      tooltip: t("compatibility.veryCompatible.tooltip"),
       className: "border-violet-400/35 bg-violet-500/10 text-violet-500 dark:text-violet-300",
       iconWrapClassName: "bg-violet-500/15",
       tooltipClassName: "text-violet-200 dark:text-violet-700",
@@ -92,15 +77,15 @@ function getMatchMeta(percent: number) {
 
   return {
     icon: Heart,
-    label: "Best match",
-    tooltip: "You're made for each other!",
+    label: t("compatibility.bestMatch.label"),
+    tooltip: t("compatibility.bestMatch.tooltip"),
     className: "border-rose-400/35 bg-rose-500/10 text-rose-500 dark:text-rose-300",
     iconWrapClassName: "bg-rose-500/15",
     tooltipClassName: "text-rose-200 dark:text-rose-700",
   };
 }
 
-export function ProfileHeader({
+export async function ProfileHeader({
   user,
   profilePathUsername,
   isOwner,
@@ -110,7 +95,25 @@ export function ProfileHeader({
   generalMatchPercent,
   generalMatchUnavailable = false,
 }: ProfileHeaderProps) {
-  const displayName = user.name ?? user.username ?? "User";
+  const t = await getTranslations("UserProfileHeader");
+  const visibilityConfig = {
+    PUBLIC: {
+      label: t("visibility.public"),
+      icon: Globe,
+      className: "border-sky-400/30 bg-sky-500/10 text-sky-400",
+    },
+    FRIENDS: {
+      label: t("visibility.friends"),
+      icon: UsersRound,
+      className: "border-amber-400/30 bg-amber-500/10 text-amber-400",
+    },
+    PRIVATE: {
+      label: t("visibility.private"),
+      icon: Lock,
+      className: "border-violet-400/30 bg-violet-500/10 text-violet-400",
+    },
+  } as const;
+  const displayName = user.name ?? user.username ?? t("fallbackUser");
   const initials = displayName
     .split(" ")
     .map((n) => n[0])
@@ -119,7 +122,7 @@ export function ProfileHeader({
   const visibilityKey = user.visibility ?? "PUBLIC";
   const visibility = visibilityConfig[visibilityKey];
   const VisibilityIcon = visibility.icon;
-  const matchMeta = typeof generalMatchPercent === "number" ? getMatchMeta(generalMatchPercent) : null;
+  const matchMeta = typeof generalMatchPercent === "number" ? getMatchMeta(generalMatchPercent, t) : null;
   const availableMatchData =
     typeof generalMatchPercent === "number" && matchMeta
       ? { percent: generalMatchPercent, meta: matchMeta }
@@ -153,7 +156,7 @@ export function ProfileHeader({
         }
       >
         {generalMatchUnavailable || !availableMatchData
-          ? "Start adding games to your profile to track compatibility."
+          ? t("compatibility.unavailable")
           : `${availableMatchData.meta.label}: ${availableMatchData.meta.tooltip}`}
       </TooltipContent>
     </Tooltip>
@@ -223,11 +226,11 @@ export function ProfileHeader({
                   type="submit"
                   variant="outline"
                   size="sm"
-                  pendingText="Sending..."
+                  pendingText={t("friendRequest.pending")}
                   className="cursor-pointer gap-1.5 transition-all hover:-translate-y-0.5 hover:shadow-sm"
                 >
                   <UserPlus className="h-3.5 w-3.5" />
-                  Send request
+                  {t("friendRequest.send")}
                 </FormPendingButton>
               </form>
               {showGeneralMatchBadge ? generalMatchBadge : null}

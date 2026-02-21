@@ -144,6 +144,8 @@ En el menu de perfil del owner, priorizar acciones separadas: `Edit profile` (pe
   - `Request sent`, `Accept`, `Reject`, `Cancel`, `Join group`, `Invitation pending`, `Promote to admin`, `Kick from group`, `Kicked from group`.
 - Evitar frases largas en botones.
 - En estados vacíos: incluir CTA útil (ej. find users, browse groups, browse games).
+- No hardcodear textos en componentes: definirlos en `messages/en.json` y `messages/es.json` y consumirlos vía `next-intl`.
+- Para `es`, usar español rioplatense (Uruguay/Argentina) con voseo y tono consistente (ej. `vos`, `contanos`, `sumate`, `organizá`).
 
 ## 9. Checklist de PR UI
 

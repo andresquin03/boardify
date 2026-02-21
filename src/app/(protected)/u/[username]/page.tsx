@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { ProfileHeader } from "@/components/profile/profile-header";
 import { ProfileGameCard } from "@/components/profile/profile-game-card";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
@@ -19,6 +20,8 @@ type MatchStats = {
   union: number;
   percent: number;
 };
+
+type TranslateFn = (key: string, values?: Record<string, string | number>) => string;
 
 type CollectionKind = "favorite" | "wishlist" | "owned";
 type CollectionFlag = "isFavorite" | "isWishlist" | "isOwned";
@@ -132,6 +135,7 @@ export default async function ProfilePage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
+  const t = await getTranslations("UserProfilePage");
   const session = await auth();
   const viewerId = session?.user?.id ?? null;
 
@@ -260,7 +264,7 @@ export default async function ProfilePage({
             <div className="flex h-full min-h-full flex-col rounded-2xl border bg-card/70 p-3 shadow-sm backdrop-blur-sm">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                 <div className="rounded-xl border bg-card/70 p-3 shadow-sm">
-                  <p className="text-center text-xs font-medium text-muted-foreground sm:text-left">Games</p>
+                  <p className="text-center text-xs font-medium text-muted-foreground sm:text-left">{t("stats.games")}</p>
                   <div className="mt-2 grid grid-cols-3 gap-2 justify-items-center sm:justify-items-start">
                     <StatCard
                       icon={Heart}
@@ -268,7 +272,7 @@ export default async function ProfilePage({
                       tone="text-rose-500"
                       href="#favorites-section"
                       accent="rose"
-                      ariaLabel="Go to favorites list"
+                      ariaLabel={t("stats.cards.favoritesAria")}
                     />
                     <StatCard
                       icon={Bookmark}
@@ -276,7 +280,7 @@ export default async function ProfilePage({
                       tone="text-sky-500"
                       href="#wishlist-section"
                       accent="sky"
-                      ariaLabel="Go to wishlist list"
+                      ariaLabel={t("stats.cards.wishlistAria")}
                     />
                     <StatCard
                       icon={Check}
@@ -286,26 +290,27 @@ export default async function ProfilePage({
                       filledIcon={false}
                       href="#owned-section"
                       accent="emerald"
-                      ariaLabel="Go to owned games list"
+                      ariaLabel={t("stats.cards.ownedAria")}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 sm:contents">
                   <div className="rounded-xl border bg-card/70 p-3 shadow-sm">
-                    <p className="text-center text-xs font-medium text-muted-foreground sm:text-left">Friends</p>
+                    <p className="text-center text-xs font-medium text-muted-foreground sm:text-left">{t("stats.friends")}</p>
                     <div className="mt-2 grid grid-cols-1 gap-2 justify-items-center sm:justify-items-start">
                       <StatCard
                         icon={UsersRound}
                         value={friendCount}
                         tone="text-violet-500"
                         href={friendsListHref}
+                        ariaLabel={t("stats.cards.friendsAria")}
                       />
                     </div>
                   </div>
 
                   <div className="rounded-xl border bg-card/70 p-3 shadow-sm">
-                    <p className="text-center text-xs font-medium text-muted-foreground sm:text-left">Groups</p>
+                    <p className="text-center text-xs font-medium text-muted-foreground sm:text-left">{t("stats.groups")}</p>
                     <div className="mt-2 grid grid-cols-1 gap-2 justify-items-center sm:justify-items-start">
                       <StatCard
                         icon={Network}
@@ -313,6 +318,7 @@ export default async function ProfilePage({
                         tone="text-sky-500"
                         href={groupsListHref}
                         accent="sky"
+                        ariaLabel={t("stats.cards.groupsAria")}
                       />
                     </div>
                   </div>
@@ -326,7 +332,7 @@ export default async function ProfilePage({
       {!canViewCollections && visibility === "FRIENDS" && !isOwner && (
         <section className="mt-8 rounded-xl border bg-card/70 p-5 shadow-sm">
           <p className="text-sm text-muted-foreground">
-            This profile is visible to friends only. Send a friend request to unlock games and stats.
+            {t("friendsOnlyNotice")}
           </p>
         </section>
       )}
@@ -335,10 +341,12 @@ export default async function ProfilePage({
         <>
           <CollectionSection
             sectionId="favorites-section"
-            title="Favorites"
+            kind="favorite"
+            t={t}
+            title={t("collections.favorite.title")}
             icon={Heart}
             count={favoriteGames.length}
-            emptyText="No favorite games yet."
+            emptyText={t("collections.favorite.empty")}
             games={favoriteGames}
             isOwner={isOwner}
             iconTone="text-rose-500"
@@ -350,10 +358,12 @@ export default async function ProfilePage({
 
           <CollectionSection
             sectionId="wishlist-section"
-            title="Wishlist"
+            kind="wishlist"
+            t={t}
+            title={t("collections.wishlist.title")}
             icon={Bookmark}
             count={wishlistGames.length}
-            emptyText="No games in wishlist."
+            emptyText={t("collections.wishlist.empty")}
             games={wishlistGames}
             isOwner={isOwner}
             iconTone="text-sky-500"
@@ -365,10 +375,12 @@ export default async function ProfilePage({
 
           <CollectionSection
             sectionId="owned-section"
-            title="Owned"
+            kind="owned"
+            t={t}
+            title={t("collections.owned.title")}
             icon={CircleCheckBig}
             count={ownedGames.length}
-            emptyText="No owned games yet."
+            emptyText={t("collections.owned.empty")}
             games={ownedGames}
             isOwner={isOwner}
             iconTone="text-emerald-500"
@@ -470,9 +482,7 @@ function StatCard({
   return (
     <Link
       href={href}
-      aria-label={
-        ariaLabel ?? (accent === "sky" ? "View groups" : "View friends list")
-      }
+      aria-label={ariaLabel}
       className={colors.link}
     >
       {content}
@@ -482,6 +492,8 @@ function StatCard({
 
 function CollectionSection({
   sectionId,
+  kind,
+  t,
   title,
   icon: Icon,
   iconTone,
@@ -495,6 +507,8 @@ function CollectionSection({
   forceMatchUnavailable = false,
 }: {
   sectionId?: string;
+  kind: "favorite" | "wishlist" | "owned";
+  t: TranslateFn;
   title: string;
   icon: React.ComponentType<{ className?: string }>;
   iconTone: string;
@@ -546,15 +560,18 @@ function CollectionSection({
                     matchBadgeClassName,
                   )}
                 >
-                  {matchUnavailable ? "-%" : `${effectiveMatchPercent}% match`}
+                  {matchUnavailable ? "-%" : t("collections.match.badge", { percent: effectiveMatchPercent })}
                 </span>
               </TooltipTrigger>
               <TooltipContent side="top" className={matchTooltipClassName}>
                 {matchUnavailable
-                  ? "Start adding games to your profile to track compatibility."
+                  ? t("collections.match.unavailable")
                   : emptyCategoryBothSides
-                    ? `Both of you have no ${title.toLowerCase()} games yet, counted as 100% match.`
-                    : `${matchStats.shared}/${matchStats.union} shared in ${title.toLowerCase()}.`}
+                    ? t(`collections.${kind}.matchBothEmpty`)
+                    : t(`collections.${kind}.matchShared`, {
+                        shared: matchStats.shared,
+                        union: matchStats.union,
+                      })}
               </TooltipContent>
             </Tooltip>
           )}
@@ -567,7 +584,7 @@ function CollectionSection({
           <p className="text-sm text-muted-foreground">{emptyText}</p>
           {isOwner && (
             <Button asChild size="sm" variant="outline" className="cursor-pointer">
-              <Link href="/games">Explore games</Link>
+              <Link href="/games">{t("collections.exploreGames")}</Link>
             </Button>
           )}
         </div>

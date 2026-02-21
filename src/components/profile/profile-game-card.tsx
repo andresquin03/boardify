@@ -1,4 +1,5 @@
 import { Clock, Users } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { formatPlayerCount, formatPlaytime } from "@/lib/game-utils";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -45,7 +46,8 @@ const sharedStyles: Record<
   },
 };
 
-export function ProfileGameCard({ game, sharedType }: ProfileGameCardProps) {
+export async function ProfileGameCard({ game, sharedType }: ProfileGameCardProps) {
+  const t = await getTranslations("UserProfileGameCard");
   const sharedStyle = sharedType ? sharedStyles[sharedType] : null;
 
   return (
@@ -64,7 +66,7 @@ export function ProfileGameCard({ game, sharedType }: ProfileGameCardProps) {
       >
         <GameImageWithFallback
           src={game.image}
-          alt={`Cover of ${game.title}`}
+          alt={t("imageAlt", { title: game.title })}
           width={40}
           height={40}
           className="h-full w-full rounded-md object-contain p-0.5"
@@ -84,11 +86,11 @@ export function ProfileGameCard({ game, sharedType }: ProfileGameCardProps) {
                     sharedStyle.badge,
                   )}
                 >
-                  In common
+                  {t("inCommon")}
                 </span>
               </TooltipTrigger>
               <TooltipContent side="top" className={sharedStyle.tooltip}>
-                Exact category match.
+                {t("exactCategoryMatch")}
               </TooltipContent>
             </Tooltip>
           )}
