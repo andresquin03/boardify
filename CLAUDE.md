@@ -116,7 +116,8 @@ Abrir: `http://localhost:3000`
 - Layout global: `src/app/layout.tsx` compone `Navbar` + `<main />` + `Footer`; el footer expone links a `/about` y `/contact`.
 - Acceso: `src/app/(protected)/layout.tsx` obliga onboarding completo; paginas de dominio aplican checks server-side y usan `redirect()` / `notFound()` segun permisos.
 - Mutaciones: `src/lib/actions.ts` concentra server actions para auth, onboarding, perfil, amistades, grupos, invitaciones/solicitudes y estado de juegos.
-- Notificaciones: `src/lib/notifications.ts` centraliza creacion/listado/contador no leidas, marcado como vistas por scope o por grupo, y borrado logico (`deletedAt`). El badge de la campana consume `/api/notifications/unread-count`.
+- Mutaciones de grupos incluyen moderacion de miembros por admins (`promote to admin`, `kick member`), con checks de permiso server-side.
+- Notificaciones: `src/lib/notifications.ts` centraliza creacion/listado/contador no leidas, marcado como vistas por scope o por grupo, y borrado logico (`deletedAt`). Incluye eventos de membresia/rol en grupos (join, promoted to admin, kicked). El badge de la campana consume `/api/notifications/unread-count`.
 - Integridad: validacion defensiva de inputs (regex/enums), checks de autorizacion y `revalidatePath` despues de cambios.
 - Dominio de datos (Prisma):
   - Auth: `User`, `Account`, `Session`, `VerificationToken`.

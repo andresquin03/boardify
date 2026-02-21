@@ -23,6 +23,8 @@ import {
   notifyGroupJoinRequestAccepted,
   notifyGroupJoinRequestReceived,
   notifyGroupMemberJoined,
+  notifyGroupMemberPromotedToAdmin,
+  notifyGroupMemberRemoved,
   softDeleteFriendRequestReceivedNotification,
   softDeleteGroupInviteReceivedNotification,
   softDeleteGroupJoinRequestReceivedNotifications,
@@ -1028,6 +1030,102 @@ export async function leaveGroup(groupId: string) {
   }
 
   redirect("/groups");
+}
+
+export async function promoteGroupMemberToAdmin(groupId: string, targetUserId: string) {
+  assertCuid(groupId, "groupId");
+  assertCuid(targetUserId, "targetUserId");
+  const userId = await getAuthUserId();
+  const group = await getGroupActionContext(groupId);
+
+  const viewerMembership = group.members.find((member) => member.userId === userId);
+  if (viewerMembership?.role !== "ADMIN") {
+    throw new Error("Not authorized");
+  }
+
+  if (targetUserId === userId) {
+    throw new Error("Cannot modify self");
+  }
+
+  const targetMembership = group.members.find((member) => member.userId === targetUserId);
+  if (!targetMembership || targetMembership.role !== "MEMBER") {
+    revalidateGroupRelatedPaths(group.slug, group.members.map((member) => member.user.username));
+    return;
+  }
+
+  const promoted = await prisma.groupMember.updateMany({
+    where: {
+      userId: targetUserId,
+      groupId: group.id,
+      role: "MEMBER",
+    },
+    data: {
+      role: "ADMIN",
+    },
+  });
+
+  if (promoted.count === 0) {
+    revalidateGroupRelatedPaths(group.slug, group.members.map((member) => member.user.username));
+    return;
+  }
+
+  await notifyGroupMemberPromotedToAdmin({
+    memberId: targetUserId,
+    adminId: userId,
+    groupId: group.id,
+    groupSlug: group.slug,
+    groupName: group.name,
+  });
+
+  revalidateGroupRelatedPaths(group.slug, group.members.map((member) => member.user.username));
+}
+
+export async function removeGroupMember(groupId: string, targetUserId: string) {
+  assertCuid(groupId, "groupId");
+  assertCuid(targetUserId, "targetUserId");
+  const userId = await getAuthUserId();
+  const group = await getGroupActionContext(groupId);
+
+  const viewerMembership = group.members.find((member) => member.userId === userId);
+  if (viewerMembership?.role !== "ADMIN") {
+    throw new Error("Not authorized");
+  }
+
+  if (targetUserId === userId) {
+    throw new Error("Cannot remove self");
+  }
+
+  const targetMembership = group.members.find((member) => member.userId === targetUserId);
+  if (!targetMembership) {
+    revalidateGroupRelatedPaths(group.slug, group.members.map((member) => member.user.username));
+    return;
+  }
+  if (targetMembership.role === "ADMIN") {
+    throw new Error("Cannot remove admins");
+  }
+
+  const removed = await prisma.groupMember.deleteMany({
+    where: {
+      userId: targetUserId,
+      groupId: group.id,
+      role: "MEMBER",
+    },
+  });
+
+  if (removed.count === 0) {
+    revalidateGroupRelatedPaths(group.slug, group.members.map((member) => member.user.username));
+    return;
+  }
+
+  await notifyGroupMemberRemoved({
+    memberId: targetUserId,
+    adminId: userId,
+    groupId: group.id,
+    groupSlug: group.slug,
+    groupName: group.name,
+  });
+
+  revalidateGroupRelatedPaths(group.slug, group.members.map((member) => member.user.username));
 }
 
 export async function joinPublicGroup(groupId: string) {

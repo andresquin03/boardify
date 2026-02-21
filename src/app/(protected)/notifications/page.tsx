@@ -266,6 +266,28 @@ function getNotificationDetails(notification: NotificationItem) {
     };
   }
 
+  if (notification.eventKey === NOTIFICATION_EVENT_KEY.GROUP_MEMBER_PROMOTED_TO_ADMIN) {
+    return {
+      title: "Promoted to admin",
+      message: `${actorName} promoted you to admin in ${groupName}.`,
+      href: groupSlug ? `/groups/${groupSlug}` : "/groups",
+      actorDisplayName: actorName,
+      actorInitials,
+      scope: NOTIFICATION_SCOPE.GROUP,
+    };
+  }
+
+  if (notification.eventKey === NOTIFICATION_EVENT_KEY.GROUP_MEMBER_REMOVED) {
+    return {
+      title: "Kicked from group",
+      message: `${actorName} kicked you out of ${groupName}.`,
+      href: groupSlug ? `/groups/${groupSlug}` : "/groups",
+      actorDisplayName: actorName,
+      actorInitials,
+      scope: NOTIFICATION_SCOPE.GROUP,
+    };
+  }
+
   return {
     title: "Notification",
     message: `${actorName} triggered ${notification.eventKey}.`,

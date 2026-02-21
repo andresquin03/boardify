@@ -87,6 +87,7 @@ Si hay dudas de diseño, este archivo es la referencia principal.
 ## 5. Botones y acciones
 
 - Primarias positivas: borde/fondo verde suave.
+- Acciones positivas sensibles (ej. `Promote to admin`) pueden usar `AlertDialog` con boton verde (no rojo).
 - Destructivas (`Reject`, `Delete`, `Clear all`):
   - usar rojo en reposo y hover,
   - no permitir que `hover` convierta texto a blanco por herencia de `outline`.
@@ -103,7 +104,9 @@ Usar para acciones destructivas o sensibles:
 - clear all notifications,
 - unfriend,
 - leave group,
-- delete group.
+- delete group,
+- promote member to admin,
+- kick member from group.
 
 Patrón:
 - título claro en pregunta,
@@ -114,6 +117,7 @@ Patrón:
 ### 6.2 DropdownMenu
 
 Usar para acciones secundarias/contextuales (menú de perfil o grupo), no para confirmar riesgo.
+En listas de miembros, el menu de `...` es el lugar para acciones de moderacion (`Promote to admin`, `Kick from group`).
 
 ### 6.3 Popup de contenido (Add members)
 
@@ -136,7 +140,7 @@ Usar para acciones secundarias/contextuales (menú de perfil o grupo), no para c
 
 - Copy corto, directo y accionable.
 - Mantener consistencia verbal:
-  - `Request sent`, `Accept`, `Reject`, `Cancel`, `Join group`, `Invitation pending`.
+  - `Request sent`, `Accept`, `Reject`, `Cancel`, `Join group`, `Invitation pending`, `Promote to admin`, `Kick from group`, `Kicked from group`.
 - Evitar frases largas en botones.
 - En estados vacíos: incluir CTA útil (ej. find users, browse groups, browse games).
 
@@ -160,5 +164,6 @@ Antes de mergear cambios visuales:
 - `src/app/(protected)/u/[username]/groups/page.tsx` (sent/received requests).
 - `src/app/(protected)/notifications/page.tsx` y `src/app/(protected)/notifications/clear-all-notifications-button.tsx`.
 - `src/components/groups/group-actions-menu.tsx`.
+- `src/components/groups/member-actions-menu.tsx`.
 - `src/components/groups/add-members-popup.tsx`.
 - `src/components/layout/footer.tsx`.

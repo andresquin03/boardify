@@ -21,6 +21,7 @@ import { prisma } from "@/lib/prisma";
 import type { GroupColor, GroupVisibility } from "@/generated/prisma/client";
 import { GroupActionsMenu } from "@/components/groups/group-actions-menu";
 import { GroupOwnedGameCard } from "@/components/groups/group-owned-game-card";
+import { MemberActionsMenu } from "@/components/groups/member-actions-menu";
 import { ShareIconButton } from "@/components/ui/share-icon-button";
 import { AddMembersPopup } from "@/components/groups/add-members-popup";
 import {
@@ -608,6 +609,8 @@ export default async function GroupDetailPage({
           <div className="mt-4 space-y-3">
             {group.members.map((member) => {
               const displayName = getUserDisplayName(member.user);
+              const canManageMember =
+                isAdmin && member.role === "MEMBER" && member.userId !== viewerId;
 
               return (
                 <div
@@ -632,15 +635,24 @@ export default async function GroupDetailPage({
                     </div>
                   </Link>
 
-                  <span
-                    className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-medium ${
-                      member.role === "ADMIN"
-                        ? "border-amber-400/40 bg-amber-500/10 text-amber-500 dark:text-amber-400"
-                        : "border-border/70 bg-background text-muted-foreground"
-                    }`}
-                  >
-                    {member.role === "ADMIN" ? "Admin" : "Member"}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-medium ${
+                        member.role === "ADMIN"
+                          ? "border-amber-400/40 bg-amber-500/10 text-amber-500 dark:text-amber-400"
+                          : "border-border/70 bg-background text-muted-foreground"
+                      }`}
+                    >
+                      {member.role === "ADMIN" ? "Admin" : "Member"}
+                    </span>
+                    {canManageMember && (
+                      <MemberActionsMenu
+                        groupId={group.id}
+                        memberId={member.userId}
+                        memberDisplayName={displayName}
+                      />
+                    )}
+                  </div>
                 </div>
               );
             })}

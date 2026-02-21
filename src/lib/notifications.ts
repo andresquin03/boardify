@@ -15,6 +15,8 @@ export const NOTIFICATION_EVENT_KEY = {
   GROUP_JOIN_REQUEST_RECEIVED: NotificationEventKey.GROUP_JOIN_REQUEST_RECEIVED,
   GROUP_JOIN_REQUEST_ACCEPTED: NotificationEventKey.GROUP_JOIN_REQUEST_ACCEPTED,
   GROUP_MEMBER_JOINED: NotificationEventKey.GROUP_MEMBER_JOINED,
+  GROUP_MEMBER_PROMOTED_TO_ADMIN: NotificationEventKey.GROUP_MEMBER_PROMOTED_TO_ADMIN,
+  GROUP_MEMBER_REMOVED: NotificationEventKey.GROUP_MEMBER_REMOVED,
 } as const;
 
 type NotificationCreateInput = {
@@ -430,4 +432,60 @@ export async function notifyGroupMemberJoined({
       }),
     ),
   );
+}
+
+export async function notifyGroupMemberPromotedToAdmin({
+  memberId,
+  adminId,
+  groupId,
+  groupSlug,
+  groupName,
+}: {
+  memberId: string;
+  adminId: string;
+  groupId: string;
+  groupSlug?: string;
+  groupName?: string;
+}) {
+  return createNotification({
+    userId: memberId,
+    actorId: adminId,
+    eventKey: NOTIFICATION_EVENT_KEY.GROUP_MEMBER_PROMOTED_TO_ADMIN,
+    scope: NOTIFICATION_SCOPE.GROUP,
+    entityType: "group",
+    entityId: groupId,
+    payload: {
+      groupId,
+      groupSlug,
+      groupName,
+    },
+  });
+}
+
+export async function notifyGroupMemberRemoved({
+  memberId,
+  adminId,
+  groupId,
+  groupSlug,
+  groupName,
+}: {
+  memberId: string;
+  adminId: string;
+  groupId: string;
+  groupSlug?: string;
+  groupName?: string;
+}) {
+  return createNotification({
+    userId: memberId,
+    actorId: adminId,
+    eventKey: NOTIFICATION_EVENT_KEY.GROUP_MEMBER_REMOVED,
+    scope: NOTIFICATION_SCOPE.GROUP,
+    entityType: "group",
+    entityId: groupId,
+    payload: {
+      groupId,
+      groupSlug,
+      groupName,
+    },
+  });
 }

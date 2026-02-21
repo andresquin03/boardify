@@ -18,6 +18,7 @@ Boardify baja esa friccion con flujos simples de perfil, amigos, grupos y notifi
 - Sistema de amistad con solicitud, aceptacion, cancelacion y unfriend.
 - Grupos con visibilidad `PUBLIC`, `INVITATION` y `PRIVATE`.
 - Invitaciones a grupos entre amigos y solicitudes de ingreso para grupos por invitacion.
+- Moderacion de miembros en grupos: admins pueden promover miembros a admin y expulsar (`kick`) miembros no-admin.
 - Centro de notificaciones (no leidas, vistas, borrado individual y clear all).
 
 ## Estado actual
