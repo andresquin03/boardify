@@ -118,6 +118,7 @@ Abrir: `http://localhost:3000`
 - Mutaciones: `src/lib/actions.ts` concentra server actions para auth, onboarding, perfil, amistades, grupos, invitaciones/solicitudes y estado de juegos.
 - Mutaciones de grupos incluyen moderacion de miembros por admins (`promote to admin`, `kick member`), con checks de permiso server-side.
 - Notificaciones: `src/lib/notifications.ts` centraliza creacion/listado/contador no leidas, marcado como vistas por scope o por grupo, y borrado logico (`deletedAt`). El mapeo `eventKey -> scope` se define en DB mediante `NotificationEvent` y se usa para aplicar preferencias de usuario por scope. Incluye eventos de membresia/rol en grupos (join, promoted to admin, kicked). El badge de la campana consume `/api/notifications/unread-count`.
+- TODO (future review): el `payload` de notificaciones guarda snapshot de metadatos de grupo (`groupName/groupSlug`); tras renames puede verse stale y, si el grupo se elimina, algunos links historicos pueden terminar en `notFound`.
 - Integridad: validacion defensiva de inputs (regex/enums), checks de autorizacion y `revalidatePath` despues de cambios.
 - Dominio de datos (Prisma):
   - Auth: `User`, `Account`, `Session`, `VerificationToken`.

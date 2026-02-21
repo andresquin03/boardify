@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { BellRing, Globe, Languages } from "lucide-react";
+import { BellRing, Check, Globe, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -16,6 +16,7 @@ import {
   updateNotificationSettings,
   updateVisibilitySettings,
 } from "@/lib/actions";
+import { cn } from "@/lib/utils";
 
 const languageOptions = {
   EN: "English",
@@ -30,6 +31,64 @@ const visibilityOptions = {
 
 type LanguageValue = keyof typeof languageOptions;
 type VisibilityValue = keyof typeof visibilityOptions;
+type NotificationOptionKey = "notifyFriendshipEvents" | "notifyGroupEvents" | "notifySystemEvents";
+
+function NotificationToggle({
+  id,
+  name,
+  title,
+  description,
+  checked,
+  onChange,
+}: {
+  id: string;
+  name: NotificationOptionKey;
+  title: string;
+  description: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label
+      htmlFor={id}
+      className={cn(
+        "group flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors",
+        checked
+          ? "border-emerald-500/45 bg-emerald-500/5"
+          : "border-border/70 bg-background/40 hover:border-emerald-500/35"
+      )}
+    >
+      <input
+        id={id}
+        type="checkbox"
+        name={name}
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="peer sr-only"
+      />
+      <span
+        aria-hidden
+        className={cn(
+          "mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-md border text-emerald-200 transition-all duration-200 ease-out",
+          "border-border/80 bg-background/80",
+          "peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-emerald-500/70",
+          checked && "border-emerald-500 bg-emerald-500/20 shadow-[0_0_0_3px_rgba(16,185,129,0.16)]"
+        )}
+      >
+        <Check
+          className={cn(
+            "h-4 w-4 transition-all duration-200 ease-out",
+            checked ? "scale-100 opacity-100" : "scale-75 opacity-0"
+          )}
+        />
+      </span>
+      <span>
+        <span className="text-sm font-medium">{title}</span>
+        <span className="mt-0.5 block text-xs text-muted-foreground">{description}</span>
+      </span>
+    </label>
+  );
+}
 
 export function SettingsForms({
   defaultLanguage,
@@ -91,13 +150,15 @@ export function SettingsForms({
             <p className="text-sm text-emerald-600 dark:text-emerald-400">{languageState.success}</p>
           )}
 
-          <Button
-            type="submit"
-            className="cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700"
-            disabled={isLanguagePending}
-          >
-            {isLanguagePending ? "Saving..." : "Save language"}
-          </Button>
+          <div className="flex justify-center md:justify-end">
+            <Button
+              type="submit"
+              className="cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700"
+              disabled={isLanguagePending}
+            >
+              {isLanguagePending ? "Saving..." : "Save language"}
+            </Button>
+          </div>
         </form>
       </section>
 
@@ -141,13 +202,15 @@ export function SettingsForms({
             <p className="text-sm text-emerald-600 dark:text-emerald-400">{visibilityState.success}</p>
           )}
 
-          <Button
-            type="submit"
-            className="cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700"
-            disabled={isVisibilityPending}
-          >
-            {isVisibilityPending ? "Saving..." : "Save visibility"}
-          </Button>
+          <div className="flex justify-center md:justify-end">
+            <Button
+              type="submit"
+              className="cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700"
+              disabled={isVisibilityPending}
+            >
+              {isVisibilityPending ? "Saving..." : "Save visibility"}
+            </Button>
+          </div>
         </form>
       </section>
 
@@ -163,53 +226,32 @@ export function SettingsForms({
         </div>
 
         <form action={notificationAction} className="space-y-3" noValidate>
-          <label className="flex items-start gap-3 rounded-lg border border-border/70 bg-background/40 p-3">
-            <input
-              type="checkbox"
-              name="notifyFriendshipEvents"
-              checked={notifyFriendshipEvents}
-              onChange={(event) => setNotifyFriendshipEvents(event.target.checked)}
-              className="mt-0.5 h-4 w-4 cursor-pointer accent-emerald-600"
-            />
-            <span>
-              <span className="text-sm font-medium">Friend activity</span>
-              <span className="mt-0.5 block text-xs text-muted-foreground">
-                Requests received and accepted.
-              </span>
-            </span>
-          </label>
+          <NotificationToggle
+            id="notify-friendship-events"
+            name="notifyFriendshipEvents"
+            checked={notifyFriendshipEvents}
+            onChange={setNotifyFriendshipEvents}
+            title="Friend activity"
+            description="Requests received and accepted."
+          />
 
-          <label className="flex items-start gap-3 rounded-lg border border-border/70 bg-background/40 p-3">
-            <input
-              type="checkbox"
-              name="notifyGroupEvents"
-              checked={notifyGroupEvents}
-              onChange={(event) => setNotifyGroupEvents(event.target.checked)}
-              className="mt-0.5 h-4 w-4 cursor-pointer accent-emerald-600"
-            />
-            <span>
-              <span className="text-sm font-medium">Group activity</span>
-              <span className="mt-0.5 block text-xs text-muted-foreground">
-                Invitations, join requests, members, and admin changes.
-              </span>
-            </span>
-          </label>
+          <NotificationToggle
+            id="notify-group-events"
+            name="notifyGroupEvents"
+            checked={notifyGroupEvents}
+            onChange={setNotifyGroupEvents}
+            title="Group activity"
+            description="Invitations, join requests, members, and admin changes."
+          />
 
-          <label className="flex items-start gap-3 rounded-lg border border-border/70 bg-background/40 p-3">
-            <input
-              type="checkbox"
-              name="notifySystemEvents"
-              checked={notifySystemEvents}
-              onChange={(event) => setNotifySystemEvents(event.target.checked)}
-              className="mt-0.5 h-4 w-4 cursor-pointer accent-emerald-600"
-            />
-            <span>
-              <span className="text-sm font-medium">System activity</span>
-              <span className="mt-0.5 block text-xs text-muted-foreground">
-                Other product notifications scoped as system messages.
-              </span>
-            </span>
-          </label>
+          <NotificationToggle
+            id="notify-system-events"
+            name="notifySystemEvents"
+            checked={notifySystemEvents}
+            onChange={setNotifySystemEvents}
+            title="System activity"
+            description="Other product notifications scoped as system messages."
+          />
 
           {notificationState?.errors?.notifications && (
             <p className="text-sm text-destructive">{notificationState.errors.notifications}</p>
@@ -222,13 +264,15 @@ export function SettingsForms({
             <p className="text-sm text-emerald-600 dark:text-emerald-400">{notificationState.success}</p>
           )}
 
-          <Button
-            type="submit"
-            className="cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700"
-            disabled={isNotificationPending}
-          >
-            {isNotificationPending ? "Saving..." : "Save notification preferences"}
-          </Button>
+          <div className="flex justify-center md:justify-end">
+            <Button
+              type="submit"
+              className="cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700"
+              disabled={isNotificationPending}
+            >
+              {isNotificationPending ? "Saving..." : "Save notification preferences"}
+            </Button>
+          </div>
         </form>
       </section>
     </div>

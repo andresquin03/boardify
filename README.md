@@ -86,6 +86,7 @@ pnpm dev
 - `src/app/(protected)`: dominio principal autenticado (games, users, friends, groups, profile, settings, notifications).
 - `src/lib/actions.ts`: server actions con mutaciones de dominio.
 - `src/lib/notifications.ts`: logica de notificaciones (crear, listar, marcar vistas, borrar) basada en catalogo de eventos y scopes.
+- `TODO (future review)`: `Notification.payload` guarda snapshot de `groupName/groupSlug`; puede quedar desactualizado tras rename y el link puede fallar si el grupo se elimina.
 - `prisma/schema.prisma`: modelos de auth, juegos, amistad, grupos, settings de usuario y notificaciones.
 
 ## Verificacion rapida (smoke check)
