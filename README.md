@@ -102,4 +102,5 @@ pnpm dev
 
 ## Documentacion adicional
 
+- Guía de diseño UI/UX: `docs/UI_GUIDELINES.md`.
 - Resumen tecnico extendido: `CLAUDE.md`.

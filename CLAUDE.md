@@ -1,5 +1,9 @@
 # Boardify - Resumen de Proyecto
 
+## Guia de UI
+- Referencia principal de decisiones visuales y UX: `docs/UI_GUIDELINES.md`.
+- Para cambios de componentes, responsive, iconografia, popups y microcopy, seguir esa guia.
+
 ## Stack principal
 - Framework: Next.js 16 (App Router) + React 19 + TypeScript estricto.
 - UI: Tailwind CSS v4 + shadcn/ui (estilo `new-york`) + Radix primitives + `lucide-react`.

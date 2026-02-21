@@ -583,7 +583,7 @@ export default async function GroupDetailPage({
                     variant="outline"
                     size="sm"
                     pendingText="Rejecting..."
-                    className="cursor-pointer gap-1 border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20"
+                    className="cursor-pointer gap-1 border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive dark:hover:text-destructive"
                   >
                     <X className="h-3.5 w-3.5" />
                     Reject invitation
@@ -707,7 +707,7 @@ export default async function GroupDetailPage({
                               variant="outline"
                               size="sm"
                               pendingText="Rejecting..."
-                              className="cursor-pointer gap-1"
+                              className="cursor-pointer gap-1 border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive dark:hover:text-destructive"
                             >
                               <X className="h-3.5 w-3.5" />
                               Reject

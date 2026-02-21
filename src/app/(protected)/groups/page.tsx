@@ -1,6 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Globe, Lock, Mail, Network, Plus, UserCheck, Users } from "lucide-react";
+import {
+  CircleHelp,
+  Clock3,
+  Globe,
+  Lock,
+  Mail,
+  Network,
+  Plus,
+  UserCheck,
+  Users,
+} from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { auth } from "@/lib/auth";
 import { GROUP_COLOR_CONFIG } from "@/lib/group-colors";
@@ -30,22 +40,44 @@ const visibilityConfig = {
 export default async function GroupsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/signin?callbackUrl=%2Fgroups");
+  const viewerId = session.user.id;
 
-  const groups = await prisma.group.findMany({
-    where: {
-      visibility: {
-        not: "PRIVATE",
+  const [groups, pendingInvitations, pendingJoinRequests] = await Promise.all([
+    prisma.group.findMany({
+      where: {
+        visibility: {
+          not: "PRIVATE",
+        },
       },
-    },
-    include: {
-      members: {
-        where: { userId: session.user.id },
-        select: { id: true },
+      include: {
+        members: {
+          where: { userId: viewerId },
+          select: { id: true },
+        },
+        _count: { select: { members: true } },
       },
-      _count: { select: { members: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.groupInvitation.findMany({
+      where: {
+        inviteeId: viewerId,
+        status: "PENDING",
+      },
+      select: { groupId: true },
+    }),
+    prisma.groupJoinRequest.findMany({
+      where: {
+        requesterId: viewerId,
+        status: "PENDING",
+      },
+      select: { groupId: true },
+    }),
+  ]);
+
+  const pendingInvitationGroupIds = new Set(pendingInvitations.map((invitation) => invitation.groupId));
+  const pendingJoinRequestGroupIds = new Set(
+    pendingJoinRequests.map((joinRequest) => joinRequest.groupId),
+  );
   const createGroupCta =
     groups.length === 0 ? "Be the first to add a group" : "Create group";
 
@@ -75,6 +107,31 @@ export default async function GroupsPage() {
             const colorConfig = GROUP_COLOR_CONFIG[group.color as GroupColor];
             const VisibilityIcon = visibility.icon;
             const isMember = group.members.length > 0;
+            const hasPendingInvitation = pendingInvitationGroupIds.has(group.id);
+            const hasPendingJoinRequest = pendingJoinRequestGroupIds.has(group.id);
+            const relationMeta = isMember
+              ? {
+                  icon: UserCheck,
+                  tooltip: "You are a member",
+                  className:
+                    "border-emerald-400/30 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400",
+                }
+              : hasPendingInvitation
+                ? {
+                    icon: CircleHelp,
+                    tooltip: "Invitation pending",
+                    className:
+                      "border-amber-400/30 bg-amber-500/10 text-amber-500 dark:text-amber-400",
+                  }
+                : hasPendingJoinRequest
+                  ? {
+                      icon: Clock3,
+                      tooltip: "Join request sent",
+                      className:
+                        "border-sky-400/30 bg-sky-500/10 text-sky-500 dark:text-sky-400",
+                    }
+                  : null;
+            const RelationIcon = relationMeta?.icon;
 
             return (
               <Link
@@ -94,14 +151,16 @@ export default async function GroupsPage() {
                     <IconComponent className="h-5 w-5" />
                   </span>
                   <div className="flex items-center gap-1.5">
-                    {isMember && (
+                    {relationMeta && RelationIcon && (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400">
-                            <UserCheck className="h-3.5 w-3.5" />
+                          <span
+                            className={`inline-flex h-7 w-7 items-center justify-center rounded-full border ${relationMeta.className}`}
+                          >
+                            <RelationIcon className="h-3.5 w-3.5" />
                           </span>
                         </TooltipTrigger>
-                        <TooltipContent side="top">You are a member</TooltipContent>
+                        <TooltipContent side="top">{relationMeta.tooltip}</TooltipContent>
                       </Tooltip>
                     )}
                     <Tooltip>
