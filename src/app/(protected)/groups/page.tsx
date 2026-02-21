@@ -141,7 +141,7 @@ export default async function GroupsPage() {
 
       <Link
         href="/groups/new"
-        className="pressable fixed right-6 bottom-6 z-50 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/35 transition-colors hover:bg-emerald-500 active:bg-emerald-700 sm:right-8 sm:bottom-8"
+        className="pressable fixed right-6 bottom-[max(2.5rem,calc(env(safe-area-inset-bottom)+4.2rem))] z-50 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/35 transition-colors hover:bg-emerald-500 active:bg-emerald-700 sm:right-8"
       >
         <Plus className="h-4 w-4" />
         {createGroupCta}

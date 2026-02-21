@@ -12,10 +12,51 @@
 - `pnpm build`: genera cliente Prisma y compila (`prisma generate && next build`).
 - `pnpm start`: ejecuta build de produccion.
 - `pnpm lint`: corre ESLint.
-- `pnpm db:migrate`: aplica migraciones en desarrollo (`prisma migrate dev`).
-- `pnpm db:seed`: carga catalogo inicial de juegos (`tsx prisma/seed.ts`).
-- `pnpm db:studio`: abre Prisma Studio.
+- `pnpm db:migrate`: aplica migraciones en desarrollo (`npx prisma migrate dev`).
+- `pnpm db:seed`: carga catalogo inicial de juegos (`npx tsx prisma/seed.ts`).
+- `pnpm db:studio`: abre Prisma Studio (`npx prisma studio`).
 - Testing: actualmente no hay script `test` ni framework de tests automatizados configurado en el repo.
+
+## Arranque rapido (2 minutos)
+Nota: la primera vez puede tardar mas por setup de OAuth y base de datos.
+
+### Prerequisitos
+- Node.js 20+
+- `pnpm`
+- PostgreSQL corriendo
+- Credenciales OAuth de Google
+
+### Variables de entorno (`.env`)
+```env
+DATABASE_URL=...
+DIRECT_URL=...
+AUTH_SECRET=...
+AUTH_GOOGLE_ID=...
+AUTH_GOOGLE_SECRET=...
+```
+
+Para OAuth local con Google:
+- Authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
+
+### Comandos
+```bash
+pnpm install
+pnpm db:migrate
+pnpm db:seed
+pnpm dev
+```
+
+Abrir: `http://localhost:3000`
+
+### Smoke check
+- Se puede iniciar sesion con Google.
+- Onboarding se completa y redirige a rutas protegidas.
+- Cargan juegos/grupos sin errores de base de datos.
+
+### Troubleshooting rapido
+- `Missing AUTH_SECRET environment variable`: falta `AUTH_SECRET` en `.env`.
+- Error de callback OAuth: revisar que la redirect URI coincida exactamente.
+- Error Prisma/DB: verificar `DATABASE_URL` y que PostgreSQL este levantado.
 
 ## Convenciones de estilo
 - TypeScript con `strict: true` y alias `@/* -> src/*`.
@@ -38,8 +79,12 @@
 │   └── games/
 ├── src/
 │   ├── app/
-│   │   ├── (protected)/          # rutas principales autenticadas
-│   │   ├── api/auth/[...nextauth]/
+│   │   ├── (protected)/                     # rutas autenticadas (games, users, friends, groups, notifications)
+│   │   ├── about/
+│   │   ├── api/
+│   │   │   ├── auth/[...nextauth]/
+│   │   │   └── notifications/unread-count/
+│   │   ├── contact/
 │   │   ├── onboarding/
 │   │   ├── signin/
 │   │   ├── globals.css
@@ -47,12 +92,12 @@
 │   ├── components/
 │   │   ├── games/
 │   │   ├── groups/
-│   │   ├── layout/
+│   │   ├── layout/                          # navbar, footer, menu usuario, bell de notificaciones
 │   │   ├── profile/
 │   │   ├── theme/
 │   │   └── ui/
-│   ├── generated/prisma/         # cliente Prisma generado
-│   ├── lib/                      # auth, acciones server, prisma client, utils
+│   ├── generated/prisma/                    # cliente Prisma generado
+│   ├── lib/                                 # auth, acciones server, prisma client, notifications, utils
 │   ├── types/
 │   └── proxy.ts
 ├── components.json
@@ -64,9 +109,15 @@
 ## Notas arquitectonicas
 - Auth: centralizada en `src/lib/auth.ts` con NextAuth + Google + Prisma Adapter.
 - Sesion: estrategia JWT, extendida con `user.id`, `username` y estado de onboarding.
+- Layout global: `src/app/layout.tsx` compone `Navbar` + `<main />` + `Footer`; el footer expone links a `/about` y `/contact`.
 - Acceso: `src/app/(protected)/layout.tsx` obliga onboarding completo; paginas de dominio aplican checks server-side y usan `redirect()` / `notFound()` segun permisos.
-- Mutaciones: `src/lib/actions.ts` concentra server actions para auth, onboarding, perfil, amistades, grupos y estado de juegos.
+- Mutaciones: `src/lib/actions.ts` concentra server actions para auth, onboarding, perfil, amistades, grupos, invitaciones/solicitudes y estado de juegos.
+- Notificaciones: `src/lib/notifications.ts` centraliza creacion/listado/contador no leidas, marcado como vistas por scope o por grupo, y borrado logico (`deletedAt`). El badge de la campana consume `/api/notifications/unread-count`.
 - Integridad: validacion defensiva de inputs (regex/enums), checks de autorizacion y `revalidatePath` despues de cambios.
-- Dominio de datos (Prisma): auth (`User`, `Account`, `Session`, `VerificationToken`), catalogo (`Game`, `Category`, `GameCategory`, `UserGame`), social (`Friendship`) y grupos (`Group`, `GroupMember`, `GroupInvitation`, `GroupSlug`).
+- Dominio de datos (Prisma):
+  - Auth: `User`, `Account`, `Session`, `VerificationToken`.
+  - Catalogo: `Game`, `Category`, `GameCategory`, `UserGame`.
+  - Social: `Friendship`, `Notification`, `NotificationEventKey`.
+  - Grupos: `Group`, `GroupMember`, `GroupInvitation`, `GroupJoinRequest`, `GroupSlug`.
 - Seguridad web: `next.config.ts` agrega headers de seguridad globales, CSP/HSTS en produccion y allowlist explicita para imagenes remotas.
 - Persistencia: Prisma corre sobre `pg.Pool` + `PrismaPg` (`src/lib/prisma.ts`) y la semilla `prisma/seed.ts` usa `upsert` para juegos y categorias.

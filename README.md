@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Boardify
 
-## Getting Started
+Boardify es una app para organizar juntadas de juegos de mesa con amigos. En vez de resolver todo por chat, centraliza biblioteca de juegos, amistades, grupos e invitaciones para decidir mas rapido que jugar.
 
-First, run the development server:
+## Que problema resuelve
 
+Coordinar una noche de juegos suele tener friccion:
+- no esta claro que juegos comparten las personas,
+- cuesta ver quien puede unirse a cada plan,
+- invitaciones y solicitudes se pierden entre mensajes.
+
+Boardify baja esa friccion con flujos simples de perfil, amigos, grupos y notificaciones.
+
+## Funcionalidades principales
+
+- Biblioteca personal de juegos (favoritos, wishlist y owned).
+- Descubrimiento de usuarios con perfiles publicos y comparacion de compatibilidad.
+- Sistema de amistad con solicitud, aceptacion, cancelacion y unfriend.
+- Grupos con visibilidad `PUBLIC`, `INVITATION` y `PRIVATE`.
+- Invitaciones a grupos entre amigos y solicitudes de ingreso para grupos por invitacion.
+- Centro de notificaciones (no leidas, vistas, borrado individual y clear all).
+
+## Estado actual
+
+Proyecto en desarrollo activo. El MVP social esta funcional y ya incluye autenticacion, onboarding, amigos, grupos y notificaciones.
+
+## Stack tecnico
+
+- Next.js 16 (App Router) + React 19 + TypeScript (`strict`).
+- Tailwind CSS v4 + shadcn/ui + Radix + `lucide-react`.
+- Auth.js / NextAuth v5 (Google OAuth) + Prisma Adapter.
+- PostgreSQL + Prisma ORM.
+- `pnpm` + ESLint 9 (`eslint-config-next`).
+
+## Requisitos
+
+- Node.js 20+
+- `pnpm`
+- PostgreSQL corriendo
+- Credenciales OAuth de Google
+
+## Configuracion local rapida
+
+1. Instalar dependencias:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Crear/actualizar `.env`:
+```env
+DATABASE_URL=...
+DIRECT_URL=...
+AUTH_SECRET=...
+AUTH_GOOGLE_ID=...
+AUTH_GOOGLE_SECRET=...
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Configurar Google OAuth para desarrollo local:
+- Authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Ejecutar DB + app:
+```bash
+pnpm db:migrate
+pnpm db:seed
+pnpm dev
+```
 
-## Learn More
+5. Abrir:
+- `http://localhost:3000`
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts utiles
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `pnpm dev`: levantar entorno local.
+- `pnpm build`: generar cliente Prisma + build de Next.
+- `pnpm start`: ejecutar build de produccion.
+- `pnpm lint`: correr ESLint.
+- `pnpm db:migrate`: aplicar migraciones en desarrollo.
+- `pnpm db:seed`: seed inicial del catalogo.
+- `pnpm db:studio`: abrir Prisma Studio.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Arquitectura (resumen)
 
-## Deploy on Vercel
+- `src/app`: rutas App Router (publicas y protegidas).
+- `src/app/(protected)`: dominio principal autenticado (games, users, friends, groups, notifications).
+- `src/lib/actions.ts`: server actions con mutaciones de dominio.
+- `src/lib/notifications.ts`: logica de notificaciones (crear, listar, marcar vistas, borrar).
+- `prisma/schema.prisma`: modelos de auth, juegos, amistad, grupos y notificaciones.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Verificacion rapida (smoke check)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Login con Google funciona.
+- Onboarding completa correctamente.
+- Se pueden enviar/aceptar solicitudes de amistad.
+- Se pueden crear grupos, invitar amigos y gestionar solicitudes.
+- La campana refleja notificaciones no leidas.
+
+## Troubleshooting
+
+- `Missing AUTH_SECRET environment variable`: falta `AUTH_SECRET` en `.env`.
+- Error de callback OAuth: revisar URI exacta en Google Console.
+- Error de DB/Prisma: validar `DATABASE_URL` y que PostgreSQL este activo.
+
+## Documentacion adicional
+
+- Resumen tecnico extendido: `CLAUDE.md`.

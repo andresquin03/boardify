@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
+  ArrowLeft,
   Check,
   Globe,
   Lock,
@@ -190,7 +191,15 @@ export default async function UserGroupsPage({
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 pb-24">
-      <div className="group flex items-center gap-2.5">
+      <Link
+        href={`/u/${targetUser.username}`}
+        className="pressable inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to profile
+      </Link>
+
+      <div className="group mt-4 flex items-center gap-2.5">
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/70 bg-card/70 text-sky-500 shadow-sm motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95">
           <Network className="h-4.5 w-4.5 transition-all duration-300 motion-safe:animate-[pulse_2.8s_ease-in-out_infinite] group-hover:scale-110 group-hover:-rotate-6 group-active:scale-95" />
         </span>
@@ -476,7 +485,7 @@ export default async function UserGroupsPage({
       {isOwner && (
         <Link
           href="/groups/new"
-          className="pressable fixed right-6 bottom-6 z-50 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/35 transition-colors hover:bg-emerald-500 active:bg-emerald-700 sm:right-8 sm:bottom-8"
+          className="pressable fixed right-6 bottom-[max(2rem,calc(env(safe-area-inset-bottom)+4.75rem))] z-50 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/35 transition-colors hover:bg-emerald-500 active:bg-emerald-700 sm:right-8"
         >
           <Plus className="h-4 w-4" />
           {createGroupCta}
