@@ -8,20 +8,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { Bell } from "lucide-react";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { UserMenuContent } from "@/components/layout/user-menu-content";
+import { countUnreadNotifications } from "@/lib/notifications";
+import { NotificationBell } from "@/components/layout/notification-bell";
 
 export async function Navbar() {
   const session = await auth();
   const hasCompletedOnboarding = Boolean(session?.user?.username);
 
-  let pendingRequestCount = 0;
-  if (session?.user?.id && hasCompletedOnboarding) {
-    pendingRequestCount = await prisma.friendship.count({
-      where: { addresseeId: session.user.id, status: "PENDING" },
-    });
+  let unreadNotificationCount = 0;
+  if (session?.user?.id) {
+    unreadNotificationCount = await countUnreadNotifications(session.user.id);
   }
 
   const usersHref = session?.user
@@ -83,24 +81,10 @@ export async function Navbar() {
         <div className="flex items-center gap-2">
           {session?.user ? (
             <>
-              <Link
-                href={hasCompletedOnboarding ? "/friends" : "/onboarding"}
-                className="group pressable relative inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent hover:text-foreground active:translate-y-0 active:scale-95 active:bg-amber-500/20 active:text-amber-400"
-              >
-                <Bell
-                  className={`h-4.5 w-4.5 transition-all duration-400 ease-out group-hover:-rotate-12 group-hover:scale-110 group-active:scale-95 group-active:text-amber-400 ${
-                    pendingRequestCount > 0 ? "text-foreground" : ""
-                  }`}
-                />
-                {pendingRequestCount > 0 && (
-                  <>
-                    <span className="absolute -top-0.5 -right-0.5 h-4.5 w-4.5 rounded-full bg-destructive/35 motion-safe:animate-ping" />
-                    <span className="absolute -top-0.5 -right-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
-                      {pendingRequestCount > 9 ? "9+" : pendingRequestCount}
-                    </span>
-                  </>
-                )}
-              </Link>
+              <NotificationBell
+                href={hasCompletedOnboarding ? "/notifications" : "/onboarding"}
+                initialUnreadCount={unreadNotificationCount}
+              />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-9 w-9 cursor-pointer rounded-full">

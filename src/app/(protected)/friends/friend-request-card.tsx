@@ -2,7 +2,7 @@
 
 import { FormPendingButton } from "@/components/ui/form-pending-button";
 import { Check, X } from "lucide-react";
-import { acceptFriendRequest, rejectFriendRequest } from "@/lib/actions";
+import { acceptFriendRequest, cancelFriendRequest, rejectFriendRequest } from "@/lib/actions";
 
 export function FriendRequestActions({ friendshipId }: { friendshipId: string }) {
   return (
@@ -32,5 +32,22 @@ export function FriendRequestActions({ friendshipId }: { friendshipId: string })
         </FormPendingButton>
       </form>
     </div>
+  );
+}
+
+export function SentFriendRequestActions({ friendshipId }: { friendshipId: string }) {
+  return (
+    <form action={cancelFriendRequest.bind(null, friendshipId)}>
+      <FormPendingButton
+        type="submit"
+        variant="outline"
+        size="sm"
+        pendingText="Cancelling..."
+        className="cursor-pointer gap-1"
+      >
+        <X className="h-3.5 w-3.5" />
+        Cancel
+      </FormPendingButton>
+    </form>
   );
 }

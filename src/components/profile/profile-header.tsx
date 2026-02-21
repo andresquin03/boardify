@@ -1,5 +1,4 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { FormPendingButton } from "@/components/ui/form-pending-button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { sendFriendRequest } from "@/lib/actions";
@@ -8,7 +7,6 @@ import {
   Lock,
   UsersRound,
   UserPlus,
-  Clock3,
   CircleHelp,
   UserRound,
   PartyPopper,
@@ -16,7 +14,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UnfriendDropdown } from "./unfriend-dropdown";
-import { FriendRequestActions } from "@/app/(protected)/friends/friend-request-card";
+import {
+  FriendRequestActions,
+  SentFriendRequestActions,
+} from "@/app/(protected)/friends/friend-request-card";
 import { ProfileActionsMenu } from "./profile-actions-menu";
 
 interface ProfileHeaderProps {
@@ -123,6 +124,40 @@ export function ProfileHeader({
     typeof generalMatchPercent === "number" && matchMeta
       ? { percent: generalMatchPercent, meta: matchMeta }
       : null;
+  const showGeneralMatchBadge = !isOwner && (relationState === "FRIEND" || visibilityKey === "PUBLIC");
+  const generalMatchBadge = availableMatchData || generalMatchUnavailable ? (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {generalMatchUnavailable || !availableMatchData ? (
+          <div className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-400/35 bg-zinc-500/10 px-2 py-1.5 text-zinc-500 dark:text-zinc-300">
+            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-zinc-500/15">
+              <CircleHelp className="h-3.5 w-3.5" />
+            </span>
+            <span className="text-xs font-semibold">-%</span>
+          </div>
+        ) : (
+          <div className={cn("inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5", availableMatchData.meta.className)}>
+            <span className={cn("inline-flex h-5 w-5 items-center justify-center rounded-full", availableMatchData.meta.iconWrapClassName)}>
+              <availableMatchData.meta.icon className="h-3.5 w-3.5" />
+            </span>
+            <span className="text-xs font-semibold">{availableMatchData.percent}%</span>
+          </div>
+        )}
+      </TooltipTrigger>
+      <TooltipContent
+        side="top"
+        className={
+          generalMatchUnavailable || !availableMatchData
+            ? "text-zinc-200 dark:text-zinc-700"
+            : availableMatchData.meta.tooltipClassName
+        }
+      >
+        {generalMatchUnavailable || !availableMatchData
+          ? "Start adding games to your profile to track compatibility."
+          : `${availableMatchData.meta.label}: ${availableMatchData.meta.tooltip}`}
+      </TooltipContent>
+    </Tooltip>
+  ) : null;
 
   return (
     <div className="rounded-2xl border bg-card/70 p-4 shadow-sm backdrop-blur-sm sm:p-6">
@@ -163,71 +198,40 @@ export function ProfileHeader({
                 profileUsername={profilePathUsername}
                 profileDisplayName={displayName}
               />
-              {availableMatchData || generalMatchUnavailable ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    {generalMatchUnavailable || !availableMatchData ? (
-                      <div className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-400/35 bg-zinc-500/10 px-2 py-1.5 text-zinc-500 dark:text-zinc-300">
-                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-zinc-500/15">
-                          <CircleHelp className="h-3.5 w-3.5" />
-                        </span>
-                        <span className="text-xs font-semibold">-%</span>
-                      </div>
-                    ) : (
-                      <div className={cn("inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5", availableMatchData.meta.className)}>
-                        <span className={cn("inline-flex h-5 w-5 items-center justify-center rounded-full", availableMatchData.meta.iconWrapClassName)}>
-                          <availableMatchData.meta.icon className="h-3.5 w-3.5" />
-                        </span>
-                        <span className="text-xs font-semibold">{availableMatchData.percent}%</span>
-                      </div>
-                    )}
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="top"
-                    className={
-                      generalMatchUnavailable || !availableMatchData
-                        ? "text-zinc-200 dark:text-zinc-700"
-                        : availableMatchData.meta.tooltipClassName
-                    }
-                  >
-                    {generalMatchUnavailable || !availableMatchData
-                      ? "Start adding games to your profile to track compatibility."
-                      : `${availableMatchData.meta.label}: ${availableMatchData.meta.tooltip}`}
-                  </TooltipContent>
-                </Tooltip>
-              ) : null}
+              {showGeneralMatchBadge ? generalMatchBadge : null}
             </div>
           )}
 
-          {!isOwner && relationState === "PENDING_SENT" && (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled
-              className="mt-0.5 gap-1.5"
-            >
-              <Clock3 className="h-3.5 w-3.5" />
-              Request sent
-            </Button>
+          {!isOwner && relationState === "PENDING_SENT" && friendshipId && (
+            <div className="mt-0.5 flex items-center gap-2">
+              <SentFriendRequestActions friendshipId={friendshipId} />
+              {showGeneralMatchBadge ? generalMatchBadge : null}
+            </div>
           )}
 
           {!isOwner && relationState === "PENDING_RECEIVED" && friendshipId && (
-            <FriendRequestActions friendshipId={friendshipId} />
+            <div className="mt-0.5 flex items-center gap-2">
+              <FriendRequestActions friendshipId={friendshipId} />
+              {showGeneralMatchBadge ? generalMatchBadge : null}
+            </div>
           )}
 
           {!isOwner && relationState === "NONE" && canSendRequest && (
-            <form action={sendFriendRequest.bind(null, user.id, profilePathUsername)}>
-              <FormPendingButton
-                type="submit"
-                variant="outline"
-                size="sm"
-                pendingText="Sending..."
-                className="mt-0.5 cursor-pointer gap-1.5 transition-all hover:-translate-y-0.5 hover:shadow-sm"
-              >
-                <UserPlus className="h-3.5 w-3.5" />
-                Send request
-              </FormPendingButton>
-            </form>
+            <div className="mt-0.5 flex items-center gap-2">
+              <form action={sendFriendRequest.bind(null, user.id, profilePathUsername)}>
+                <FormPendingButton
+                  type="submit"
+                  variant="outline"
+                  size="sm"
+                  pendingText="Sending..."
+                  className="cursor-pointer gap-1.5 transition-all hover:-translate-y-0.5 hover:shadow-sm"
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  Send request
+                </FormPendingButton>
+              </form>
+              {showGeneralMatchBadge ? generalMatchBadge : null}
+            </div>
           )}
         </div>
       </div>

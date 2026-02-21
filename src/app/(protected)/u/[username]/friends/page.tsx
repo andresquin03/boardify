@@ -1,7 +1,16 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Lock, Globe, Handshake, UserCheck, UserPlus, UsersRound } from "lucide-react";
+import {
+  CircleHelp,
+  Clock3,
+  Lock,
+  Globe,
+  Handshake,
+  UserCheck,
+  UserPlus,
+  UsersRound,
+} from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -88,23 +97,35 @@ export default async function UserFriendsPage({
     .map((friend) => friend.id)
     .filter((id) => id !== viewerId);
 
-  const viewerFriendships = listedOtherUserIds.length
+  const viewerRelations = listedOtherUserIds.length
     ? await prisma.friendship.findMany({
         where: {
-          status: "ACCEPTED",
+          status: { in: ["ACCEPTED", "PENDING"] },
           OR: [
             { requesterId: viewerId, addresseeId: { in: listedOtherUserIds } },
             { requesterId: { in: listedOtherUserIds }, addresseeId: viewerId },
           ],
         },
-        select: { requesterId: true, addresseeId: true },
+        select: { requesterId: true, addresseeId: true, status: true },
       })
     : [];
 
-  const viewerFriendIds = new Set<string>();
-  for (const friendship of viewerFriendships) {
-    viewerFriendIds.add(
-      friendship.requesterId === viewerId ? friendship.addresseeId : friendship.requesterId,
+  const relationStateByUserId = new Map<
+    string,
+    "FRIEND" | "PENDING_SENT" | "PENDING_RECEIVED"
+  >();
+  for (const relation of viewerRelations) {
+    const otherUserId =
+      relation.requesterId === viewerId ? relation.addresseeId : relation.requesterId;
+
+    if (relation.status === "ACCEPTED") {
+      relationStateByUserId.set(otherUserId, "FRIEND");
+      continue;
+    }
+
+    relationStateByUserId.set(
+      otherUserId,
+      relation.requesterId === viewerId ? "PENDING_SENT" : "PENDING_RECEIVED",
     );
   }
 
@@ -128,7 +149,7 @@ export default async function UserFriendsPage({
         <div className="mt-4 space-y-2">
           {friendUsers.map((friend) => {
             const isCurrentUser = friend.id === viewerId;
-            const isFriend = viewerFriendIds.has(friend.id);
+            const relationState = relationStateByUserId.get(friend.id) ?? "NONE";
             const visibilityKey =
               friend.visibility === "FRIENDS"
                 ? "FRIENDS"
@@ -143,6 +164,36 @@ export default async function UserFriendsPage({
               .map((part) => part[0])
               .join("")
               .toUpperCase();
+
+            const relationMeta =
+              relationState === "FRIEND"
+                ? {
+                    icon: UserCheck,
+                    tooltip: "Friends",
+                    className:
+                      "border-emerald-400/30 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400",
+                  }
+                : relationState === "PENDING_RECEIVED"
+                  ? {
+                      icon: CircleHelp,
+                      tooltip: "Sent you a request",
+                      className:
+                        "border-amber-400/30 bg-amber-500/10 text-amber-500 dark:text-amber-400",
+                    }
+                  : relationState === "PENDING_SENT"
+                    ? {
+                        icon: Clock3,
+                        tooltip: "Request sent",
+                        className:
+                          "border-sky-400/30 bg-sky-500/10 text-sky-500 dark:text-sky-400",
+                      }
+                    : {
+                        icon: UserPlus,
+                        tooltip: "Add friend",
+                        className:
+                          "border-muted-foreground/25 bg-muted/70 text-muted-foreground",
+                      };
+            const RelationIcon = relationMeta.icon;
 
             return (
               <Link
@@ -177,22 +228,12 @@ export default async function UserFriendsPage({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span
-                          className={`inline-flex h-7 w-7 items-center justify-center rounded-full border ${
-                            isFriend
-                              ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400"
-                              : "border-muted-foreground/25 bg-muted/70 text-muted-foreground"
-                          }`}
+                          className={`inline-flex h-7 w-7 items-center justify-center rounded-full border ${relationMeta.className}`}
                         >
-                          {isFriend ? (
-                            <UserCheck className="h-3.5 w-3.5" />
-                          ) : (
-                            <UserPlus className="h-3.5 w-3.5" />
-                          )}
+                          <RelationIcon className="h-3.5 w-3.5" />
                         </span>
                       </TooltipTrigger>
-                      <TooltipContent side="top">
-                        {isFriend ? "Friends" : "Add friend"}
-                      </TooltipContent>
+                      <TooltipContent side="top">{relationMeta.tooltip}</TooltipContent>
                     </Tooltip>
                   )}
                   <Tooltip>

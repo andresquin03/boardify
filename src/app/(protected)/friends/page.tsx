@@ -2,10 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Globe, Handshake, Lock, UserPlus, UsersRound } from "lucide-react";
+import { Dices, Globe, Handshake, Lock, UserPlus, UsersRound } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { FriendRequestActions } from "./friend-request-card";
+import { markNotificationsSeenByScopes, NOTIFICATION_SCOPE } from "@/lib/notifications";
+import { FriendRequestActions, SentFriendRequestActions } from "./friend-request-card";
 
 const visibilityConfig = {
   PUBLIC: {
@@ -29,6 +30,8 @@ export default async function FriendsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/");
   const userId = session.user.id;
+
+  await markNotificationsSeenByScopes(userId, [NOTIFICATION_SCOPE.FRIENDSHIP]);
 
   const [receivedRequests, sentRequests, friends] = await Promise.all([
     prisma.friendship.findMany({
@@ -104,7 +107,7 @@ export default async function FriendsPage() {
                 className="flex items-center justify-between rounded-xl border bg-card/70 p-3 shadow-sm"
               >
                 <UserRow user={req.addressee} />
-                <span className="text-xs text-muted-foreground">Pending</span>
+                <SentFriendRequestActions friendshipId={req.id} />
               </div>
             ))}
           </div>
@@ -119,16 +122,31 @@ export default async function FriendsPage() {
           </span>
         </h2>
         {friendUsers.length === 0 ? (
-          <div className="mt-3 flex flex-col items-start gap-3">
-            <p className="text-sm text-muted-foreground">No friends yet.</p>
-            <Link
-              href="/users"
-              className="pressable inline-flex items-center gap-2 rounded-md border border-border/70 bg-card px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent/60 active:bg-accent/75"
-            >
-              <UserPlus className="h-3.5 w-3.5" />
-              Go find some friends
-            </Link>
-          </div>
+          <section className="mt-3 rounded-xl border bg-card/70 p-5 shadow-sm">
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              <UsersRound className="h-4 w-4" />
+              No friends yet.
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Find players, compare collections, and plan your next game night.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                href="/users"
+                className="pressable inline-flex items-center gap-2 rounded-md border border-border/70 bg-card px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent/60 active:bg-accent/75"
+              >
+                <UserPlus className="h-3.5 w-3.5" />
+                Find users
+              </Link>
+              <Link
+                href="/games"
+                className="pressable inline-flex items-center gap-2 rounded-md border border-border/70 bg-card px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent/60 active:bg-accent/75"
+              >
+                <Dices className="h-3.5 w-3.5" />
+                Browse games
+              </Link>
+            </div>
+          </section>
         ) : (
           <div className="mt-3 space-y-2">
             {friendUsers.map((user) => (

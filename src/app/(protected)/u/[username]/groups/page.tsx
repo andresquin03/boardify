@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { GROUP_ICON_MAP } from "@/lib/group-icons";
 import type { GroupColor, GroupVisibility } from "@/generated/prisma/client";
 import { cn } from "@/lib/utils";
+import { markNotificationsSeenByScopes, NOTIFICATION_SCOPE } from "@/lib/notifications";
 
 const visibilityConfig = {
   PUBLIC: {
@@ -45,6 +46,10 @@ export default async function UserGroupsPage({
   if (!targetUser) notFound();
 
   const isOwner = viewerId === targetUser.id;
+
+  if (isOwner) {
+    await markNotificationsSeenByScopes(viewerId, [NOTIFICATION_SCOPE.GROUP]);
+  }
 
   if (!isOwner) {
     const isFriend = Boolean(

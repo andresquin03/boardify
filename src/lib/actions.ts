@@ -13,6 +13,12 @@ import {
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSafeRedirectPath } from "@/lib/safe-redirect";
+import {
+  deleteNotificationForUser,
+  notifyFriendRequestAccepted,
+  notifyFriendRequestReceived,
+  softDeleteFriendRequestReceivedNotification,
+} from "@/lib/notifications";
 
 // ── Input validation ─────────────────────────────────────
 
@@ -291,25 +297,42 @@ export async function sendFriendRequest(addresseeId: string, profileUsername: st
   });
 
   if (!existing) {
-    await prisma.friendship.create({
+    const createdRequest = await prisma.friendship.create({
       data: {
         requesterId,
         addresseeId,
       },
+      select: { id: true },
     });
-  } else if (existing.status === "REJECTED" || existing.status === "UNFRIENDED") {
-    await prisma.friendship.update({
+    await notifyFriendRequestReceived({
+      addresseeId,
+      requesterId,
+      friendshipId: createdRequest.id,
+    });
+  } else if (
+    existing.status === "REJECTED" ||
+    existing.status === "CANCELLED" ||
+    existing.status === "UNFRIENDED"
+  ) {
+    const reopenedRequest = await prisma.friendship.update({
       where: { id: existing.id },
       data: {
         requesterId,
         addresseeId,
         status: "PENDING",
       },
+      select: { id: true },
+    });
+    await notifyFriendRequestReceived({
+      addresseeId,
+      requesterId,
+      friendshipId: reopenedRequest.id,
     });
   }
 
   revalidatePath(`/u/${profileUsername}`);
   revalidatePath("/friends");
+  revalidatePath("/notifications");
 }
 
 async function getAuthorizedFriendship(friendshipId: string, userId: string) {
@@ -336,6 +359,7 @@ function revalidateFriendshipProfiles(friendship: {
   addressee: { username: string | null };
 }) {
   revalidatePath("/friends");
+  revalidatePath("/notifications");
   revalidatePath("/", "layout");
   if (friendship.requester.username) {
     revalidatePath(`/u/${friendship.requester.username}`);
@@ -354,12 +378,27 @@ export async function acceptFriendRequest(friendshipId: string) {
     throw new Error("Only the recipient can accept a request");
   }
   if (friendship.status !== "PENDING") {
-    throw new Error("Request is not pending");
+    revalidateFriendshipProfiles(friendship);
+    return;
   }
 
-  await prisma.friendship.update({
-    where: { id: friendshipId },
+  const result = await prisma.friendship.updateMany({
+    where: {
+      id: friendshipId,
+      status: "PENDING",
+      addresseeId: userId,
+    },
     data: { status: "ACCEPTED" },
+  });
+  if (result.count === 0) {
+    revalidateFriendshipProfiles(friendship);
+    return;
+  }
+
+  await notifyFriendRequestAccepted({
+    requesterId: friendship.requesterId,
+    addresseeId: friendship.addresseeId,
+    friendshipId,
   });
 
   revalidateFriendshipProfiles(friendship);
@@ -374,13 +413,53 @@ export async function rejectFriendRequest(friendshipId: string) {
     throw new Error("Only the recipient can reject a request");
   }
   if (friendship.status !== "PENDING") {
-    throw new Error("Request is not pending");
+    revalidateFriendshipProfiles(friendship);
+    return;
   }
 
-  await prisma.friendship.update({
-    where: { id: friendshipId },
+  const result = await prisma.friendship.updateMany({
+    where: {
+      id: friendshipId,
+      status: "PENDING",
+      addresseeId: userId,
+    },
     data: { status: "REJECTED" },
   });
+  if (result.count === 0) {
+    revalidateFriendshipProfiles(friendship);
+    return;
+  }
+
+  revalidateFriendshipProfiles(friendship);
+}
+
+export async function cancelFriendRequest(friendshipId: string) {
+  assertCuid(friendshipId, "friendshipId");
+  const userId = await getAuthUserId();
+  const friendship = await getAuthorizedFriendship(friendshipId, userId);
+
+  if (friendship.requesterId !== userId) {
+    throw new Error("Only the requester can cancel a request");
+  }
+  if (friendship.status !== "PENDING") {
+    revalidateFriendshipProfiles(friendship);
+    return;
+  }
+
+  const result = await prisma.friendship.updateMany({
+    where: {
+      id: friendshipId,
+      status: "PENDING",
+      requesterId: userId,
+    },
+    data: { status: "CANCELLED" },
+  });
+  if (result.count === 0) {
+    revalidateFriendshipProfiles(friendship);
+    return;
+  }
+
+  await softDeleteFriendRequestReceivedNotification(friendship.addresseeId, friendshipId);
 
   revalidateFriendshipProfiles(friendship);
 }
@@ -392,15 +471,39 @@ export async function unfriend(friendshipId: string, profileUsername: string) {
   const friendship = await getAuthorizedFriendship(friendshipId, userId);
 
   if (friendship.status !== "ACCEPTED") {
-    throw new Error("Only accepted friendships can be unfriended");
+    revalidateFriendshipProfiles(friendship);
+    return;
   }
 
-  await prisma.friendship.update({
-    where: { id: friendshipId },
+  const result = await prisma.friendship.updateMany({
+    where: {
+      id: friendshipId,
+      status: "ACCEPTED",
+      OR: [{ requesterId: userId }, { addresseeId: userId }],
+    },
     data: { status: "UNFRIENDED" },
   });
+  if (result.count === 0) {
+    revalidateFriendshipProfiles(friendship);
+    return;
+  }
 
   revalidateFriendshipProfiles(friendship);
+}
+
+// ── Notifications ───────────────────────────────────────
+
+export async function deleteNotification(notificationId: string) {
+  assertCuid(notificationId, "notificationId");
+  const userId = await getAuthUserId();
+
+  const result = await deleteNotificationForUser(userId, notificationId);
+  if (result.count === 0) {
+    throw new Error("Notification not found");
+  }
+
+  revalidatePath("/notifications");
+  revalidatePath("/", "layout");
 }
 
 // ── Groups ──────────────────────────────────────────────

@@ -1,6 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Globe, Lock, Search, UserCheck, UserPlus, Users, UsersRound } from "lucide-react";
+import {
+  CircleHelp,
+  Clock3,
+  Globe,
+  Lock,
+  Search,
+  UserCheck,
+  UserPlus,
+  Users,
+  UsersRound,
+} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +55,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
   const params = await searchParams;
   const query = normalizeSingleValue(params.q).trim();
 
-  const friendships = await prisma.friendship.findMany({
+  const acceptedFriendships = await prisma.friendship.findMany({
     where: {
       status: "ACCEPTED",
       OR: [{ requesterId: viewerId }, { addresseeId: viewerId }],
@@ -54,12 +64,43 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
   });
 
   const friendIds = new Set<string>();
-  for (const friendship of friendships) {
+  for (const friendship of acceptedFriendships) {
     friendIds.add(
       friendship.requesterId === viewerId ? friendship.addresseeId : friendship.requesterId,
     );
   }
   const friendIdsList = [...friendIds];
+
+  const relations = await prisma.friendship.findMany({
+    where: {
+      status: { in: ["ACCEPTED", "PENDING"] },
+      OR: [{ requesterId: viewerId }, { addresseeId: viewerId }],
+    },
+    select: {
+      requesterId: true,
+      addresseeId: true,
+      status: true,
+    },
+  });
+
+  const relationStateByUserId = new Map<
+    string,
+    "FRIEND" | "PENDING_SENT" | "PENDING_RECEIVED"
+  >();
+  for (const relation of relations) {
+    const otherUserId =
+      relation.requesterId === viewerId ? relation.addresseeId : relation.requesterId;
+
+    if (relation.status === "ACCEPTED") {
+      relationStateByUserId.set(otherUserId, "FRIEND");
+      continue;
+    }
+
+    relationStateByUserId.set(
+      otherUserId,
+      relation.requesterId === viewerId ? "PENDING_SENT" : "PENDING_RECEIVED",
+    );
+  }
 
   const users = await prisma.user.findMany({
     where: {
@@ -137,7 +178,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
         <div className="mt-4 grid gap-2">
           {users.map((user) => {
             const isCurrentUser = user.id === viewerId;
-            const isFriend = friendIds.has(user.id);
+            const relationState = relationStateByUserId.get(user.id) ?? "NONE";
             const displayName = user.name ?? user.username ?? "User";
             const initials = displayName
               .split(" ")
@@ -152,7 +193,36 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
                   : "PUBLIC";
             const visibility = visibilityConfig[visibilityKey];
             const VisibilityIcon = visibility.icon;
-            const RelationIcon = isFriend ? UserCheck : UserPlus;
+
+            const relationMeta =
+              relationState === "FRIEND"
+                ? {
+                    icon: UserCheck,
+                    tooltip: "Friends",
+                    className:
+                      "border-emerald-400/30 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400",
+                  }
+                : relationState === "PENDING_RECEIVED"
+                  ? {
+                      icon: CircleHelp,
+                      tooltip: "Sent you a request",
+                      className:
+                        "border-amber-400/30 bg-amber-500/10 text-amber-500 dark:text-amber-400",
+                    }
+                  : relationState === "PENDING_SENT"
+                    ? {
+                        icon: Clock3,
+                        tooltip: "Request sent",
+                        className:
+                          "border-sky-400/30 bg-sky-500/10 text-sky-500 dark:text-sky-400",
+                      }
+                    : {
+                        icon: UserPlus,
+                        tooltip: "Add friend",
+                        className:
+                          "border-muted-foreground/25 bg-muted/70 text-muted-foreground",
+                      };
+            const RelationIcon = relationMeta.icon;
 
             return (
               <Link
@@ -187,18 +257,12 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span
-                          className={`inline-flex h-7 w-7 items-center justify-center rounded-full border ${
-                            isFriend
-                              ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400"
-                              : "border-muted-foreground/25 bg-muted/70 text-muted-foreground"
-                          }`}
+                          className={`inline-flex h-7 w-7 items-center justify-center rounded-full border ${relationMeta.className}`}
                         >
                           <RelationIcon className="h-3.5 w-3.5" />
                         </span>
                       </TooltipTrigger>
-                      <TooltipContent side="top">
-                        {isFriend ? "Friends" : "Add friend"}
-                      </TooltipContent>
+                      <TooltipContent side="top">{relationMeta.tooltip}</TooltipContent>
                     </Tooltip>
                   )}
                   <Tooltip>
