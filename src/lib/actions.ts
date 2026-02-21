@@ -1929,6 +1929,7 @@ type ProfileFormState = {
     username?: string;
     name?: string;
     bio?: string;
+    language?: string;
     visibility?: string;
     general?: string;
   };
@@ -1936,6 +1937,7 @@ type ProfileFormState = {
     username: string;
     name: string;
     bio: string;
+    language: "EN" | "ES";
     visibility: "PUBLIC" | "FRIENDS" | "PRIVATE";
   };
 } | null;
@@ -1954,6 +1956,7 @@ type ProfileInput = {
   username: string;
   name: string;
   bio: string | null;
+  language: "EN" | "ES";
   visibility: "PUBLIC" | "FRIENDS" | "PRIVATE";
 };
 
@@ -1968,11 +1971,17 @@ function parseProfileFormData(formData: FormData): ParsedProfileFormData {
   const rawUsername = formData.get("username");
   const rawName = formData.get("name");
   const rawBio = formData.get("bio");
+  const rawLanguage = formData.get("language");
   const rawVisibility = formData.get("visibility");
   const username =
     typeof rawUsername === "string" ? normalizeUsername(rawUsername) : "";
   const name = typeof rawName === "string" ? rawName.trim() : "";
   const bio = typeof rawBio === "string" ? rawBio.trim() : "";
+  const language =
+    typeof rawLanguage === "string" &&
+    VALID_USER_LANGUAGES.includes(rawLanguage as typeof VALID_USER_LANGUAGES[number])
+      ? (rawLanguage as "EN" | "ES")
+      : "EN";
   const visibility =
     typeof rawVisibility === "string" &&
     VALID_VISIBILITIES.includes(rawVisibility as typeof VALID_VISIBILITIES[number])
@@ -1982,6 +1991,7 @@ function parseProfileFormData(formData: FormData): ParsedProfileFormData {
     username,
     name,
     bio,
+    language,
     visibility,
   };
 
@@ -2000,6 +2010,13 @@ function parseProfileFormData(formData: FormData): ParsedProfileFormData {
   }
 
   if (
+    typeof rawLanguage !== "string" ||
+    !VALID_USER_LANGUAGES.includes(rawLanguage as typeof VALID_USER_LANGUAGES[number])
+  ) {
+    errors.language = "Invalid language option.";
+  }
+
+  if (
     typeof rawVisibility !== "string" ||
     !VALID_VISIBILITIES.includes(rawVisibility as typeof VALID_VISIBILITIES[number])
   ) {
@@ -2015,6 +2032,7 @@ function parseProfileFormData(formData: FormData): ParsedProfileFormData {
       username,
       name,
       bio: bio ? bio : null,
+      language,
       visibility,
     },
   };
@@ -2047,6 +2065,7 @@ export async function completeOnboarding(
         username: parsed.data.username,
         name: parsed.data.name,
         bio: parsed.data.bio ?? "",
+        language: parsed.data.language,
         visibility: parsed.data.visibility,
       },
     };
@@ -2065,6 +2084,7 @@ export async function completeOnboarding(
           username: parsed.data.username,
           name: parsed.data.name,
           bio: parsed.data.bio ?? "",
+          language: parsed.data.language,
           visibility: parsed.data.visibility,
         },
       };

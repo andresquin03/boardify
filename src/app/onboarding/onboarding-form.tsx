@@ -26,15 +26,26 @@ const visibilityConfig = {
   },
 } as const;
 
+const languageConfig = {
+  EN: {
+    label: "English",
+  },
+  ES: {
+    label: "Spanish",
+  },
+} as const;
+
 export function OnboardingForm({
   defaultUsername,
   defaultName,
   defaultBio,
+  defaultLanguage,
   defaultVisibility,
 }: {
   defaultUsername: string;
   defaultName: string;
   defaultBio: string;
+  defaultLanguage: "EN" | "ES";
   defaultVisibility: "PUBLIC" | "FRIENDS" | "PRIVATE";
 }) {
   const [state, action, isPending] = useActionState(completeOnboarding, null);
@@ -42,9 +53,10 @@ export function OnboardingForm({
     username: defaultUsername,
     name: defaultName,
     bio: defaultBio,
+    language: defaultLanguage,
     visibility: defaultVisibility,
   };
-  const formKey = `${initialValues.username}|${initialValues.name}|${initialValues.bio}|${initialValues.visibility}`;
+  const formKey = `${initialValues.username}|${initialValues.name}|${initialValues.bio}|${initialValues.language}|${initialValues.visibility}`;
 
   return (
     <form key={formKey} action={action} className="space-y-4" noValidate>
@@ -95,6 +107,22 @@ export function OnboardingForm({
           <p className="text-sm text-destructive">{state.errors.bio}</p>
         )}
         <p className="text-xs text-muted-foreground">Optional. Max 160 characters.</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="language">Language</Label>
+        <Select name="language" defaultValue={initialValues.language}>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="EN">{languageConfig.EN.label}</SelectItem>
+            <SelectItem value="ES">{languageConfig.ES.label}</SelectItem>
+          </SelectContent>
+        </Select>
+        {state?.errors?.language && (
+          <p className="text-sm text-destructive">{state.errors.language}</p>
+        )}
       </div>
 
       <div className="space-y-2">

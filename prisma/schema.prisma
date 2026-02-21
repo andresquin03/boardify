@@ -17,7 +17,7 @@ model User {
   image         String?
   username      String?   @unique
   bio           String?
-  language      UserLanguage @default(EN)
+  language      UserLanguage?
   visibility    ProfileVisibility @default(PRIVATE)
   notifyFriendshipEvents Boolean @default(true)
   notifyGroupEvents      Boolean @default(true)

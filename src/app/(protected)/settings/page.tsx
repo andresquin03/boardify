@@ -49,7 +49,7 @@ export default async function SettingsPage() {
       </p>
 
       <SettingsForms
-        defaultLanguage={user.language}
+        defaultLanguage={user.language ?? "EN"}
         defaultVisibility={user.visibility}
         defaultNotifyFriendshipEvents={user.notifyFriendshipEvents}
         defaultNotifyGroupEvents={user.notifyGroupEvents}

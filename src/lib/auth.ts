@@ -31,7 +31,15 @@ async function getUserSessionProfile(userId: string) {
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: authSecret,
   adapter: PrismaAdapter(prisma),
-  providers: [Google],
+  providers: [
+    Google({
+      authorization: {
+        params: {
+          prompt: "select_account",
+        },
+      },
+    }),
+  ],
   session: { strategy: "jwt" },
   cookies: {
     sessionToken: {

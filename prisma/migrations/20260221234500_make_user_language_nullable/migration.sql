@@ -1,0 +1,3 @@
+ALTER TABLE "User"
+  ALTER COLUMN "language" DROP DEFAULT,
+  ALTER COLUMN "language" DROP NOT NULL;

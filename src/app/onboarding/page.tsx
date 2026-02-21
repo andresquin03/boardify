@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -16,8 +17,26 @@ function getSuggestedUsernameFromEmail(email: string | null | undefined) {
   );
 }
 
+type LanguageValue = "EN" | "ES";
+
+function getPreferredLanguageFromHeader(acceptLanguage: string | null): LanguageValue {
+  if (!acceptLanguage) return "EN";
+
+  for (const rawPart of acceptLanguage.split(",")) {
+    const localePart = rawPart.trim().split(";")[0]?.toLowerCase();
+    if (!localePart) continue;
+
+    const baseLanguage = localePart.split("-")[0];
+    if (baseLanguage === "es") return "ES";
+    if (baseLanguage === "en") return "EN";
+  }
+
+  return "EN";
+}
+
 export default async function OnboardingPage() {
   const session = await auth();
+  const requestHeaders = await headers();
 
   if (!session?.user) redirect("/");
   const user = await prisma.user.findUnique({
@@ -26,6 +45,7 @@ export default async function OnboardingPage() {
       username: true,
       name: true,
       bio: true,
+      language: true,
       visibility: true,
     },
   });
@@ -33,6 +53,8 @@ export default async function OnboardingPage() {
   if (!user) redirect("/api/auth/signout?callbackUrl=/");
   if (user.username) redirect(`/u/${user.username}`);
   const suggestedUsername = getSuggestedUsernameFromEmail(session.user.email);
+  const defaultLanguage =
+    user.language ?? getPreferredLanguageFromHeader(requestHeaders.get("accept-language"));
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md items-center px-4">
@@ -47,6 +69,7 @@ export default async function OnboardingPage() {
           defaultUsername={user.username ?? suggestedUsername}
           defaultName={user.name ?? session.user.name ?? ""}
           defaultBio={user.bio ?? ""}
+          defaultLanguage={defaultLanguage}
           defaultVisibility={user.visibility ?? "PUBLIC"}
         />
       </div>
