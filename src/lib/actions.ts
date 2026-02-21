@@ -14,10 +14,18 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSafeRedirectPath } from "@/lib/safe-redirect";
 import {
+  deleteAllNotificationsForUser,
   deleteNotificationForUser,
   notifyFriendRequestAccepted,
   notifyFriendRequestReceived,
+  notifyGroupInviteAccepted,
+  notifyGroupInviteReceived,
+  notifyGroupJoinRequestAccepted,
+  notifyGroupJoinRequestReceived,
+  notifyGroupMemberJoined,
   softDeleteFriendRequestReceivedNotification,
+  softDeleteGroupInviteReceivedNotification,
+  softDeleteGroupJoinRequestReceivedNotifications,
 } from "@/lib/notifications";
 
 // ── Input validation ─────────────────────────────────────
@@ -506,6 +514,14 @@ export async function deleteNotification(notificationId: string) {
   revalidatePath("/", "layout");
 }
 
+export async function clearAllNotifications() {
+  const userId = await getAuthUserId();
+  await deleteAllNotificationsForUser(userId);
+
+  revalidatePath("/notifications");
+  revalidatePath("/", "layout");
+}
+
 // ── Groups ──────────────────────────────────────────────
 
 export type GroupFormState = {
@@ -615,6 +631,63 @@ function parseGroupFormData(formData: FormData): ParsedGroupFormData {
       visibility,
     },
   };
+}
+
+type GroupActionContext = {
+  id: string;
+  slug: string;
+  name: string;
+  visibility: GroupVisibilityValue;
+  members: Array<{
+    userId: string;
+    role: "ADMIN" | "MEMBER";
+    user: { username: string | null };
+  }>;
+};
+
+async function getGroupActionContext(groupId: string): Promise<GroupActionContext> {
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      visibility: true,
+      members: {
+        select: {
+          userId: true,
+          role: true,
+          user: { select: { username: true } },
+        },
+      },
+    },
+  });
+  if (!group) {
+    throw new Error("Group not found");
+  }
+  return group;
+}
+
+function getGroupAdminIds(group: GroupActionContext) {
+  return group.members
+    .filter((member) => member.role === "ADMIN")
+    .map((member) => member.userId);
+}
+
+function revalidateGroupRelatedPaths(
+  groupSlug: string,
+  usernames: Array<string | null | undefined> = [],
+) {
+  revalidatePath("/groups");
+  revalidatePath(`/groups/${groupSlug}`);
+  revalidatePath("/notifications");
+  revalidatePath("/", "layout");
+
+  for (const username of new Set(usernames)) {
+    if (!username) continue;
+    revalidatePath(`/u/${username}`);
+    revalidatePath(`/u/${username}/groups`);
+  }
 }
 
 export async function createGroup(
@@ -955,6 +1028,769 @@ export async function leaveGroup(groupId: string) {
   }
 
   redirect("/groups");
+}
+
+export async function joinPublicGroup(groupId: string) {
+  assertCuid(groupId, "groupId");
+  const userId = await getAuthUserId();
+  const [group, user] = await Promise.all([
+    getGroupActionContext(groupId),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { username: true },
+    }),
+  ]);
+
+  if (group.visibility !== "PUBLIC") {
+    throw new Error("This group is not open to direct join");
+  }
+
+  const alreadyMember = group.members.some((member) => member.userId === userId);
+  if (alreadyMember) {
+    revalidateGroupRelatedPaths(group.slug, group.members.map((member) => member.user.username));
+    return;
+  }
+
+  const created = await prisma.groupMember.createMany({
+    data: [
+      {
+        userId,
+        groupId: group.id,
+        role: "MEMBER",
+      },
+    ],
+    skipDuplicates: true,
+  });
+  if (created.count === 0) {
+    revalidateGroupRelatedPaths(group.slug, group.members.map((member) => member.user.username));
+    return;
+  }
+
+  await prisma.groupJoinRequest.updateMany({
+    where: {
+      groupId: group.id,
+      requesterId: userId,
+      status: "PENDING",
+    },
+    data: {
+      status: "CANCELLED",
+      handledById: userId,
+    },
+  });
+
+  await notifyGroupMemberJoined({
+    recipientIds: group.members.map((member) => member.userId),
+    actorId: userId,
+    groupId: group.id,
+    groupSlug: group.slug,
+    groupName: group.name,
+  });
+
+  revalidateGroupRelatedPaths(group.slug, [
+    ...group.members.map((member) => member.user.username),
+    user?.username,
+  ]);
+}
+
+export async function requestToJoinGroup(groupId: string) {
+  assertCuid(groupId, "groupId");
+  const requesterId = await getAuthUserId();
+  const [group, requester] = await Promise.all([
+    getGroupActionContext(groupId),
+    prisma.user.findUnique({
+      where: { id: requesterId },
+      select: { username: true },
+    }),
+  ]);
+
+  if (group.visibility === "PRIVATE") {
+    throw new Error("This group is private");
+  }
+  if (group.visibility !== "INVITATION") {
+    throw new Error("Use direct join for public groups");
+  }
+
+  if (group.members.some((member) => member.userId === requesterId)) {
+    revalidateGroupRelatedPaths(group.slug, group.members.map((member) => member.user.username));
+    return;
+  }
+
+  const existing = await prisma.groupJoinRequest.findUnique({
+    where: {
+      groupId_requesterId: {
+        groupId: group.id,
+        requesterId,
+      },
+    },
+    select: { id: true, status: true },
+  });
+
+  let joinRequestId: string | null = null;
+  if (!existing) {
+    const created = await prisma.groupJoinRequest.create({
+      data: {
+        groupId: group.id,
+        requesterId,
+      },
+      select: { id: true },
+    });
+    joinRequestId = created.id;
+  } else if (existing.status !== "PENDING") {
+    const reopened = await prisma.groupJoinRequest.update({
+      where: { id: existing.id },
+      data: {
+        status: "PENDING",
+        handledById: null,
+      },
+      select: { id: true },
+    });
+    joinRequestId = reopened.id;
+  }
+
+  if (joinRequestId) {
+    await notifyGroupJoinRequestReceived({
+      adminIds: getGroupAdminIds(group),
+      requesterId,
+      joinRequestId,
+      groupId: group.id,
+      groupSlug: group.slug,
+      groupName: group.name,
+    });
+  }
+
+  revalidateGroupRelatedPaths(group.slug, [
+    ...group.members.map((member) => member.user.username),
+    requester?.username,
+  ]);
+}
+
+export async function cancelGroupJoinRequest(joinRequestId: string) {
+  assertCuid(joinRequestId, "joinRequestId");
+  const userId = await getAuthUserId();
+
+  const joinRequest = await prisma.groupJoinRequest.findUnique({
+    where: { id: joinRequestId },
+    select: {
+      id: true,
+      status: true,
+      requesterId: true,
+      group: {
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          members: {
+            select: {
+              userId: true,
+              user: { select: { username: true } },
+            },
+          },
+        },
+      },
+      requester: {
+        select: {
+          username: true,
+        },
+      },
+    },
+  });
+  if (!joinRequest) {
+    throw new Error("Join request not found");
+  }
+  if (joinRequest.requesterId !== userId) {
+    throw new Error("Only the requester can cancel a request");
+  }
+
+  if (joinRequest.status !== "PENDING") {
+    revalidateGroupRelatedPaths(joinRequest.group.slug, [
+      ...joinRequest.group.members.map((member) => member.user.username),
+      joinRequest.requester.username,
+    ]);
+    return;
+  }
+
+  const result = await prisma.groupJoinRequest.updateMany({
+    where: {
+      id: joinRequest.id,
+      requesterId: userId,
+      status: "PENDING",
+    },
+    data: {
+      status: "CANCELLED",
+      handledById: userId,
+    },
+  });
+  if (result.count === 0) {
+    revalidateGroupRelatedPaths(joinRequest.group.slug, [
+      ...joinRequest.group.members.map((member) => member.user.username),
+      joinRequest.requester.username,
+    ]);
+    return;
+  }
+
+  await softDeleteGroupJoinRequestReceivedNotifications(joinRequest.id);
+
+  revalidateGroupRelatedPaths(joinRequest.group.slug, [
+    ...joinRequest.group.members.map((member) => member.user.username),
+    joinRequest.requester.username,
+  ]);
+}
+
+export async function acceptGroupJoinRequest(joinRequestId: string) {
+  assertCuid(joinRequestId, "joinRequestId");
+  const userId = await getAuthUserId();
+
+  const joinRequest = await prisma.groupJoinRequest.findUnique({
+    where: { id: joinRequestId },
+    select: {
+      id: true,
+      status: true,
+      requesterId: true,
+      groupId: true,
+      group: {
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          members: {
+            select: {
+              userId: true,
+              role: true,
+              user: {
+                select: { username: true },
+              },
+            },
+          },
+        },
+      },
+      requester: {
+        select: {
+          username: true,
+        },
+      },
+    },
+  });
+  if (!joinRequest) {
+    throw new Error("Join request not found");
+  }
+
+  const viewerMembership = joinRequest.group.members.find((member) => member.userId === userId);
+  if (viewerMembership?.role !== "ADMIN") {
+    throw new Error("Not authorized");
+  }
+
+  if (joinRequest.status !== "PENDING") {
+    revalidateGroupRelatedPaths(joinRequest.group.slug, [
+      ...joinRequest.group.members.map((member) => member.user.username),
+      joinRequest.requester.username,
+    ]);
+    return;
+  }
+
+  const accepted = await prisma.$transaction(async (tx) => {
+    const updateResult = await tx.groupJoinRequest.updateMany({
+      where: {
+        id: joinRequest.id,
+        status: "PENDING",
+      },
+      data: {
+        status: "ACCEPTED",
+        handledById: userId,
+      },
+    });
+    if (updateResult.count === 0) {
+      return false;
+    }
+
+    await tx.groupMember.createMany({
+      data: [
+        {
+          userId: joinRequest.requesterId,
+          groupId: joinRequest.groupId,
+          role: "MEMBER",
+        },
+      ],
+      skipDuplicates: true,
+    });
+
+    await tx.groupInvitation.updateMany({
+      where: {
+        groupId: joinRequest.groupId,
+        inviteeId: joinRequest.requesterId,
+        status: "PENDING",
+      },
+      data: {
+        status: "CANCELLED",
+      },
+    });
+
+    return true;
+  });
+
+  if (!accepted) {
+    revalidateGroupRelatedPaths(joinRequest.group.slug, [
+      ...joinRequest.group.members.map((member) => member.user.username),
+      joinRequest.requester.username,
+    ]);
+    return;
+  }
+
+  await Promise.all([
+    notifyGroupJoinRequestAccepted({
+      requesterId: joinRequest.requesterId,
+      adminId: userId,
+      joinRequestId: joinRequest.id,
+      groupId: joinRequest.group.id,
+      groupSlug: joinRequest.group.slug,
+      groupName: joinRequest.group.name,
+    }),
+    notifyGroupMemberJoined({
+      recipientIds: joinRequest.group.members.map((member) => member.userId),
+      actorId: joinRequest.requesterId,
+      groupId: joinRequest.group.id,
+      groupSlug: joinRequest.group.slug,
+      groupName: joinRequest.group.name,
+    }),
+    softDeleteGroupJoinRequestReceivedNotifications(joinRequest.id),
+  ]);
+
+  revalidateGroupRelatedPaths(joinRequest.group.slug, [
+    ...joinRequest.group.members.map((member) => member.user.username),
+    joinRequest.requester.username,
+  ]);
+}
+
+export async function rejectGroupJoinRequest(joinRequestId: string) {
+  assertCuid(joinRequestId, "joinRequestId");
+  const userId = await getAuthUserId();
+
+  const joinRequest = await prisma.groupJoinRequest.findUnique({
+    where: { id: joinRequestId },
+    select: {
+      id: true,
+      status: true,
+      requesterId: true,
+      group: {
+        select: {
+          slug: true,
+          members: {
+            select: {
+              userId: true,
+              role: true,
+              user: { select: { username: true } },
+            },
+          },
+        },
+      },
+      requester: {
+        select: {
+          username: true,
+        },
+      },
+    },
+  });
+  if (!joinRequest) {
+    throw new Error("Join request not found");
+  }
+
+  const viewerMembership = joinRequest.group.members.find((member) => member.userId === userId);
+  if (viewerMembership?.role !== "ADMIN") {
+    throw new Error("Not authorized");
+  }
+
+  if (joinRequest.status !== "PENDING") {
+    revalidateGroupRelatedPaths(joinRequest.group.slug, [
+      ...joinRequest.group.members.map((member) => member.user.username),
+      joinRequest.requester.username,
+    ]);
+    return;
+  }
+
+  const result = await prisma.groupJoinRequest.updateMany({
+    where: {
+      id: joinRequest.id,
+      status: "PENDING",
+    },
+    data: {
+      status: "REJECTED",
+      handledById: userId,
+    },
+  });
+  if (result.count === 0) {
+    revalidateGroupRelatedPaths(joinRequest.group.slug, [
+      ...joinRequest.group.members.map((member) => member.user.username),
+      joinRequest.requester.username,
+    ]);
+    return;
+  }
+
+  await softDeleteGroupJoinRequestReceivedNotifications(joinRequest.id);
+
+  revalidateGroupRelatedPaths(joinRequest.group.slug, [
+    ...joinRequest.group.members.map((member) => member.user.username),
+    joinRequest.requester.username,
+  ]);
+}
+
+export async function sendGroupInvitation(groupId: string, inviteeId: string) {
+  assertCuid(groupId, "groupId");
+  assertCuid(inviteeId, "inviteeId");
+  const inviterId = await getAuthUserId();
+
+  if (inviterId === inviteeId) {
+    throw new Error("Cannot invite yourself");
+  }
+
+  const [group, invitee, friendship] = await Promise.all([
+    getGroupActionContext(groupId),
+    prisma.user.findUnique({
+      where: { id: inviteeId },
+      select: { id: true, username: true },
+    }),
+    prisma.friendship.findFirst({
+      where: {
+        status: "ACCEPTED",
+        OR: [
+          { requesterId: inviterId, addresseeId: inviteeId },
+          { requesterId: inviteeId, addresseeId: inviterId },
+        ],
+      },
+      select: { id: true },
+    }),
+  ]);
+
+  const inviterMembership = group.members.find((member) => member.userId === inviterId);
+  if (inviterMembership?.role !== "ADMIN") {
+    throw new Error("Not authorized");
+  }
+  if (!invitee) {
+    throw new Error("User not found");
+  }
+  if (!friendship) {
+    throw new Error("You can only invite your friends");
+  }
+  if (group.members.some((member) => member.userId === inviteeId)) {
+    throw new Error("User is already a member");
+  }
+
+  const existing = await prisma.groupInvitation.findUnique({
+    where: {
+      groupId_inviteeId: {
+        groupId: group.id,
+        inviteeId,
+      },
+    },
+    select: {
+      id: true,
+      status: true,
+    },
+  });
+
+  let invitationId: string | null = null;
+  if (!existing) {
+    const created = await prisma.groupInvitation.create({
+      data: {
+        groupId: group.id,
+        inviterId,
+        inviteeId,
+      },
+      select: { id: true },
+    });
+    invitationId = created.id;
+  } else if (existing.status !== "PENDING") {
+    const reopened = await prisma.groupInvitation.update({
+      where: { id: existing.id },
+      data: {
+        status: "PENDING",
+        inviterId,
+      },
+      select: { id: true },
+    });
+    invitationId = reopened.id;
+  }
+
+  if (invitationId) {
+    await notifyGroupInviteReceived({
+      inviteeId,
+      inviterId,
+      invitationId,
+      groupId: group.id,
+      groupSlug: group.slug,
+      groupName: group.name,
+    });
+  }
+
+  revalidateGroupRelatedPaths(group.slug, [
+    ...group.members.map((member) => member.user.username),
+    invitee.username,
+  ]);
+}
+
+export async function cancelGroupInvitation(invitationId: string) {
+  assertCuid(invitationId, "invitationId");
+  const userId = await getAuthUserId();
+
+  const invitation = await prisma.groupInvitation.findUnique({
+    where: { id: invitationId },
+    select: {
+      id: true,
+      status: true,
+      inviterId: true,
+      inviteeId: true,
+      group: {
+        select: {
+          slug: true,
+          members: {
+            select: {
+              userId: true,
+              user: { select: { username: true } },
+            },
+          },
+        },
+      },
+      invitee: {
+        select: {
+          username: true,
+        },
+      },
+    },
+  });
+  if (!invitation) {
+    throw new Error("Invitation not found");
+  }
+  if (invitation.inviterId !== userId) {
+    throw new Error("Only the inviter can cancel");
+  }
+
+  if (invitation.status !== "PENDING") {
+    revalidateGroupRelatedPaths(invitation.group.slug, [
+      ...invitation.group.members.map((member) => member.user.username),
+      invitation.invitee.username,
+    ]);
+    return;
+  }
+
+  const result = await prisma.groupInvitation.updateMany({
+    where: {
+      id: invitation.id,
+      inviterId: userId,
+      status: "PENDING",
+    },
+    data: {
+      status: "CANCELLED",
+    },
+  });
+  if (result.count === 0) {
+    revalidateGroupRelatedPaths(invitation.group.slug, [
+      ...invitation.group.members.map((member) => member.user.username),
+      invitation.invitee.username,
+    ]);
+    return;
+  }
+
+  await softDeleteGroupInviteReceivedNotification(invitation.inviteeId, invitation.id);
+
+  revalidateGroupRelatedPaths(invitation.group.slug, [
+    ...invitation.group.members.map((member) => member.user.username),
+    invitation.invitee.username,
+  ]);
+}
+
+export async function acceptGroupInvitation(invitationId: string) {
+  assertCuid(invitationId, "invitationId");
+  const userId = await getAuthUserId();
+
+  const invitation = await prisma.groupInvitation.findUnique({
+    where: { id: invitationId },
+    select: {
+      id: true,
+      status: true,
+      groupId: true,
+      inviterId: true,
+      inviteeId: true,
+      group: {
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          members: {
+            select: {
+              userId: true,
+              user: { select: { username: true } },
+            },
+          },
+        },
+      },
+      invitee: {
+        select: {
+          username: true,
+        },
+      },
+      inviter: {
+        select: {
+          username: true,
+        },
+      },
+    },
+  });
+  if (!invitation) {
+    throw new Error("Invitation not found");
+  }
+  if (invitation.inviteeId !== userId) {
+    throw new Error("Only invitee can accept");
+  }
+
+  if (invitation.status !== "PENDING") {
+    revalidateGroupRelatedPaths(invitation.group.slug, [
+      ...invitation.group.members.map((member) => member.user.username),
+      invitation.invitee.username,
+      invitation.inviter.username,
+    ]);
+    return;
+  }
+
+  const accepted = await prisma.$transaction(async (tx) => {
+    const updateResult = await tx.groupInvitation.updateMany({
+      where: {
+        id: invitation.id,
+        inviteeId: userId,
+        status: "PENDING",
+      },
+      data: {
+        status: "ACCEPTED",
+      },
+    });
+    if (updateResult.count === 0) {
+      return false;
+    }
+
+    await tx.groupMember.createMany({
+      data: [
+        {
+          userId,
+          groupId: invitation.groupId,
+          role: "MEMBER",
+        },
+      ],
+      skipDuplicates: true,
+    });
+
+    await tx.groupJoinRequest.updateMany({
+      where: {
+        groupId: invitation.groupId,
+        requesterId: userId,
+        status: "PENDING",
+      },
+      data: {
+        status: "CANCELLED",
+        handledById: invitation.inviterId,
+      },
+    });
+
+    return true;
+  });
+  if (!accepted) {
+    revalidateGroupRelatedPaths(invitation.group.slug, [
+      ...invitation.group.members.map((member) => member.user.username),
+      invitation.invitee.username,
+      invitation.inviter.username,
+    ]);
+    return;
+  }
+
+  await Promise.all([
+    notifyGroupInviteAccepted({
+      inviterId: invitation.inviterId,
+      inviteeId: userId,
+      invitationId: invitation.id,
+      groupId: invitation.group.id,
+      groupSlug: invitation.group.slug,
+      groupName: invitation.group.name,
+    }),
+    notifyGroupMemberJoined({
+      recipientIds: invitation.group.members.map((member) => member.userId),
+      actorId: userId,
+      groupId: invitation.group.id,
+      groupSlug: invitation.group.slug,
+      groupName: invitation.group.name,
+    }),
+    softDeleteGroupInviteReceivedNotification(userId, invitation.id),
+  ]);
+
+  revalidateGroupRelatedPaths(invitation.group.slug, [
+    ...invitation.group.members.map((member) => member.user.username),
+    invitation.invitee.username,
+    invitation.inviter.username,
+  ]);
+}
+
+export async function rejectGroupInvitation(invitationId: string) {
+  assertCuid(invitationId, "invitationId");
+  const userId = await getAuthUserId();
+
+  const invitation = await prisma.groupInvitation.findUnique({
+    where: { id: invitationId },
+    select: {
+      id: true,
+      status: true,
+      inviteeId: true,
+      group: {
+        select: {
+          slug: true,
+          members: {
+            select: {
+              userId: true,
+              user: { select: { username: true } },
+            },
+          },
+        },
+      },
+      invitee: {
+        select: {
+          username: true,
+        },
+      },
+    },
+  });
+  if (!invitation) {
+    throw new Error("Invitation not found");
+  }
+  if (invitation.inviteeId !== userId) {
+    throw new Error("Only invitee can reject");
+  }
+
+  if (invitation.status !== "PENDING") {
+    revalidateGroupRelatedPaths(invitation.group.slug, [
+      ...invitation.group.members.map((member) => member.user.username),
+      invitation.invitee.username,
+    ]);
+    return;
+  }
+
+  const result = await prisma.groupInvitation.updateMany({
+    where: {
+      id: invitation.id,
+      inviteeId: userId,
+      status: "PENDING",
+    },
+    data: {
+      status: "REJECTED",
+    },
+  });
+  if (result.count === 0) {
+    revalidateGroupRelatedPaths(invitation.group.slug, [
+      ...invitation.group.members.map((member) => member.user.username),
+      invitation.invitee.username,
+    ]);
+    return;
+  }
+
+  await softDeleteGroupInviteReceivedNotification(userId, invitation.id);
+
+  revalidateGroupRelatedPaths(invitation.group.slug, [
+    ...invitation.group.members.map((member) => member.user.username),
+    invitation.invitee.username,
+  ]);
 }
 
 // ── Onboarding ──────────────────────────────────────────

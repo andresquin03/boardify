@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { deleteNotification } from "@/lib/actions";
+import { ClearAllNotificationsButton } from "./clear-all-notifications-button";
 import {
   countUnreadNotifications,
   listNotifications,
@@ -35,7 +36,7 @@ export default async function NotificationsPage() {
   const hasNotifications = notifications.length > 0;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-2xl flex-col px-4 py-10">
       <div className="group flex items-center gap-2.5">
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/70 bg-card/70 text-amber-500 shadow-sm motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95">
           <BellRing className="h-4.5 w-4.5 transition-all duration-300 motion-safe:animate-[pulse_2.8s_ease-in-out_infinite] group-hover:scale-110 group-hover:-rotate-6 group-active:scale-95" />
@@ -148,6 +149,12 @@ export default async function NotificationsPage() {
           })}
         </section>
       )}
+
+      {hasNotifications && (
+        <div className="mt-auto flex justify-end pt-8">
+          <ClearAllNotificationsButton />
+        </div>
+      )}
     </div>
   );
 }
@@ -219,6 +226,39 @@ function getNotificationDetails(notification: NotificationItem) {
     return {
       title: "Group invitation accepted",
       message: `${actorName} accepted your invitation to ${groupName}.`,
+      href: groupSlug ? `/groups/${groupSlug}` : "/groups",
+      actorDisplayName: actorName,
+      actorInitials,
+      scope: NOTIFICATION_SCOPE.GROUP,
+    };
+  }
+
+  if (notification.eventKey === NOTIFICATION_EVENT_KEY.GROUP_JOIN_REQUEST_RECEIVED) {
+    return {
+      title: "Join request received",
+      message: `${actorName} requested to join ${groupName}.`,
+      href: groupSlug ? `/groups/${groupSlug}` : "/groups",
+      actorDisplayName: actorName,
+      actorInitials,
+      scope: NOTIFICATION_SCOPE.GROUP,
+    };
+  }
+
+  if (notification.eventKey === NOTIFICATION_EVENT_KEY.GROUP_JOIN_REQUEST_ACCEPTED) {
+    return {
+      title: "Request accepted",
+      message: `${actorName} accepted your request to join ${groupName}.`,
+      href: groupSlug ? `/groups/${groupSlug}` : "/groups",
+      actorDisplayName: actorName,
+      actorInitials,
+      scope: NOTIFICATION_SCOPE.GROUP,
+    };
+  }
+
+  if (notification.eventKey === NOTIFICATION_EVENT_KEY.GROUP_MEMBER_JOINED) {
+    return {
+      title: "New group member",
+      message: `${actorName} joined ${groupName}.`,
       href: groupSlug ? `/groups/${groupSlug}` : "/groups",
       actorDisplayName: actorName,
       actorInitials,

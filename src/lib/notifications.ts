@@ -12,6 +12,9 @@ export const NOTIFICATION_EVENT_KEY = {
   FRIEND_REQUEST_ACCEPTED: NotificationEventKey.FRIEND_REQUEST_ACCEPTED,
   GROUP_INVITE_RECEIVED: NotificationEventKey.GROUP_INVITE_RECEIVED,
   GROUP_INVITE_ACCEPTED: NotificationEventKey.GROUP_INVITE_ACCEPTED,
+  GROUP_JOIN_REQUEST_RECEIVED: NotificationEventKey.GROUP_JOIN_REQUEST_RECEIVED,
+  GROUP_JOIN_REQUEST_ACCEPTED: NotificationEventKey.GROUP_JOIN_REQUEST_ACCEPTED,
+  GROUP_MEMBER_JOINED: NotificationEventKey.GROUP_MEMBER_JOINED,
 } as const;
 
 type NotificationCreateInput = {
@@ -116,10 +119,50 @@ export async function markNotificationsSeenByScopes(userId: string, scopes: stri
   });
 }
 
+export async function markGroupNotificationsSeen(userId: string, groupId: string) {
+  const now = new Date();
+  return prisma.notification.updateMany({
+    where: {
+      userId,
+      scope: NOTIFICATION_SCOPE.GROUP,
+      deletedAt: null,
+      isSeen: false,
+      OR: [
+        {
+          entityType: "group",
+          entityId: groupId,
+        },
+        {
+          payload: {
+            path: ["groupId"],
+            equals: groupId,
+          },
+        },
+      ],
+    },
+    data: {
+      isSeen: true,
+      seenAt: now,
+    },
+  });
+}
+
 export async function deleteNotificationForUser(userId: string, notificationId: string) {
   return prisma.notification.updateMany({
     where: {
       id: notificationId,
+      userId,
+      deletedAt: null,
+    },
+    data: {
+      deletedAt: new Date(),
+    },
+  });
+}
+
+export async function deleteAllNotificationsForUser(userId: string) {
+  return prisma.notification.updateMany({
+    where: {
       userId,
       deletedAt: null,
     },
@@ -247,4 +290,144 @@ export async function notifyGroupInviteAccepted({
       groupName,
     },
   });
+}
+
+export async function softDeleteGroupInviteReceivedNotification(
+  inviteeId: string,
+  invitationId: string,
+) {
+  return prisma.notification.updateMany({
+    where: {
+      userId: inviteeId,
+      eventKey: NOTIFICATION_EVENT_KEY.GROUP_INVITE_RECEIVED,
+      entityType: "group_invitation",
+      entityId: invitationId,
+      deletedAt: null,
+    },
+    data: {
+      deletedAt: new Date(),
+    },
+  });
+}
+
+export async function softDeleteGroupJoinRequestReceivedNotifications(joinRequestId: string) {
+  return prisma.notification.updateMany({
+    where: {
+      eventKey: NOTIFICATION_EVENT_KEY.GROUP_JOIN_REQUEST_RECEIVED,
+      entityType: "group_join_request",
+      entityId: joinRequestId,
+      deletedAt: null,
+    },
+    data: {
+      deletedAt: new Date(),
+    },
+  });
+}
+
+export async function notifyGroupJoinRequestReceived({
+  adminIds,
+  requesterId,
+  joinRequestId,
+  groupId,
+  groupSlug,
+  groupName,
+}: {
+  adminIds: string[];
+  requesterId: string;
+  joinRequestId: string;
+  groupId: string;
+  groupSlug?: string;
+  groupName?: string;
+}) {
+  const recipientIds = [...new Set(adminIds)].filter((id) => id !== requesterId);
+  if (recipientIds.length === 0) {
+    return [];
+  }
+
+  return Promise.all(
+    recipientIds.map((adminId) =>
+      createNotification({
+        userId: adminId,
+        actorId: requesterId,
+        eventKey: NOTIFICATION_EVENT_KEY.GROUP_JOIN_REQUEST_RECEIVED,
+        scope: NOTIFICATION_SCOPE.GROUP,
+        entityType: "group_join_request",
+        entityId: joinRequestId,
+        payload: {
+          status: "PENDING",
+          groupId,
+          groupSlug,
+          groupName,
+        },
+      }),
+    ),
+  );
+}
+
+export async function notifyGroupJoinRequestAccepted({
+  requesterId,
+  adminId,
+  joinRequestId,
+  groupId,
+  groupSlug,
+  groupName,
+}: {
+  requesterId: string;
+  adminId: string;
+  joinRequestId: string;
+  groupId: string;
+  groupSlug?: string;
+  groupName?: string;
+}) {
+  return createNotification({
+    userId: requesterId,
+    actorId: adminId,
+    eventKey: NOTIFICATION_EVENT_KEY.GROUP_JOIN_REQUEST_ACCEPTED,
+    scope: NOTIFICATION_SCOPE.GROUP,
+    entityType: "group_join_request",
+    entityId: joinRequestId,
+    payload: {
+      status: "ACCEPTED",
+      groupId,
+      groupSlug,
+      groupName,
+    },
+  });
+}
+
+export async function notifyGroupMemberJoined({
+  recipientIds,
+  actorId,
+  groupId,
+  groupSlug,
+  groupName,
+}: {
+  recipientIds: string[];
+  actorId: string;
+  groupId: string;
+  groupSlug?: string;
+  groupName?: string;
+}) {
+  const uniqueRecipientIds = [...new Set(recipientIds)].filter((id) => id !== actorId);
+  if (uniqueRecipientIds.length === 0) {
+    return [];
+  }
+
+  return Promise.all(
+    uniqueRecipientIds.map((recipientId) =>
+      createNotification({
+        userId: recipientId,
+        actorId,
+        eventKey: NOTIFICATION_EVENT_KEY.GROUP_MEMBER_JOINED,
+        scope: NOTIFICATION_SCOPE.GROUP,
+        entityType: "group",
+        entityId: groupId,
+        payload: {
+          groupId,
+          groupSlug,
+          groupName,
+        },
+      }),
+    ),
+  );
 }

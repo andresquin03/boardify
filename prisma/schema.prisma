@@ -28,6 +28,8 @@ model User {
   groupMemberships          GroupMember[]
   sentGroupInvitations      GroupInvitation[] @relation("GroupInvitationSent")
   receivedGroupInvitations  GroupInvitation[] @relation("GroupInvitationReceived")
+  sentGroupJoinRequests     GroupJoinRequest[] @relation("GroupJoinRequestSent")
+  handledGroupJoinRequests  GroupJoinRequest[] @relation("GroupJoinRequestHandled")
   notifications             Notification[] @relation("NotificationRecipient")
   actedNotifications        Notification[] @relation("NotificationActor")
 
@@ -54,6 +56,9 @@ enum NotificationEventKey {
   FRIEND_REQUEST_ACCEPTED
   GROUP_INVITE_RECEIVED
   GROUP_INVITE_ACCEPTED
+  GROUP_JOIN_REQUEST_RECEIVED
+  GROUP_JOIN_REQUEST_ACCEPTED
+  GROUP_MEMBER_JOINED
 }
 
 model Friendship {
@@ -208,6 +213,14 @@ enum GroupInvitationStatus {
   PENDING
   ACCEPTED
   REJECTED
+  CANCELLED
+}
+
+enum GroupJoinRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
 }
 
 enum GroupIcon {
@@ -276,6 +289,7 @@ model Group {
 
   members     GroupMember[]
   invitations GroupInvitation[]
+  joinRequests GroupJoinRequest[]
   slugHistory GroupSlug[]
 }
 
@@ -319,4 +333,23 @@ model GroupInvitation {
 
   @@unique([groupId, inviteeId])
   @@index([inviteeId, status])
+}
+
+model GroupJoinRequest {
+  id          String                 @id @default(cuid())
+  status      GroupJoinRequestStatus @default(PENDING)
+  groupId     String
+  requesterId String
+  handledById String?
+
+  group     Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  requester User   @relation("GroupJoinRequestSent", fields: [requesterId], references: [id], onDelete: Cascade)
+  handledBy User?  @relation("GroupJoinRequestHandled", fields: [handledById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([groupId, requesterId])
+  @@index([requesterId, status])
+  @@index([groupId, status])
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Ellipsis, LogOut, Pencil, ShieldAlert, UserPlus } from "lucide-react";
+import { Ellipsis, LogOut, Pencil, ShieldAlert } from "lucide-react";
 import { leaveGroup } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,10 +63,6 @@ export function GroupActionsMenu({
                   <Pencil className="h-4 w-4" />
                   Edit group
                 </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled className="gap-2">
-                <UserPlus className="h-4 w-4" />
-                Add members (Soon)
               </DropdownMenuItem>
               <DropdownMenuSeparator />
             </>

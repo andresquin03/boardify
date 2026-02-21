@@ -1,6 +1,19 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Globe, Lock, Mail, Network, Plus, UserCheck, Users } from "lucide-react";
+import {
+  Check,
+  Globe,
+  Lock,
+  Mail,
+  Network,
+  Plus,
+  SendHorizontal,
+  UserCheck,
+  Users,
+  X,
+} from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { FormPendingButton } from "@/components/ui/form-pending-button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { auth } from "@/lib/auth";
 import { GROUP_COLOR_CONFIG } from "@/lib/group-colors";
@@ -9,6 +22,12 @@ import { GROUP_ICON_MAP } from "@/lib/group-icons";
 import type { GroupColor, GroupVisibility } from "@/generated/prisma/client";
 import { cn } from "@/lib/utils";
 import { markNotificationsSeenByScopes, NOTIFICATION_SCOPE } from "@/lib/notifications";
+import {
+  acceptGroupJoinRequest,
+  cancelGroupInvitation,
+  cancelGroupJoinRequest,
+  rejectGroupJoinRequest,
+} from "@/lib/actions";
 
 const visibilityConfig = {
   PUBLIC: {
@@ -86,9 +105,88 @@ export default async function UserGroupsPage({
     orderBy: { joinedAt: "desc" },
   });
 
+  const [sentGroupInvitations, sentJoinRequests, adminPendingJoinRequests] = isOwner
+    ? await Promise.all([
+        prisma.groupInvitation.findMany({
+          where: {
+            inviterId: viewerId,
+            status: "PENDING",
+          },
+          include: {
+            group: {
+              select: {
+                id: true,
+                slug: true,
+                name: true,
+              },
+            },
+            invitee: {
+              select: {
+                id: true,
+                name: true,
+                username: true,
+                image: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.groupJoinRequest.findMany({
+          where: {
+            requesterId: viewerId,
+            status: "PENDING",
+          },
+          include: {
+            group: {
+              select: {
+                id: true,
+                slug: true,
+                name: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.groupJoinRequest.findMany({
+          where: {
+            status: "PENDING",
+            group: {
+              members: {
+                some: {
+                  userId: viewerId,
+                  role: "ADMIN",
+                },
+              },
+            },
+          },
+          include: {
+            group: {
+              select: {
+                id: true,
+                slug: true,
+                name: true,
+              },
+            },
+            requester: {
+              select: {
+                id: true,
+                name: true,
+                username: true,
+                image: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        }),
+      ])
+    : [[], [], []];
+
   const displayName = targetUser.name ?? targetUser.username ?? "User";
   const createGroupCta =
     groups.length === 0 ? "Create your first group!" : "Create group";
+  const hasSentGroupRequests =
+    sentGroupInvitations.length > 0 || sentJoinRequests.length > 0;
+  const hasIncomingGroupRequests = adminPendingJoinRequests.length > 0;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 pb-24">
@@ -104,12 +202,187 @@ export default async function UserGroupsPage({
         {groups.length} {groups.length === 1 ? "group" : "groups"}
       </p>
 
+      {isOwner && hasSentGroupRequests && (
+        <section className="mt-6 space-y-4">
+          <div className="rounded-xl border bg-card/70 p-4 shadow-sm">
+            <h2 className="flex items-center gap-2 text-base font-semibold">
+              <SendHorizontal className="h-4 w-4 text-sky-500" />
+              Sent requests
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Invitations you sent and join requests you submitted.
+            </p>
+
+            <div className="mt-3 grid gap-3 lg:grid-cols-2">
+              {sentGroupInvitations.length > 0 && (
+                <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                  <p className="text-sm font-medium">
+                    Group invitations sent
+                    <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                      {sentGroupInvitations.length}
+                    </span>
+                  </p>
+                  <div className="mt-2 space-y-2">
+                    {sentGroupInvitations.map((invitation) => {
+                      const inviteeName = invitation.invitee.name ?? invitation.invitee.username ?? "User";
+                      return (
+                        <div
+                          key={invitation.id}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/60 bg-background/65 px-2.5 py-2"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm">
+                              <Link href={`/groups/${invitation.group.slug}`} className="font-medium hover:underline">
+                                {invitation.group.name}
+                              </Link>{" "}
+                              <span className="text-muted-foreground">for {inviteeName}</span>
+                            </p>
+                          </div>
+                          <form action={cancelGroupInvitation.bind(null, invitation.id)}>
+                            <FormPendingButton
+                              type="submit"
+                              variant="outline"
+                              size="sm"
+                              pendingText="Cancelling..."
+                              className="cursor-pointer gap-1"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                              Cancel
+                            </FormPendingButton>
+                          </form>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {sentJoinRequests.length > 0 && (
+                <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                  <p className="text-sm font-medium">
+                    Join requests sent
+                    <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                      {sentJoinRequests.length}
+                    </span>
+                  </p>
+                  <div className="mt-2 space-y-2">
+                    {sentJoinRequests.map((request) => (
+                      <div
+                        key={request.id}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/60 bg-background/65 px-2.5 py-2"
+                      >
+                        <p className="truncate text-sm">
+                          <Link href={`/groups/${request.group.slug}`} className="font-medium hover:underline">
+                            {request.group.name}
+                          </Link>
+                        </p>
+                        <form action={cancelGroupJoinRequest.bind(null, request.id)}>
+                          <FormPendingButton
+                            type="submit"
+                            variant="outline"
+                            size="sm"
+                            pendingText="Cancelling..."
+                            className="cursor-pointer gap-1"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                            Cancel
+                          </FormPendingButton>
+                        </form>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {isOwner && hasIncomingGroupRequests && (
+        <section className="mt-6 rounded-xl border bg-card/70 p-4 shadow-sm">
+          <h2 className="flex items-center gap-2 text-base font-semibold">
+            <Mail className="h-4 w-4 text-amber-500" />
+            Requests to your groups
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+              {adminPendingJoinRequests.length}
+            </span>
+          </h2>
+          <div className="mt-3 space-y-2">
+            {adminPendingJoinRequests.map((request) => {
+              const requesterName = request.requester.name ?? request.requester.username ?? "User";
+              return (
+                <div
+                  key={request.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2"
+                >
+                  <div className="min-w-0 flex items-center gap-2.5">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={request.requester.image ?? undefined} alt={requesterName} />
+                      <AvatarFallback>
+                        {requesterName
+                          .split(" ")
+                          .map((part) => part[0])
+                          .join("")
+                          .slice(0, 2)
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{requesterName}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        wants to join{" "}
+                        <Link href={`/groups/${request.group.slug}`} className="hover:underline">
+                          {request.group.name}
+                        </Link>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <form action={acceptGroupJoinRequest.bind(null, request.id)}>
+                      <FormPendingButton
+                        type="submit"
+                        variant="outline"
+                        size="sm"
+                        pendingText="Accepting..."
+                        className="cursor-pointer gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        Accept
+                      </FormPendingButton>
+                    </form>
+                    <form action={rejectGroupJoinRequest.bind(null, request.id)}>
+                      <FormPendingButton
+                        type="submit"
+                        variant="outline"
+                        size="sm"
+                        pendingText="Rejecting..."
+                        className="cursor-pointer gap-1"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        Reject
+                      </FormPendingButton>
+                    </form>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {groups.length === 0 ? (
-        <div className="mt-6 flex flex-col items-start gap-3">
-          <p className="text-sm text-muted-foreground">
-            {isOwner ? "You haven\u2019t joined any groups yet." : "No groups yet."}
+        <section className="mt-6 rounded-xl border bg-card/70 p-5 shadow-sm">
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Network className="h-4 w-4" />
+            No groups yet.
           </p>
-          {isOwner && (
+          <p className="mt-1 text-sm text-muted-foreground">
+            {isOwner
+              ? "Browse groups to join one, or create your own."
+              : `${displayName} hasn\u2019t joined any groups yet.`}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
             <Link
               href="/groups"
               className="pressable inline-flex items-center gap-2 rounded-md border border-border/70 bg-card px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent/60 active:bg-accent/75"
@@ -117,8 +390,17 @@ export default async function UserGroupsPage({
               <Network className="h-3.5 w-3.5" />
               Browse groups
             </Link>
-          )}
-        </div>
+            {isOwner && (
+              <Link
+                href="/groups/new"
+                className="pressable inline-flex items-center gap-2 rounded-md border border-border/70 bg-card px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent/60 active:bg-accent/75"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Create group
+              </Link>
+            )}
+          </div>
+        </section>
       ) : (
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map(({ group }) => {
