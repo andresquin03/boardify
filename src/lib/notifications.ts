@@ -251,6 +251,28 @@ export async function markGroupNotificationsSeen(userId: string, groupId: string
   });
 }
 
+export async function markFriendshipNotificationsSeenByActor(userId: string, actorId: string) {
+  const friendshipEventKeys = await getNotificationEventKeysByScopes([NOTIFICATION_SCOPE.FRIENDSHIP]);
+  if (friendshipEventKeys.length === 0) {
+    return { count: 0 };
+  }
+
+  const now = new Date();
+  return prisma.notification.updateMany({
+    where: {
+      userId,
+      actorId,
+      eventKey: { in: friendshipEventKeys },
+      deletedAt: null,
+      isSeen: false,
+    },
+    data: {
+      isSeen: true,
+      seenAt: now,
+    },
+  });
+}
+
 export async function deleteNotificationForUser(userId: string, notificationId: string) {
   return prisma.notification.updateMany({
     where: {

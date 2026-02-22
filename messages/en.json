@@ -534,7 +534,13 @@
       "rating": "{rating} / 10 rating",
       "difficulty": "{difficulty} / 5 difficulty"
     },
-    "about": "About"
+    "about": "About",
+    "friendsOwned": {
+      "title": "Friends who own this game",
+      "empty": "None of your friends own this game yet.",
+      "badge": "Owns it",
+      "fallbackUser": "User"
+    }
   },
   "GameNotFound": {
     "eyebrow": "GAME NOT FOUND",

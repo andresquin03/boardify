@@ -125,6 +125,8 @@ Abrir: `http://localhost:3000`
 - Onboarding/settings: al cambiar idioma se sincroniza `User.language` y cookie `boardify_lang`.
 - Mutaciones de grupos incluyen moderacion de miembros por admins (`promote to admin`, `kick member`), con checks de permiso server-side.
 - Notificaciones: `src/lib/notifications.ts` centraliza creacion/listado/contador no leidas, marcado como vistas por scope o por grupo, y borrado logico (`deletedAt`). El mapeo `eventKey -> scope` se define en DB mediante `NotificationEvent` y se usa para aplicar preferencias de usuario por scope. Incluye eventos de membresia/rol en grupos (join, promoted to admin, kicked). El badge de la campana consume `/api/notifications/unread-count`.
+- UX de notificaciones de amistad: entrar a `/friends` marca vistas las de scope amistad; entrar a `/u/[username]` marca vistas solo las notificaciones de amistad emitidas por ese actor (`actorId`).
+- UX de notificaciones de grupos: entrar a `/u/[username]/groups` marca vistas las de scope grupos solo si el viewer es owner de ese perfil; entrar a `/groups/[slug]` marca vistas solo las notificaciones asociadas a ese grupo (`entityId` o `payload.groupId`).
 - TODO (future review): el `payload` de notificaciones guarda snapshot de metadatos de grupo (`groupName/groupSlug`); tras renames puede verse stale y, si el grupo se elimina, algunos links historicos pueden terminar en `notFound`.
 - Integridad: validacion defensiva de inputs (regex/enums), checks de autorizacion y `revalidatePath` despues de cambios.
 - Dominio de datos (Prisma):

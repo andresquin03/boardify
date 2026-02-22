@@ -1,11 +1,13 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { formatPlayerCount, formatPlaytime } from "@/lib/game-utils";
 import { GameActions } from "@/components/games/game-actions";
 import { GameImageWithFallback } from "@/components/games/game-image-with-fallback";
 import { ShareIconButton } from "@/components/ui/share-icon-button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Clock, Users, Star, CalendarDays, Shapes, Pencil, Thermometer } from "lucide-react";
 
 export default async function GameDetailPage({
@@ -13,10 +15,12 @@ export default async function GameDetailPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  const locale = await getLocale();
   const t = await getTranslations("GameDetailPage");
   const { slug } = await params;
   const session = await auth();
   const userId = session?.user?.id;
+  const fallbackUser = t("friendsOwned.fallbackUser");
 
   const game = await prisma.game.findUnique({
     where: { slug },
@@ -31,12 +35,59 @@ export default async function GameDetailPage({
   if (!game) notFound();
 
   let userState: { isFavorite: boolean; isWishlist: boolean; isOwned: boolean } | undefined;
+  let friendsWhoOwn: Array<{ id: string; name: string | null; username: string | null; image: string | null }> = [];
+
   if (userId) {
-    const ug = await prisma.userGame.findUnique({
-      where: { userId_gameId: { userId, gameId: game.id } },
-      select: { isFavorite: true, isWishlist: true, isOwned: true },
-    });
+    const [ug, acceptedFriendships] = await Promise.all([
+      prisma.userGame.findUnique({
+        where: { userId_gameId: { userId, gameId: game.id } },
+        select: { isFavorite: true, isWishlist: true, isOwned: true },
+      }),
+      prisma.friendship.findMany({
+        where: {
+          status: "ACCEPTED",
+          OR: [{ requesterId: userId }, { addresseeId: userId }],
+        },
+        select: {
+          requesterId: true,
+          addresseeId: true,
+        },
+      }),
+    ]);
+
     if (ug) userState = ug;
+
+    const friendIds = acceptedFriendships.map((friendship) =>
+      friendship.requesterId === userId ? friendship.addresseeId : friendship.requesterId,
+    );
+
+    if (friendIds.length > 0) {
+      const ownedByFriends = await prisma.userGame.findMany({
+        where: {
+          gameId: game.id,
+          isOwned: true,
+          userId: { in: friendIds },
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              image: true,
+            },
+          },
+        },
+      });
+
+      friendsWhoOwn = ownedByFriends
+        .map((entry) => entry.user)
+        .sort((a, b) =>
+          getUserDisplayName(a, fallbackUser).localeCompare(getUserDisplayName(b, fallbackUser), locale, {
+            sensitivity: "base",
+          }),
+        );
+    }
   }
 
   return (
@@ -131,6 +182,58 @@ export default async function GameDetailPage({
           </p>
         </div>
       )}
+
+      {/* Friends ownership */}
+      {!!userId && (
+        <section className="mt-8 rounded-xl border bg-card/70 p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <Users className="h-4.5 w-4.5 text-emerald-500" />
+              {t("friendsOwned.title")}
+            </h2>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+              {friendsWhoOwn.length}
+            </span>
+          </div>
+
+          {friendsWhoOwn.length === 0 ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t("friendsOwned.empty")}
+            </p>
+          ) : (
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {friendsWhoOwn.map((friend) => {
+                const displayName = getUserDisplayName(friend, fallbackUser);
+                const profileHref = friend.username ? `/u/${friend.username}` : "/onboarding";
+
+                return (
+                  <Link
+                    key={friend.id}
+                    href={profileHref}
+                    className="pressable flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/25 px-3 py-2 transition-colors hover:bg-accent/40 active:bg-accent/55"
+                  >
+                    <div className="min-w-0 flex items-center gap-2.5">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={friend.image ?? undefined} alt={displayName} />
+                        <AvatarFallback>{getUserInitials(displayName)}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{displayName}</p>
+                        {friend.username && (
+                          <p className="truncate text-xs text-muted-foreground">@{friend.username}</p>
+                        )}
+                      </div>
+                    </div>
+                    <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-400/35 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      {t("friendsOwned.badge")}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }
@@ -141,4 +244,20 @@ function getDifficultyColorClass(value: number) {
   if (value <= 3) return "text-yellow-400 dark:text-yellow-300";
   if (value <= 4) return "text-orange-500 dark:text-orange-400";
   return "text-red-500 dark:text-red-400";
+}
+
+function getUserDisplayName(
+  user: { name: string | null; username: string | null },
+  fallbackUser: string,
+) {
+  return user.name ?? user.username ?? fallbackUser;
+}
+
+function getUserInitials(displayName: string) {
+  return displayName
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 }

@@ -152,7 +152,7 @@
     "collections": {
       "match": {
         "badge": "{percent}% de compatibilidad",
-        "unavailable": "Empezá a sumar juegos a tu perfil para seguir la compatibilidad."
+        "unavailable": "Empezá a sumar juegos a tu perfil para ver la compatibilidad."
       },
       "favorite": {
         "title": "Favoritos",
@@ -187,7 +187,7 @@
       "pending": "Enviando..."
     },
     "compatibility": {
-      "unavailable": "Empezá a sumar juegos a tu perfil para seguir la compatibilidad.",
+      "unavailable": "Empezá a sumar juegos a tu perfil para ver la compatibilidad.",
       "incompatible": {
         "label": "Incompatibles",
         "tooltip": "Por ahora..."
@@ -534,7 +534,13 @@
       "rating": "{rating} / 10 de rating",
       "difficulty": "{difficulty} / 5 de dificultad"
     },
-    "about": "Acerca del juego"
+    "about": "Acerca del juego",
+    "friendsOwned": {
+      "title": "Amigos que tienen este juego",
+      "empty": "Todavía ninguno de tus amigos tiene este juego.",
+      "badge": "Lo tiene",
+      "fallbackUser": "Usuario"
+    }
   },
   "GameNotFound": {
     "eyebrow": "JUEGO NO ENCONTRADO",

@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Heart, Bookmark, CircleCheckBig, Check, UsersRound, Network } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { markFriendshipNotificationsSeenByActor } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
 function sleep(ms: number) {
@@ -167,6 +168,10 @@ export default async function ProfilePage({
 
   if (!canAccessPage) {
     notFound();
+  }
+
+  if (viewerId && !isOwner) {
+    await markFriendshipNotificationsSeenByActor(viewerId, user.id);
   }
 
   const userGames = canViewCollections

@@ -14,6 +14,7 @@ Boardify baja esa friccion con flujos simples de perfil, amigos, grupos y notifi
 ## Funcionalidades principales
 
 - Biblioteca personal de juegos (favoritos, wishlist y owned).
+- Detalle de juego con lista de amigos que lo tienen (si sos usuario autenticado).
 - Descubrimiento de usuarios con perfiles publicos y comparacion de compatibilidad.
 - Edicion de perfil publico en `/profile/edit` y configuracion unificada en `/settings` (idioma, visibilidad y preferencias de notificaciones).
 - Internacionalizacion con `next-intl` (idiomas `en` y `es`) y persistencia de preferencia de idioma por usuario.
@@ -94,6 +95,8 @@ pnpm dev
 - `messages/en.json` y `messages/es.json`: fuente de verdad para textos UI por namespace.
 - Convencion de copy: en `es` se usa registro rioplatense (Uruguay/Argentina).
 - `TODO (future review)`: `Notification.payload` guarda snapshot de `groupName/groupSlug`; puede quedar desactualizado tras rename y el link puede fallar si el grupo se elimina.
+- Notificaciones de amistad: `/friends` marca vistas las del scope amistad; visitar `/u/[username]` marca vistas solo las notificaciones de amistad cuyo actor es ese usuario.
+- Notificaciones de grupos: `/u/[username]/groups` (solo owner) marca vistas las del scope grupos; visitar `/groups/[slug]` marca vistas solo las notificaciones del grupo abierto (por `entityId` o `payload.groupId`).
 - `prisma/schema.prisma`: modelos de auth, juegos, amistad, grupos, settings de usuario y notificaciones.
 
 ## Verificacion rapida (smoke check)
