@@ -15,7 +15,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getSafeRedirectPath } from "@/lib/safe-redirect";
-import { LANGUAGE_COOKIE_NAME, mapUserLanguageToLocale } from "@/lib/locale";
+import { LANGUAGE_COOKIE_NAME, mapUserLanguageToLocale, normalizeLocale } from "@/lib/locale";
 import {
   deleteAllNotificationsForUser,
   deleteNotificationForUser,
@@ -564,6 +564,20 @@ type ParsedGroupFormData =
 
 type ActionMessageTranslator = Awaited<ReturnType<typeof getTranslations>>;
 
+function getLocaleFromFormData(formData: FormData) {
+  const rawLocale = formData.get("locale");
+  if (typeof rawLocale !== "string") return null;
+  return normalizeLocale(rawLocale);
+}
+
+async function getActionMessagesTranslator(formData: FormData): Promise<ActionMessageTranslator> {
+  const locale = getLocaleFromFormData(formData);
+  if (locale) {
+    return getTranslations({ locale, namespace: "ActionMessages" });
+  }
+  return getTranslations("ActionMessages");
+}
+
 function parseGroupFormData(
   formData: FormData,
   t: ActionMessageTranslator,
@@ -703,7 +717,7 @@ export async function createGroup(
   _prev: GroupFormState,
   formData: FormData,
 ): Promise<GroupFormState> {
-  const t = await getTranslations("ActionMessages");
+  const t = await getActionMessagesTranslator(formData);
   const userId = await getAuthUserId();
   const parsed = parseGroupFormData(formData, t);
 
@@ -796,7 +810,7 @@ export async function updateGroup(
   _prev: GroupFormState,
   formData: FormData,
 ): Promise<GroupFormState> {
-  const t = await getTranslations("ActionMessages");
+  const t = await getActionMessagesTranslator(formData);
   const userId = await getAuthUserId();
   const groupId = formData.get("groupId");
   assertCuid(groupId, "groupId");
@@ -1958,7 +1972,7 @@ type SettingsFormState = {
     notifications?: string;
     general?: string;
   };
-  success?: string;
+  success?: "languageUpdated" | "visibilityUpdated" | "notificationsUpdated";
 } | null;
 
 type ProfileInput = {
@@ -2054,7 +2068,7 @@ export async function completeOnboarding(
   _prev: ProfileFormState,
   formData: FormData,
 ): Promise<ProfileFormState> {
-  const t = await getTranslations("ActionMessages");
+  const t = await getActionMessagesTranslator(formData);
   const userId = await getAuthUserId({ requireOnboardingCompleted: false });
   const parsed = parseProfileFormData(formData, t);
   if ("errors" in parsed) {
@@ -2127,7 +2141,7 @@ export async function updateProfileSettings(
   _prev: ProfileFormState,
   formData: FormData,
 ): Promise<ProfileFormState> {
-  const t = await getTranslations("ActionMessages");
+  const t = await getActionMessagesTranslator(formData);
   const userId = await getAuthUserId();
   const name = formData.get("name");
   const bio = formData.get("bio");
@@ -2172,7 +2186,7 @@ export async function updateUserSettings(
   _prev: SettingsFormState,
   formData: FormData,
 ): Promise<SettingsFormState> {
-  const t = await getTranslations("ActionMessages");
+  const t = await getActionMessagesTranslator(formData);
   const userId = await getAuthUserId();
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -2219,7 +2233,7 @@ export async function updateUserSettings(
     });
 
     revalidatePath("/settings");
-    return { success: t("settings.languageUpdated") };
+    return { success: "languageUpdated" };
   }
 
   if (section === "visibility") {
@@ -2246,7 +2260,7 @@ export async function updateUserSettings(
     if (user.username) {
       revalidatePath(`/u/${user.username}`);
     }
-    return { success: t("settings.visibilityUpdated") };
+    return { success: "visibilityUpdated" };
   }
 
   if (section === "notifications") {
@@ -2264,7 +2278,7 @@ export async function updateUserSettings(
     });
 
     revalidatePath("/settings");
-    return { success: t("settings.notificationsUpdated") };
+    return { success: "notificationsUpdated" };
   }
 
   return {

@@ -123,6 +123,7 @@ export function OnboardingForm({
 
   return (
     <form action={action} className="space-y-4" noValidate>
+      <input type="hidden" name="locale" value={locale} />
       <div className="space-y-2">
         <Label htmlFor="username">{t("username.label")}</Label>
         <Input

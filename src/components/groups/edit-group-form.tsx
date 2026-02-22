@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   GroupColor,
   GroupIcon,
@@ -53,6 +53,7 @@ export function EditGroupForm({
   defaultVisibility: GroupVisibilityValue;
 }) {
   const t = useTranslations("GroupForms");
+  const locale = useLocale();
   const [state, action] = useActionState(updateGroup, null);
 
   const initialValues = state?.values ?? {
@@ -86,6 +87,7 @@ export function EditGroupForm({
   return (
     <form key={formKey} action={action} className="space-y-4" noValidate>
       <input type="hidden" name="groupId" value={groupId} />
+      <input type="hidden" name="locale" value={locale} />
 
       <div className="space-y-2">
         <Label htmlFor="name">{t("name.label")}</Label>

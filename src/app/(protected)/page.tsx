@@ -140,17 +140,17 @@ export default async function HomePage() {
                 }`}
                 style={{ animationDelay: `${450 + i * 100}ms` }}
               >
-                <CardHeader>
+                <CardHeader className="justify-items-center text-center sm:justify-items-start sm:text-left">
                   <action.icon
                     className={`h-8 w-8 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6 ${action.iconColor} ${action.iconHoverColor}`}
                   />
                   <CardTitle className="mt-2">{t(`quickActions.${action.key}.title`)}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-center text-sm text-muted-foreground sm:text-left">
                     {t(`quickActions.${action.key}.description`)}
                   </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
                     <Button asChild variant="outline" className="cursor-pointer group/btn">
                       <Link href={action.href}>
                         {t(`quickActions.${action.key}.cta`)}
@@ -182,14 +182,16 @@ export default async function HomePage() {
                 }`}
                 style={{ animationDelay: `${750 + i * 80}ms` }}
               >
-                <CardHeader>
+                <CardHeader className="justify-items-center text-center sm:justify-items-start sm:text-left">
                   <feature.icon
                     className={`h-7 w-7 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6 ${feature.iconColor} ${feature.iconHoverColor}`}
                   />
                   <CardTitle className="mt-2 text-base">{t(`features.${feature.key}.title`)}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">{t(`features.${feature.key}.description`)}</p>
+                  <p className="text-center text-sm text-muted-foreground sm:text-left">
+                    {t(`features.${feature.key}.description`)}
+                  </p>
                 </CardContent>
               </Card>
             );

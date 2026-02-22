@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { BellRing, Check, Globe, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -94,6 +94,7 @@ export function SettingsForms({
   defaultNotifySystemEvents: boolean;
 }) {
   const t = useTranslations("SettingsForms");
+  const locale = useLocale();
   const [languageState, languageAction, isLanguagePending] = useActionState(updateLanguageSettings, null);
   const [visibilityState, visibilityAction, isVisibilityPending] = useActionState(updateVisibilitySettings, null);
   const [notificationState, notificationAction, isNotificationPending] = useActionState(updateNotificationSettings, null);
@@ -118,8 +119,11 @@ export function SettingsForms({
         </div>
 
         <form action={languageAction} className="space-y-3" noValidate>
+          <input type="hidden" name="locale" value={locale} />
           <div className="space-y-2">
-            <Label htmlFor="language">{t("language.label")}</Label>
+            <Label htmlFor="language" className="sr-only">
+              {t("language.label")}
+            </Label>
             <Select name="language" value={language} onValueChange={(value) => setLanguage(value as LanguageValue)}>
               <SelectTrigger id="language" className="w-full">
                 <SelectValue />
@@ -138,7 +142,9 @@ export function SettingsForms({
           </div>
 
           {languageState?.success && (
-            <p className="text-sm text-emerald-600 dark:text-emerald-400">{languageState.success}</p>
+            <p className="text-sm text-emerald-600 dark:text-emerald-400">
+              {t(`feedback.${languageState.success}`)}
+            </p>
           )}
 
           <div className="flex justify-center md:justify-end">
@@ -147,7 +153,7 @@ export function SettingsForms({
               className="cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700"
               disabled={isLanguagePending}
             >
-              {isLanguagePending ? t("actions.pendingSave") : t("actions.saveLanguage")}
+              {isLanguagePending ? t("actions.pendingSave") : t("actions.saveSection")}
             </Button>
           </div>
         </form>
@@ -165,8 +171,11 @@ export function SettingsForms({
         </div>
 
         <form action={visibilityAction} className="space-y-3" noValidate>
+          <input type="hidden" name="locale" value={locale} />
           <div className="space-y-2">
-            <Label htmlFor="visibility">{t("visibility.label")}</Label>
+            <Label htmlFor="visibility" className="sr-only">
+              {t("visibility.label")}
+            </Label>
             <Select
               name="visibility"
               value={visibility}
@@ -190,7 +199,9 @@ export function SettingsForms({
           </div>
 
           {visibilityState?.success && (
-            <p className="text-sm text-emerald-600 dark:text-emerald-400">{visibilityState.success}</p>
+            <p className="text-sm text-emerald-600 dark:text-emerald-400">
+              {t(`feedback.${visibilityState.success}`)}
+            </p>
           )}
 
           <div className="flex justify-center md:justify-end">
@@ -199,7 +210,7 @@ export function SettingsForms({
               className="cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700"
               disabled={isVisibilityPending}
             >
-              {isVisibilityPending ? t("actions.pendingSave") : t("actions.saveVisibility")}
+              {isVisibilityPending ? t("actions.pendingSave") : t("actions.saveSection")}
             </Button>
           </div>
         </form>
@@ -217,6 +228,7 @@ export function SettingsForms({
         </div>
 
         <form action={notificationAction} className="space-y-3" noValidate>
+          <input type="hidden" name="locale" value={locale} />
           <NotificationToggle
             id="notify-friendship-events"
             name="notifyFriendshipEvents"
@@ -252,7 +264,9 @@ export function SettingsForms({
           )}
 
           {notificationState?.success && (
-            <p className="text-sm text-emerald-600 dark:text-emerald-400">{notificationState.success}</p>
+            <p className="text-sm text-emerald-600 dark:text-emerald-400">
+              {t(`feedback.${notificationState.success}`)}
+            </p>
           )}
 
           <div className="flex justify-center md:justify-end">

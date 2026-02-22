@@ -608,9 +608,13 @@
     },
     "actions": {
       "pendingSave": "Guardando...",
-      "saveLanguage": "Guardar idioma",
-      "saveVisibility": "Guardar visibilidad",
+      "saveSection": "Guardar cambios",
       "saveNotifications": "Guardar preferencias de notificaciones"
+    },
+    "feedback": {
+      "languageUpdated": "Idioma actualizado.",
+      "visibilityUpdated": "Visibilidad actualizada.",
+      "notificationsUpdated": "Preferencias de notificaciones actualizadas."
     }
   },
   "NotificationsPage": {
@@ -824,10 +828,7 @@
     "settings": {
       "userNotFound": "Usuario no encontrado.",
       "invalidLanguage": "Opción de idioma inválida.",
-      "languageUpdated": "Idioma actualizado.",
       "invalidVisibility": "Opción de visibilidad inválida.",
-      "visibilityUpdated": "Visibilidad actualizada.",
-      "notificationsUpdated": "Preferencias de notificaciones actualizadas.",
       "invalidSection": "Sección de configuración inválida."
     }
   },

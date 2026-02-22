@@ -545,7 +545,7 @@ function CollectionSection({
       tabIndex={-1}
       className="mt-8 scroll-mt-24 rounded-xl border bg-card/70 p-4 shadow-sm outline-none sm:p-5"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Icon className={`h-4 w-4 ${iconTone}`} />
           {title}
@@ -580,12 +580,14 @@ function CollectionSection({
       </div>
 
       {games.length === 0 ? (
-        <div className="mt-4 flex flex-col items-start gap-3">
-          <p className="text-sm text-muted-foreground">{emptyText}</p>
+        <div className="mt-4 flex flex-col items-center gap-3 sm:items-start">
+          <p className="text-center text-sm text-muted-foreground sm:text-left">{emptyText}</p>
           {isOwner && (
-            <Button asChild size="sm" variant="outline" className="cursor-pointer">
-              <Link href="/games">{t("collections.exploreGames")}</Link>
-            </Button>
+            <div className="flex w-full justify-center sm:justify-start">
+              <Button asChild size="sm" variant="outline" className="cursor-pointer">
+                <Link href="/games">{t("collections.exploreGames")}</Link>
+              </Button>
+            </div>
           )}
         </div>
       ) : (

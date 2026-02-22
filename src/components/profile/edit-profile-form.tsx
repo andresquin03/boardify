@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,10 +16,12 @@ export function EditProfileForm({
   defaultBio: string;
 }) {
   const t = useTranslations("EditProfileForm");
+  const locale = useLocale();
   const [state, action, isPending] = useActionState(updateProfileSettings, null);
 
   return (
     <form action={action} className="space-y-4" noValidate>
+      <input type="hidden" name="locale" value={locale} />
       <div className="space-y-2">
         <Label htmlFor="name">{t("name.label")}</Label>
         <Input
