@@ -2,6 +2,7 @@ import { GameCard } from "@/components/games/game-card";
 import { GamesFilters } from "@/components/games/games-filters";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { getLocale, getTranslations } from "next-intl/server";
 import {
   isDifficultyFilterValue,
   isGameSortValue,
@@ -87,12 +88,12 @@ function compareNullableNumberDesc(a: number | null, b: number | null) {
 
 function sortGamesByOption<
   T extends { title: string; difficulty: number | null; rating: number | null },
->(games: T[], sortBy: GameSortValue) {
+>(games: T[], sortBy: GameSortValue, locale: string) {
   const sorted = [...games];
 
   if (sortBy === "abc") {
     return sorted.sort((a, b) =>
-      a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
+      a.title.localeCompare(b.title, locale, { sensitivity: "base" }),
     );
   }
 
@@ -100,18 +101,20 @@ function sortGamesByOption<
     return sorted.sort((a, b) => {
       const numberDiff = compareNullableNumberDesc(a.difficulty, b.difficulty);
       if (numberDiff !== 0) return numberDiff;
-      return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+      return a.title.localeCompare(b.title, locale, { sensitivity: "base" });
     });
   }
 
   return sorted.sort((a, b) => {
     const numberDiff = compareNullableNumberDesc(a.rating, b.rating);
     if (numberDiff !== 0) return numberDiff;
-    return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+    return a.title.localeCompare(b.title, locale, { sensitivity: "base" });
   });
 }
 
 export default async function GamesPage({ searchParams }: GamesPageProps) {
+  const t = await getTranslations("GamesPage");
+  const locale = await getLocale();
   const params = await searchParams;
   const session = await auth();
   const userId = session?.user?.id;
@@ -172,7 +175,7 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
   const games = await prisma.game.findMany({
     where: whereFilters.length > 0 ? { AND: whereFilters } : undefined,
   });
-  const sortedGames = sortGamesByOption(games, selectedSort);
+  const sortedGames = sortGamesByOption(games, selectedSort, locale);
 
   const categories = await prisma.category.findMany({
     select: { name: true },
@@ -202,10 +205,10 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
         <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border/70 bg-card/70 text-sky-500 shadow-sm motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95">
           <Dice5 className="h-5 w-5 transition-all duration-300 motion-safe:animate-[pulse_2.8s_ease-in-out_infinite] group-hover:scale-110 group-hover:-rotate-6 group-active:scale-95" />
         </span>
-        <h1 className="text-3xl font-bold">Games</h1>
+        <h1 className="text-3xl font-bold">{t("title")}</h1>
       </div>
       <p className="mt-1 text-muted-foreground">
-        Browse our catalog of board games.
+        {t("description")}
       </p>
 
       <GamesFilters
@@ -218,7 +221,7 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
       />
 
       {sortedGames.length === 0 ? (
-        <p className="mt-8 text-sm text-muted-foreground">No games found with those filters.</p>
+        <p className="mt-8 text-sm text-muted-foreground">{t("empty")}</p>
       ) : (
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {sortedGames.map((game) => (

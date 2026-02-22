@@ -1,4 +1,8 @@
 {
+  "AppMetadata": {
+    "title": "Boardify",
+    "description": "Organizá tus noches de juego con Boardify."
+  },
   "OnboardingPage": {
     "title": "Bienvenido a Boardify",
     "subtitle": "Configurá tu perfil para arrancar."
@@ -238,6 +242,462 @@
       "cancelling": "Cancelando..."
     }
   },
+  "FriendsPage": {
+    "title": "Amigos",
+    "sections": {
+      "receivedRequests": "Solicitudes recibidas",
+      "sentRequests": "Solicitudes enviadas",
+      "friends": "Amigos"
+    },
+    "empty": {
+      "title": "Todavía no tenés amigos.",
+      "description": "Encontrá jugadores, compará colecciones y organizá tu próxima noche de juego."
+    },
+    "actions": {
+      "findUsers": "Buscar usuarios",
+      "browseGames": "Explorar juegos"
+    }
+  },
+  "GroupsPage": {
+    "title": "Grupos",
+    "description": "Explorá grupos y encontrá tu comunidad.",
+    "results": "{count, plural, one {# grupo} other {# grupos}}",
+    "empty": "Todavía no hay grupos.",
+    "visibility": {
+      "public": "Grupo público",
+      "invitation": "Solo por invitación",
+      "private": "Grupo privado"
+    },
+    "relation": {
+      "member": "Sos miembro",
+      "invitationPending": "Invitación pendiente",
+      "joinRequestSent": "Solicitud enviada"
+    },
+    "membersCount": "{count, plural, one {# miembro} other {# miembros}}",
+    "actions": {
+      "createFirstGroup": "Sé la primera persona en crear un grupo",
+      "createGroup": "Crear grupo"
+    }
+  },
+  "CreateGroupPage": {
+    "backToGroups": "Volver a grupos",
+    "title": "Crear grupo",
+    "description": "Configurá tu grupo e invitá gente después."
+  },
+  "EditGroupPage": {
+    "backToGroup": "Volver al grupo",
+    "title": "Editar grupo",
+    "description": "Actualizá los datos de tu grupo. Los cambios se ven al instante.",
+    "dangerZone": {
+      "title": "Zona de peligro",
+      "description": "Eliminar este grupo es permanente y no se puede deshacer."
+    }
+  },
+  "GroupNotFound": {
+    "eyebrow": "GRUPO NO ENCONTRADO",
+    "title": "Grupo no disponible",
+    "description": "No encontramos un grupo con ese slug.",
+    "actions": {
+      "browseGroups": "Ver grupos",
+      "backHome": "Volver al inicio"
+    }
+  },
+  "GroupForms": {
+    "name": {
+      "label": "Nombre del grupo",
+      "placeholder": "Los Meeples",
+      "helper": "3-30 caracteres. Letras, números, espacios, puntos, guiones bajos y guiones."
+    },
+    "description": {
+      "label": "Descripción",
+      "placeholder": "¿De qué trata tu grupo?",
+      "helper": "Opcional. Máximo 160 caracteres."
+    },
+    "color": {
+      "label": "Color",
+      "ariaLabel": "Color del grupo"
+    },
+    "icon": {
+      "label": "Ícono",
+      "ariaLabel": "Ícono del grupo"
+    },
+    "visibility": {
+      "label": "Visibilidad",
+      "public": "🌐 Grupo público",
+      "invitation": "✉️ Solo por invitación",
+      "private": "🔒 Grupo privado"
+    },
+    "colors": {
+      "SKY": "Cielo",
+      "EMERALD": "Esmeralda",
+      "AMBER": "Ámbar",
+      "ROSE": "Rosa",
+      "VIOLET": "Violeta",
+      "INDIGO": "Índigo",
+      "CYAN": "Cian",
+      "LIME": "Lima"
+    },
+    "actions": {
+      "create": "Crear grupo",
+      "pendingCreate": "Creando...",
+      "save": "Guardar cambios",
+      "pendingSave": "Guardando..."
+    }
+  },
+  "DeleteGroupButton": {
+    "button": "Eliminar grupo",
+    "dialog": {
+      "title": "¿Eliminar {groupName}?",
+      "description": "Esto elimina de forma permanente el grupo, miembros e invitaciones. Esta acción no se puede deshacer.",
+      "cancel": "Cancelar",
+      "confirm": "Sí, eliminar grupo",
+      "pending": "Eliminando..."
+    }
+  },
+  "GroupActionsMenu": {
+    "srOnly": "Acciones del grupo",
+    "editGroup": "Editar grupo",
+    "leaveGroup": "Salir del grupo",
+    "onlyAdminNotice": "Sos el único admin. Asigná otro admin primero.",
+    "dialog": {
+      "title": "¿Salir de este grupo?",
+      "description": "Vas a salir de este grupo y perder acceso a acciones de miembros. Si está permitido, podés volver a unirte después.",
+      "cancel": "Cancelar",
+      "confirm": "Sí, salir del grupo",
+      "pending": "Saliendo..."
+    }
+  },
+  "MemberActionsMenu": {
+    "srOnly": "Acciones del miembro",
+    "promoteToAdmin": "Promover a admin",
+    "kickFromGroup": "Expulsar del grupo",
+    "promoteDialog": {
+      "title": "¿Promover a {memberDisplayName} a admin?",
+      "description": "Va a poder editar este grupo, invitar miembros y gestionar solicitudes de ingreso.",
+      "cancel": "Cancelar",
+      "confirm": "Sí, promover",
+      "pending": "Promoviendo..."
+    },
+    "kickDialog": {
+      "title": "¿Expulsar a {memberDisplayName} de este grupo?",
+      "description": "Va a perder acceso a acciones de miembros y podrá volver a unirse más adelante si está permitido.",
+      "cancel": "Cancelar",
+      "confirm": "Sí, expulsar",
+      "pending": "Expulsando..."
+    }
+  },
+  "AddMembersPopup": {
+    "trigger": "Agregar miembros",
+    "title": "Agregar miembros",
+    "description": "Invitá amigos para unirse a este grupo.",
+    "empty": "No tenés amigos para invitar.",
+    "fallbackUser": "Usuario",
+    "actions": {
+      "invite": "Invitar",
+      "pendingInvite": "Invitando...",
+      "close": "Cerrar"
+    }
+  },
+  "GroupOwnedGameCard": {
+    "imageAlt": "Portada de {title}",
+    "fallbackUser": "Usuario",
+    "ownership": "{owned}/{total} lo tienen"
+  },
+  "GroupDetailPage": {
+    "fallbackUser": "Usuario",
+    "backToGroups": "Volver a grupos",
+    "visibility": {
+      "public": "Grupo público",
+      "invitation": "Solo por invitación",
+      "private": "Grupo privado"
+    },
+    "membership": {
+      "joined": "Sos miembro",
+      "notJoined": "No sos miembro"
+    },
+    "createdAt": "Creado {date}",
+    "share": {
+      "messageMember": "Sumate a mi grupo de Boardify:",
+      "messageVisitor": "Mirá este grupo de Boardify:",
+      "tooltip": "Compartir grupo",
+      "aria": "Compartir grupo"
+    },
+    "actions": {
+      "joinGroup": "Unirme al grupo",
+      "requestToJoin": "Solicitar ingreso",
+      "cancelRequest": "Cancelar solicitud",
+      "acceptInvitation": "Aceptar invitación",
+      "rejectInvitation": "Rechazar invitación",
+      "accept": "Aceptar",
+      "reject": "Rechazar",
+      "cancel": "Cancelar"
+    },
+    "pending": {
+      "joining": "Uniéndote...",
+      "sending": "Enviando...",
+      "cancelling": "Cancelando...",
+      "accepting": "Aceptando...",
+      "rejecting": "Rechazando..."
+    },
+    "badges": {
+      "invitationPending": "Invitación pendiente",
+      "pending": "Pendiente"
+    },
+    "privateNotice": "Este grupo es privado. Pedile una invitación a un admin.",
+    "roles": {
+      "admin": "Admin",
+      "member": "Miembro"
+    },
+    "sections": {
+      "members": {
+        "title": "Miembros",
+        "empty": "Todavía no hay miembros."
+      },
+      "joinRequests": {
+        "title": "Solicitudes de ingreso",
+        "requestedAt": "Solicitado {timestamp}"
+      },
+      "sentInvitations": {
+        "title": "Invitaciones enviadas",
+        "sentBy": "Enviada {timestamp} por {name}"
+      },
+      "library": {
+        "title": "Biblioteca del grupo",
+        "notMember": "Unite a este grupo para ver qué juegos tienen sus miembros.",
+        "empty": "Todavía no hay juegos propios en este grupo."
+      }
+    }
+  },
+  "GamesPage": {
+    "title": "Juegos",
+    "description": "Explorá nuestro catálogo de juegos de mesa.",
+    "empty": "No se encontraron juegos con esos filtros."
+  },
+  "GamesFilters": {
+    "search": {
+      "placeholder": "Buscar por título o categoría..."
+    },
+    "difficulty": {
+      "placeholder": "Dificultad",
+      "all": "Todas las dificultades",
+      "options": {
+        "easy": "Fácil",
+        "medium": "Media",
+        "hard": "Difícil"
+      }
+    },
+    "players": {
+      "trigger": "Jugadores",
+      "label": "Cantidad de jugadores",
+      "options": {
+        "2": "2 jugadores",
+        "3-4": "3-4 jugadores",
+        "5+": "5+ jugadores"
+      }
+    },
+    "categories": {
+      "trigger": "Categorías",
+      "label": "Categoría",
+      "empty": "Sin categorías"
+    },
+    "sort": {
+      "placeholder": "Ordenar por",
+      "options": {
+        "abc": "A-Z",
+        "difficulty": "Dificultad",
+        "rating": "Rating"
+      }
+    },
+    "actions": {
+      "clear": "Limpiar"
+    }
+  },
+  "GameStateActions": {
+    "favorite": "Favorito",
+    "wishlist": "Wishlist",
+    "owned": "Propio",
+    "ownedBlocksWishlist": "Los juegos propios no pueden ir a wishlist"
+  },
+  "GameCard": {
+    "openAria": "Abrir {title}",
+    "imageAlt": "Portada de {title}"
+  },
+  "GameDetailPage": {
+    "imageAlt": "Portada de {title}",
+    "share": {
+      "message": "Juguemos {title} en Boardify:",
+      "tooltip": "Compartir juego",
+      "aria": "Compartir juego"
+    },
+    "stats": {
+      "players": "{players} jugadores",
+      "rating": "{rating} / 10 de rating",
+      "difficulty": "{difficulty} / 5 de dificultad"
+    },
+    "about": "Acerca del juego"
+  },
+  "GameNotFound": {
+    "eyebrow": "JUEGO NO ENCONTRADO",
+    "title": "Este juego no existe",
+    "description": "El link del juego es inválido o el juego fue removido del catálogo.",
+    "actions": {
+      "browseGames": "Ver juegos",
+      "backHome": "Volver al inicio"
+    }
+  },
+  "ProfileEditPage": {
+    "backToProfile": "Volver al perfil",
+    "title": "Editar perfil",
+    "description": "Actualizá la información pública de tu perfil."
+  },
+  "EditProfileForm": {
+    "name": {
+      "label": "Nombre visible",
+      "placeholder": "Tu nombre"
+    },
+    "bio": {
+      "label": "Bio",
+      "placeholder": "Contanos sobre vos...",
+      "helper": "Opcional. Máximo 160 caracteres."
+    },
+    "actions": {
+      "save": "Guardar cambios",
+      "pendingSave": "Guardando..."
+    }
+  },
+  "SettingsPage": {
+    "backToProfile": "Volver al perfil",
+    "title": "Configurar perfil",
+    "description": "Gestioná idioma, visibilidad del perfil y preferencias de notificaciones."
+  },
+  "SettingsForms": {
+    "language": {
+      "title": "Idioma",
+      "description": "Elegí tu idioma preferido de la app.",
+      "label": "Idioma preferido",
+      "options": {
+        "EN": "Inglés",
+        "ES": "Español"
+      }
+    },
+    "visibility": {
+      "title": "Visibilidad del perfil",
+      "description": "Controlá quién puede acceder a los detalles de tu perfil y tus colecciones.",
+      "label": "Visibilidad",
+      "options": {
+        "PUBLIC": "🌐 Perfil público",
+        "FRIENDS": "👥 Solo amigos",
+        "PRIVATE": "🔒 Perfil privado"
+      }
+    },
+    "notifications": {
+      "title": "Notificaciones",
+      "description": "Elegí qué categorías de actividad pueden notificarte.",
+      "friendship": {
+        "title": "Actividad de amigos",
+        "description": "Solicitudes recibidas y aceptadas."
+      },
+      "group": {
+        "title": "Actividad de grupos",
+        "description": "Invitaciones, solicitudes de ingreso, miembros y cambios de admin."
+      },
+      "system": {
+        "title": "Actividad del sistema",
+        "description": "Otras notificaciones del producto definidas como mensajes de sistema."
+      }
+    },
+    "actions": {
+      "pendingSave": "Guardando...",
+      "saveLanguage": "Guardar idioma",
+      "saveVisibility": "Guardar visibilidad",
+      "saveNotifications": "Guardar preferencias de notificaciones"
+    }
+  },
+  "NotificationsPage": {
+    "title": "Notificaciones",
+    "summary": {
+      "withCount": "{count, plural, one {# notificación} other {# notificaciones}}",
+      "upToDate": "Estás al día."
+    },
+    "empty": {
+      "title": "No hay notificaciones por ahora.",
+      "actions": {
+        "findUsers": "Buscar usuarios",
+        "viewFriends": "Ver amigos",
+        "browseGames": "Explorar juegos"
+      }
+    },
+    "actions": {
+      "open": "Abrir",
+      "openActorProfile": "Abrir perfil de {name}",
+      "deleteNotification": "Eliminar notificación"
+    },
+    "fallbacks": {
+      "someone": "Alguien",
+      "group": "grupo"
+    },
+    "events": {
+      "friendRequestReceived": {
+        "title": "Solicitud de amistad recibida",
+        "message": "{actorName} te envió una solicitud de amistad."
+      },
+      "friendRequestAccepted": {
+        "title": "Solicitud de amistad aceptada",
+        "message": "{actorName} aceptó tu solicitud de amistad."
+      },
+      "groupInviteReceived": {
+        "title": "Invitación a grupo recibida",
+        "message": "{actorName} te invitó a unirte a {groupName}."
+      },
+      "groupInviteAccepted": {
+        "title": "Invitación a grupo aceptada",
+        "message": "{actorName} aceptó tu invitación a {groupName}."
+      },
+      "groupJoinRequestReceived": {
+        "title": "Solicitud de ingreso recibida",
+        "message": "{actorName} solicitó unirse a {groupName}."
+      },
+      "groupJoinRequestAccepted": {
+        "title": "Solicitud aceptada",
+        "message": "{actorName} aceptó tu solicitud para unirte a {groupName}."
+      },
+      "groupMemberJoined": {
+        "title": "Nuevo miembro del grupo",
+        "message": "{actorName} se unió a {groupName}."
+      },
+      "groupMemberPromotedToAdmin": {
+        "title": "Promovido a admin",
+        "message": "{actorName} te promovió a admin en {groupName}."
+      },
+      "groupMemberRemoved": {
+        "title": "Expulsado del grupo",
+        "message": "{actorName} te expulsó de {groupName}."
+      },
+      "unknown": {
+        "title": "Notificación",
+        "message": "{actorName} activó {eventKey}."
+      }
+    }
+  },
+  "ClearAllNotificationsButton": {
+    "trigger": "Limpiar todas las notificaciones",
+    "dialog": {
+      "title": "¿Limpiar todas las notificaciones?",
+      "description": "Esto elimina todas tus notificaciones de la lista.",
+      "cancel": "Cancelar",
+      "confirm": "Sí, limpiar todo",
+      "pending": "Limpiando..."
+    }
+  },
+  "AppNotFound": {
+    "eyebrow": "ERROR 404",
+    "title": "Página no encontrada",
+    "description": "La página que buscás no existe o fue movida.",
+    "actions": {
+      "backHome": "Volver al inicio",
+      "browseGames": "Ver juegos"
+    }
+  },
   "UserProfileNotFound": {
     "eyebrow": "USUARIO NO ENCONTRADO",
     "title": "Perfil no disponible",
@@ -340,6 +800,35 @@
         "title": "Fichas de juego detalladas",
         "description": "Abrí fichas completas con categorías, ratings, dificultad y tu estado de un vistazo."
       }
+    }
+  },
+  "ActionMessages": {
+    "group": {
+      "invalidName": "Nombre de grupo inválido. Usá 3-30 letras, números, espacios, puntos, guiones bajos o guiones.",
+      "descriptionTooLong": "La descripción debe tener 160 caracteres o menos.",
+      "invalidIcon": "Opción de ícono inválida.",
+      "invalidColor": "Opción de color inválida.",
+      "invalidVisibility": "Opción de visibilidad inválida.",
+      "slugBaseRequired": "El nombre del grupo debe incluir letras o números.",
+      "slugGenerationFailed": "No se pudo generar un slug único. Probá con otro nombre.",
+      "notFound": "Grupo no encontrado."
+    },
+    "profile": {
+      "invalidUsername": "Usuario inválido. Usá 3-30 caracteres en minúscula, números, puntos, guiones bajos o guiones.",
+      "nameRequired": "El nombre visible es obligatorio (máximo 50 caracteres).",
+      "bioTooLong": "La bio debe tener 160 caracteres o menos.",
+      "invalidLanguage": "Opción de idioma inválida.",
+      "invalidVisibility": "Opción de visibilidad inválida.",
+      "usernameTaken": "Ese usuario ya está en uso."
+    },
+    "settings": {
+      "userNotFound": "Usuario no encontrado.",
+      "invalidLanguage": "Opción de idioma inválida.",
+      "languageUpdated": "Idioma actualizado.",
+      "invalidVisibility": "Opción de visibilidad inválida.",
+      "visibilityUpdated": "Visibilidad actualizada.",
+      "notificationsUpdated": "Preferencias de notificaciones actualizadas.",
+      "invalidSection": "Sección de configuración inválida."
     }
   },
   "AboutPage": {

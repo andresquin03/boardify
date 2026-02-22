@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { formatPlayerCount, formatPlaytime } from "@/lib/game-utils";
@@ -12,6 +13,7 @@ export default async function GameDetailPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  const t = await getTranslations("GameDetailPage");
   const { slug } = await params;
   const session = await auth();
   const userId = session?.user?.id;
@@ -44,7 +46,7 @@ export default async function GameDetailPage({
         <div className="relative aspect-[4/3] w-full sm:aspect-[16/9]">
           <GameImageWithFallback
             src={game.image}
-            alt={`Cover of ${game.title}`}
+            alt={t("imageAlt", { title: game.title })}
             fill
             className="object-contain p-3 sm:p-6"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 900px"
@@ -85,9 +87,9 @@ export default async function GameDetailPage({
           )}
           <ShareIconButton
             path={`/g/${game.slug}`}
-            message={`Let's play ${game.title} on Boardify:`}
-            tooltipLabel="Share game"
-            ariaLabel="Share game"
+            message={t("share.message", { title: game.title })}
+            tooltipLabel={t("share.tooltip")}
+            ariaLabel={t("share.aria")}
             size="md"
             className="ml-4"
           />
@@ -98,7 +100,9 @@ export default async function GameDetailPage({
       <div className="mt-6 flex gap-6 text-sm">
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <Users className="h-4 w-4" />
-          <span>{formatPlayerCount(game.minPlayers, game.maxPlayers)} players</span>
+          <span>
+            {t("stats.players", { players: formatPlayerCount(game.minPlayers, game.maxPlayers) })}
+          </span>
         </div>
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <Clock className="h-4 w-4" />
@@ -107,13 +111,13 @@ export default async function GameDetailPage({
         {game.rating !== null && (
           <div className="flex items-center gap-1.5 text-amber-500 dark:text-amber-400">
             <Star className="h-4 w-4" fill="currentColor" />
-            <span>{game.rating.toFixed(1)} / 10 rating</span>
+            <span>{t("stats.rating", { rating: game.rating.toFixed(1) })}</span>
           </div>
         )}
         {game.difficulty !== null && (
           <div className={`flex items-center gap-1.5 ${getDifficultyColorClass(game.difficulty)}`}>
             <Thermometer className="h-4 w-4" />
-            <span>{game.difficulty.toFixed(1)} / 5 difficulty</span>
+            <span>{t("stats.difficulty", { difficulty: game.difficulty.toFixed(1) })}</span>
           </div>
         )}
       </div>
@@ -121,7 +125,7 @@ export default async function GameDetailPage({
       {/* Description */}
       {game.description && (
         <div className="mt-8">
-          <h2 className="text-lg font-semibold">About</h2>
+          <h2 className="text-lg font-semibold">{t("about")}</h2>
           <p className="mt-2 leading-relaxed text-muted-foreground">
             {game.description}
           </p>

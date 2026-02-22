@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Ellipsis, ShieldCheck, UserMinus } from "lucide-react";
 import { promoteGroupMemberToAdmin, removeGroupMember } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ export function MemberActionsMenu({
   memberId: string;
   memberDisplayName: string;
 }) {
+  const t = useTranslations("MemberActionsMenu");
   const [isPromoteConfirmOpen, setIsPromoteConfirmOpen] = useState(false);
   const [isRemoveConfirmOpen, setIsRemoveConfirmOpen] = useState(false);
 
@@ -45,7 +47,7 @@ export function MemberActionsMenu({
             className="cursor-pointer border-border/70 bg-card text-muted-foreground hover:bg-accent/60 hover:text-foreground active:bg-accent/75"
           >
             <Ellipsis className="h-4 w-4" />
-            <span className="sr-only">Member actions</span>
+            <span className="sr-only">{t("srOnly")}</span>
           </Button>
         </DropdownMenuTrigger>
 
@@ -58,7 +60,7 @@ export function MemberActionsMenu({
             }}
           >
             <ShieldCheck className="h-4 w-4" />
-            Promote to admin
+            {t("promoteToAdmin")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -70,7 +72,7 @@ export function MemberActionsMenu({
             }}
           >
             <UserMinus className="h-4 w-4" />
-            Kick from group
+            {t("kickFromGroup")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -78,21 +80,21 @@ export function MemberActionsMenu({
       <AlertDialog open={isPromoteConfirmOpen} onOpenChange={setIsPromoteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Promote {memberDisplayName} to admin?</AlertDialogTitle>
+            <AlertDialogTitle>{t("promoteDialog.title", { memberDisplayName })}</AlertDialogTitle>
             <AlertDialogDescription>
-              They will be able to edit this group, invite members, and manage join requests.
+              {t("promoteDialog.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("promoteDialog.cancel")}</AlertDialogCancel>
             <form action={promoteGroupMemberToAdmin.bind(null, groupId, memberId)}>
               <FormPendingButton
                 type="submit"
                 variant="outline"
-                pendingText="Promoting..."
+                pendingText={t("promoteDialog.pending")}
                 className="w-full border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-700 sm:w-auto dark:text-emerald-400 dark:hover:text-emerald-400"
               >
-                Yes, promote
+                {t("promoteDialog.confirm")}
               </FormPendingButton>
             </form>
           </AlertDialogFooter>
@@ -102,21 +104,21 @@ export function MemberActionsMenu({
       <AlertDialog open={isRemoveConfirmOpen} onOpenChange={setIsRemoveConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Kick {memberDisplayName} from this group?</AlertDialogTitle>
+            <AlertDialogTitle>{t("kickDialog.title", { memberDisplayName })}</AlertDialogTitle>
             <AlertDialogDescription>
-              They will lose access to member-only actions and can join again later if allowed.
+              {t("kickDialog.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("kickDialog.cancel")}</AlertDialogCancel>
             <form action={removeGroupMember.bind(null, groupId, memberId)}>
               <FormPendingButton
                 type="submit"
                 variant="destructive"
-                pendingText="Kicking..."
+                pendingText={t("kickDialog.pending")}
                 className="w-full sm:w-auto"
               >
-                Yes, kick
+                {t("kickDialog.confirm")}
               </FormPendingButton>
             </form>
           </AlertDialogFooter>

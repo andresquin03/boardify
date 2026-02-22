@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   GroupColor,
   GroupIcon,
@@ -24,12 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FormPendingButton } from "@/components/ui/form-pending-button";
-
-const visibilityConfig: Record<GroupVisibilityValue, { label: string }> = {
-  PUBLIC: { label: "🌐 Public group" },
-  INVITATION: { label: "✉️ Invitation only" },
-  PRIVATE: { label: "🔒 Private group" },
-};
 
 const colorOptions = Object.values(GroupColor) as GroupColorValue[];
 const iconOptions = Object.values(GroupIcon) as GroupIconValue[];
@@ -57,6 +52,7 @@ export function EditGroupForm({
   defaultColor: GroupColorValue;
   defaultVisibility: GroupVisibilityValue;
 }) {
+  const t = useTranslations("GroupForms");
   const [state, action] = useActionState(updateGroup, null);
 
   const initialValues = state?.values ?? {
@@ -71,18 +67,33 @@ export function EditGroupForm({
   const [selectedColor, setSelectedColor] = useState<GroupColorValue>(initialValues.color);
   const [selectedIcon, setSelectedIcon] = useState<GroupIconValue>(initialValues.icon);
   const selectedColorConfig = GROUP_COLOR_CONFIG[selectedColor];
+  const visibilityConfig: Record<GroupVisibilityValue, { label: string }> = {
+    PUBLIC: { label: t("visibility.public") },
+    INVITATION: { label: t("visibility.invitation") },
+    PRIVATE: { label: t("visibility.private") },
+  };
+  const colorLabels: Record<GroupColorValue, string> = {
+    SKY: t("colors.SKY"),
+    EMERALD: t("colors.EMERALD"),
+    AMBER: t("colors.AMBER"),
+    ROSE: t("colors.ROSE"),
+    VIOLET: t("colors.VIOLET"),
+    INDIGO: t("colors.INDIGO"),
+    CYAN: t("colors.CYAN"),
+    LIME: t("colors.LIME"),
+  };
 
   return (
     <form key={formKey} action={action} className="space-y-4" noValidate>
       <input type="hidden" name="groupId" value={groupId} />
 
       <div className="space-y-2">
-        <Label htmlFor="name">Group name</Label>
+        <Label htmlFor="name">{t("name.label")}</Label>
         <Input
           id="name"
           name="name"
           defaultValue={initialValues.name}
-          placeholder="Los Meeples"
+          placeholder={t("name.placeholder")}
           maxLength={30}
           autoComplete="off"
         />
@@ -90,37 +101,38 @@ export function EditGroupForm({
           <p className="text-sm text-destructive">{state.errors.name}</p>
         ) : (
           <p className="text-xs text-muted-foreground">
-            3-30 characters. Letters, numbers, spaces, dots, underscores and hyphens.
+            {t("name.helper")}
           </p>
         )}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor="description">{t("description.label")}</Label>
         <Textarea
           id="description"
           name="description"
           defaultValue={initialValues.description}
-          placeholder="What is your group about?"
+          placeholder={t("description.placeholder")}
           maxLength={160}
           rows={3}
         />
         {state?.errors?.description && (
           <p className="text-sm text-destructive">{state.errors.description}</p>
         )}
-        <p className="text-xs text-muted-foreground">Optional. Max 160 characters.</p>
+        <p className="text-xs text-muted-foreground">{t("description.helper")}</p>
       </div>
 
       <div className="space-y-2">
-        <Label>Color</Label>
+        <Label>{t("color.label")}</Label>
         <div
           role="radiogroup"
-          aria-label="Group color"
+          aria-label={t("color.ariaLabel")}
           className="mx-auto inline-flex flex-nowrap items-center gap-2 rounded-lg border border-border/70 bg-muted/20 p-2 max-[450px]:inline-grid max-[450px]:grid-cols-4 max-[450px]:justify-items-center"
         >
           {colorOptions.map((color) => {
             const colorConfig = GROUP_COLOR_CONFIG[color];
             const isSelected = color === selectedColor;
+            const colorLabel = colorLabels[color];
 
             return (
               <Tooltip key={color}>
@@ -132,7 +144,7 @@ export function EditGroupForm({
                       value={color}
                       checked={isSelected}
                       onChange={() => setSelectedColor(color)}
-                      aria-label={colorConfig.label}
+                      aria-label={colorLabel}
                       className="peer sr-only"
                     />
                     <span
@@ -152,7 +164,7 @@ export function EditGroupForm({
                     </span>
                   </label>
                 </TooltipTrigger>
-                <TooltipContent side="top">{colorConfig.label}</TooltipContent>
+                <TooltipContent side="top">{colorLabel}</TooltipContent>
               </Tooltip>
             );
           })}
@@ -161,10 +173,10 @@ export function EditGroupForm({
       </div>
 
       <div className="space-y-2">
-        <Label>Icon</Label>
+        <Label>{t("icon.label")}</Label>
         <div
           role="radiogroup"
-          aria-label="Group icon"
+          aria-label={t("icon.ariaLabel")}
           className="flex flex-wrap gap-2 rounded-lg border border-border/70 bg-muted/20 p-2"
         >
           {iconOptions.map((icon) => {
@@ -215,7 +227,7 @@ export function EditGroupForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="visibility">Visibility</Label>
+        <Label htmlFor="visibility">{t("visibility.label")}</Label>
         <Select name="visibility" defaultValue={initialValues.visibility}>
           <SelectTrigger id="visibility" className="w-full">
             <SelectValue />
@@ -240,9 +252,9 @@ export function EditGroupForm({
       <FormPendingButton
         type="submit"
         className="w-full cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700"
-        pendingText="Saving..."
+        pendingText={t("actions.pendingSave")}
       >
-        Save changes
+        {t("actions.save")}
       </FormPendingButton>
     </form>
   );

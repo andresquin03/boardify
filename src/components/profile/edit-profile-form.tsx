@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,17 +15,18 @@ export function EditProfileForm({
   defaultName: string;
   defaultBio: string;
 }) {
+  const t = useTranslations("EditProfileForm");
   const [state, action, isPending] = useActionState(updateProfileSettings, null);
 
   return (
     <form action={action} className="space-y-4" noValidate>
       <div className="space-y-2">
-        <Label htmlFor="name">Display name</Label>
+        <Label htmlFor="name">{t("name.label")}</Label>
         <Input
           id="name"
           name="name"
           defaultValue={defaultName}
-          placeholder="Your Name"
+          placeholder={t("name.placeholder")}
           maxLength={50}
         />
         {state?.errors?.name && (
@@ -33,19 +35,19 @@ export function EditProfileForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="bio">Bio</Label>
+        <Label htmlFor="bio">{t("bio.label")}</Label>
         <Textarea
           id="bio"
           name="bio"
           defaultValue={defaultBio}
-          placeholder="Tell us about yourself..."
+          placeholder={t("bio.placeholder")}
           maxLength={160}
           rows={3}
         />
         {state?.errors?.bio && (
           <p className="text-sm text-destructive">{state.errors.bio}</p>
         )}
-        <p className="text-xs text-muted-foreground">Optional. Max 160 characters.</p>
+        <p className="text-xs text-muted-foreground">{t("bio.helper")}</p>
       </div>
 
       {state?.errors?.general && (
@@ -57,7 +59,7 @@ export function EditProfileForm({
         className="w-full cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700"
         disabled={isPending}
       >
-        {isPending ? "Saving..." : "Save changes"}
+        {isPending ? t("actions.pendingSave") : t("actions.save")}
       </Button>
     </form>
   );

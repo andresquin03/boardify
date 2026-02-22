@@ -1,6 +1,7 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Clock, Heart, Bookmark, CircleCheckBig, Users } from "lucide-react";
@@ -30,6 +31,8 @@ interface GameCardProps {
 }
 
 export function GameCard({ game, userState, isAuthenticated }: GameCardProps) {
+  const t = useTranslations("GameCard");
+  const tActions = useTranslations("GameStateActions");
   const [isPending, startTransition] = useTransition();
   const [pendingAction, setPendingAction] = useState<"favorite" | "wishlist" | "owned" | null>(null);
   const [optimistic, setOptimistic] = useOptimistic(
@@ -69,14 +72,14 @@ export function GameCard({ game, userState, isAuthenticated }: GameCardProps) {
     <Card className="group relative rounded-2xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:ring-1 hover:ring-border/80">
       <Link
         href={`/g/${game.slug}`}
-        aria-label={`Open ${game.title}`}
+        aria-label={t("openAria", { title: game.title })}
         className="pressable absolute inset-0 z-10 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 active:bg-foreground/5"
       />
       <CardHeader className="pb-2">
         <div className="relative h-32 overflow-hidden rounded-xl bg-muted transition-colors group-hover:bg-muted/80">
           <GameImageWithFallback
             src={game.image}
-            alt={`Cover of ${game.title}`}
+            alt={t("imageAlt", { title: game.title })}
             fill
             className="object-contain p-2"
             sizes="(max-width: 640px) 100vw, 360px"
@@ -115,7 +118,7 @@ export function GameCard({ game, userState, isAuthenticated }: GameCardProps) {
                       glowClassName:
                         "bg-rose-500/35 ring-1 ring-inset ring-rose-300/80 shadow-[0_0_0_1px_rgba(251,113,133,0.45),0_0_22px_rgba(244,63,94,0.5)]",
                     })}
-                    aria-label="Favorite"
+                    aria-label={tActions("favorite")}
                     aria-pressed={optimistic.isFavorite}
                   >
                     <span
@@ -135,7 +138,7 @@ export function GameCard({ game, userState, isAuthenticated }: GameCardProps) {
                     />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">Favorite</TooltipContent>
+                <TooltipContent side="bottom">{tActions("favorite")}</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -152,7 +155,7 @@ export function GameCard({ game, userState, isAuthenticated }: GameCardProps) {
                         "bg-sky-500/35 ring-1 ring-inset ring-sky-300/80 shadow-[0_0_0_1px_rgba(56,189,248,0.45),0_0_22px_rgba(14,165,233,0.45)]",
                       disabled: optimistic.isOwned,
                     })}
-                    aria-label="Wishlist"
+                    aria-label={tActions("wishlist")}
                     aria-pressed={optimistic.isWishlist}
                   >
                     <span
@@ -173,7 +176,9 @@ export function GameCard({ game, userState, isAuthenticated }: GameCardProps) {
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
-                  {optimistic.isOwned ? "Owned games can't be wishlisted" : "Wishlist"}
+                  {optimistic.isOwned
+                    ? tActions("ownedBlocksWishlist")
+                    : tActions("wishlist")}
                 </TooltipContent>
               </Tooltip>
               <Tooltip>
@@ -190,7 +195,7 @@ export function GameCard({ game, userState, isAuthenticated }: GameCardProps) {
                       glowClassName:
                         "bg-emerald-500/35 ring-1 ring-inset ring-emerald-300/80 shadow-[0_0_0_1px_rgba(52,211,153,0.45),0_0_22px_rgba(16,185,129,0.45)]",
                     })}
-                    aria-label="Owned"
+                    aria-label={tActions("owned")}
                     aria-pressed={optimistic.isOwned}
                   >
                     <span
@@ -209,7 +214,7 @@ export function GameCard({ game, userState, isAuthenticated }: GameCardProps) {
                     />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">Owned</TooltipContent>
+                <TooltipContent side="bottom">{tActions("owned")}</TooltipContent>
               </Tooltip>
             </div>
           )}

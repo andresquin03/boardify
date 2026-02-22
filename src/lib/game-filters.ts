@@ -1,35 +1,35 @@
 export const PLAYER_FILTERS = [
-  { value: "2", label: "2 players" },
-  { value: "3-4", label: "3-4 players" },
-  { value: "5+", label: "5+ players" },
+  "2",
+  "3-4",
+  "5+",
 ] as const;
 
-export type PlayerFilterValue = (typeof PLAYER_FILTERS)[number]["value"];
+export type PlayerFilterValue = (typeof PLAYER_FILTERS)[number];
 
 export function isPlayerFilterValue(value: string): value is PlayerFilterValue {
-  return PLAYER_FILTERS.some((filter) => filter.value === value);
+  return PLAYER_FILTERS.some((filter) => filter === value);
 }
 
 export const DIFFICULTY_FILTERS = [
-  { value: "easy", label: "Easy" },
-  { value: "medium", label: "Medium" },
-  { value: "hard", label: "Hard" },
+  "easy",
+  "medium",
+  "hard",
 ] as const;
 
-export type DifficultyFilterValue = (typeof DIFFICULTY_FILTERS)[number]["value"];
+export type DifficultyFilterValue = (typeof DIFFICULTY_FILTERS)[number];
 
 export function isDifficultyFilterValue(value: string): value is DifficultyFilterValue {
-  return DIFFICULTY_FILTERS.some((filter) => filter.value === value);
+  return DIFFICULTY_FILTERS.some((filter) => filter === value);
 }
 
 export const SORT_OPTIONS = [
-  { value: "abc", label: "A-Z" },
-  { value: "difficulty", label: "Difficulty" },
-  { value: "rating", label: "Rating" },
+  "abc",
+  "difficulty",
+  "rating",
 ] as const;
 
-export type GameSortValue = (typeof SORT_OPTIONS)[number]["value"];
+export type GameSortValue = (typeof SORT_OPTIONS)[number];
 
 export function isGameSortValue(value: string): value is GameSortValue {
-  return SORT_OPTIONS.some((option) => option.value === value);
+  return SORT_OPTIONS.some((option) => option === value);
 }

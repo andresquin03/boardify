@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Clock, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -26,7 +27,8 @@ interface GroupOwnedGameCardProps {
   memberCount: number;
 }
 
-export function GroupOwnedGameCard({ game, owners, memberCount }: GroupOwnedGameCardProps) {
+export async function GroupOwnedGameCard({ game, owners, memberCount }: GroupOwnedGameCardProps) {
+  const t = await getTranslations("GroupOwnedGameCard");
   const visibleOwners = owners.slice(0, 5);
   const hiddenOwnersCount = Math.max(0, owners.length - visibleOwners.length);
 
@@ -38,7 +40,7 @@ export function GroupOwnedGameCard({ game, owners, memberCount }: GroupOwnedGame
       <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted/60">
         <GameImageWithFallback
           src={game.image}
-          alt={`Cover of ${game.title}`}
+          alt={t("imageAlt", { title: game.title })}
           fill
           className="object-contain p-1"
           sizes="56px"
@@ -62,7 +64,7 @@ export function GroupOwnedGameCard({ game, owners, memberCount }: GroupOwnedGame
         <div className="mt-2 flex items-center justify-between gap-3">
           <div className="flex items-center -space-x-1.5">
             {visibleOwners.map((owner) => {
-              const displayName = owner.name ?? owner.username ?? "User";
+              const displayName = owner.name ?? owner.username ?? t("fallbackUser");
               const initials = displayName
                 .split(" ")
                 .map((part) => part[0])
@@ -90,7 +92,7 @@ export function GroupOwnedGameCard({ game, owners, memberCount }: GroupOwnedGame
           </div>
 
           <span className="shrink-0 text-[11px] text-muted-foreground">
-            {owners.length}/{memberCount} own it
+            {t("ownership", { owned: owners.length, total: memberCount })}
           </span>
         </div>
       </div>

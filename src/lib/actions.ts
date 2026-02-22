@@ -13,6 +13,7 @@ import {
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { getSafeRedirectPath } from "@/lib/safe-redirect";
 import { LANGUAGE_COOKIE_NAME, mapUserLanguageToLocale } from "@/lib/locale";
 import {
@@ -561,7 +562,12 @@ type ParsedGroupFormData =
     }
   | { data: GroupInput };
 
-function parseGroupFormData(formData: FormData): ParsedGroupFormData {
+type ActionMessageTranslator = Awaited<ReturnType<typeof getTranslations>>;
+
+function parseGroupFormData(
+  formData: FormData,
+  t: ActionMessageTranslator,
+): ParsedGroupFormData {
   const rawName = formData.get("name");
   const rawDescription = formData.get("description");
   const rawIcon = formData.get("icon");
@@ -593,33 +599,32 @@ function parseGroupFormData(formData: FormData): ParsedGroupFormData {
   const errors: NonNullable<GroupFormState>["errors"] = {};
 
   if (!GROUP_NAME_RE.test(name)) {
-    errors.name =
-      "Invalid group name. Use 3-30 letters, numbers, spaces, dots, underscores or hyphens.";
+    errors.name = t("group.invalidName");
   }
 
   if (description !== "" && description.length > 160) {
-    errors.description = "Description must be 160 characters or less.";
+    errors.description = t("group.descriptionTooLong");
   }
 
   if (
     typeof rawIcon !== "string" ||
     !VALID_GROUP_ICONS.includes(rawIcon as GroupIconValue)
   ) {
-    errors.icon = "Invalid icon option.";
+    errors.icon = t("group.invalidIcon");
   }
 
   if (
     typeof rawColor !== "string" ||
     !VALID_GROUP_COLORS.includes(rawColor as GroupColorValue)
   ) {
-    errors.color = "Invalid color option.";
+    errors.color = t("group.invalidColor");
   }
 
   if (
     typeof rawVisibility !== "string" ||
     !VALID_GROUP_VISIBILITIES.includes(rawVisibility as GroupVisibilityValue)
   ) {
-    errors.visibility = "Invalid visibility option.";
+    errors.visibility = t("group.invalidVisibility");
   }
 
   if (Object.keys(errors).length > 0) {
@@ -698,8 +703,9 @@ export async function createGroup(
   _prev: GroupFormState,
   formData: FormData,
 ): Promise<GroupFormState> {
+  const t = await getTranslations("ActionMessages");
   const userId = await getAuthUserId();
-  const parsed = parseGroupFormData(formData);
+  const parsed = parseGroupFormData(formData, t);
 
   if ("errors" in parsed) {
     return { errors: parsed.errors, values: parsed.values };
@@ -708,7 +714,7 @@ export async function createGroup(
   const baseSlug = toBaseGroupSlug(parsed.data.name);
   if (!baseSlug) {
     return {
-      errors: { name: "Group name must include letters or numbers." },
+      errors: { name: t("group.slugBaseRequired") },
       values: {
         name: parsed.data.name,
         description: parsed.data.description ?? "",
@@ -761,7 +767,7 @@ export async function createGroup(
 
   if (!createdGroup) {
     return {
-      errors: { general: "Could not generate a unique slug. Please try another name." },
+      errors: { general: t("group.slugGenerationFailed") },
       values: {
         name: parsed.data.name,
         description: parsed.data.description ?? "",
@@ -790,10 +796,11 @@ export async function updateGroup(
   _prev: GroupFormState,
   formData: FormData,
 ): Promise<GroupFormState> {
+  const t = await getTranslations("ActionMessages");
   const userId = await getAuthUserId();
   const groupId = formData.get("groupId");
   assertCuid(groupId, "groupId");
-  const parsed = parseGroupFormData(formData);
+  const parsed = parseGroupFormData(formData, t);
 
   if ("errors" in parsed) {
     return { errors: parsed.errors, values: parsed.values };
@@ -802,7 +809,7 @@ export async function updateGroup(
   const baseSlug = toBaseGroupSlug(parsed.data.name);
   if (!baseSlug) {
     return {
-      errors: { name: "Group name must include letters or numbers." },
+      errors: { name: t("group.slugBaseRequired") },
       values: {
         name: parsed.data.name,
         description: parsed.data.description ?? "",
@@ -819,7 +826,7 @@ export async function updateGroup(
   });
   if (!group) {
     return {
-      errors: { general: "Group not found." },
+      errors: { general: t("group.notFound") },
       values: {
         name: parsed.data.name,
         description: parsed.data.description ?? "",
@@ -885,7 +892,7 @@ export async function updateGroup(
 
   if (!updated) {
     return {
-      errors: { general: "Could not generate a unique slug. Please try another name." },
+      errors: { general: t("group.slugGenerationFailed") },
       values: {
         name: parsed.data.name,
         description: parsed.data.description ?? "",
@@ -1969,7 +1976,10 @@ type ParsedProfileFormData =
     }
   | { data: ProfileInput };
 
-function parseProfileFormData(formData: FormData): ParsedProfileFormData {
+function parseProfileFormData(
+  formData: FormData,
+  t: ActionMessageTranslator,
+): ParsedProfileFormData {
   const rawUsername = formData.get("username");
   const rawName = formData.get("name");
   const rawBio = formData.get("bio");
@@ -2000,29 +2010,29 @@ function parseProfileFormData(formData: FormData): ParsedProfileFormData {
   const errors: NonNullable<ProfileFormState>["errors"] = {};
 
   if (!USERNAME_RE.test(username)) {
-    errors.username = "Invalid username. Use 3-30 lowercase letters, numbers, dots, underscores or hyphens.";
+    errors.username = t("profile.invalidUsername");
   }
 
   if (name.length === 0 || name.length > 50) {
-    errors.name = "Display name is required (max 50 characters).";
+    errors.name = t("profile.nameRequired");
   }
 
   if (bio !== "" && bio.length > 160) {
-    errors.bio = "Bio must be 160 characters or less.";
+    errors.bio = t("profile.bioTooLong");
   }
 
   if (
     typeof rawLanguage !== "string" ||
     !VALID_USER_LANGUAGES.includes(rawLanguage as typeof VALID_USER_LANGUAGES[number])
   ) {
-    errors.language = "Invalid language option.";
+    errors.language = t("profile.invalidLanguage");
   }
 
   if (
     typeof rawVisibility !== "string" ||
     !VALID_VISIBILITIES.includes(rawVisibility as typeof VALID_VISIBILITIES[number])
   ) {
-    errors.visibility = "Invalid visibility option.";
+    errors.visibility = t("profile.invalidVisibility");
   }
 
   if (Object.keys(errors).length > 0) {
@@ -2044,8 +2054,9 @@ export async function completeOnboarding(
   _prev: ProfileFormState,
   formData: FormData,
 ): Promise<ProfileFormState> {
+  const t = await getTranslations("ActionMessages");
   const userId = await getAuthUserId({ requireOnboardingCompleted: false });
-  const parsed = parseProfileFormData(formData);
+  const parsed = parseProfileFormData(formData, t);
   if ("errors" in parsed) {
     return { errors: parsed.errors, values: parsed.values };
   }
@@ -2062,7 +2073,7 @@ export async function completeOnboarding(
 
   if (taken && taken.id !== userId) {
     return {
-      errors: { username: "This username is already taken." },
+      errors: { username: t("profile.usernameTaken") },
       values: {
         username: parsed.data.username,
         name: parsed.data.name,
@@ -2092,7 +2103,7 @@ export async function completeOnboarding(
   } catch (error) {
     if (isUsernameUniqueConstraintError(error)) {
       return {
-        errors: { username: "This username is already taken." },
+        errors: { username: t("profile.usernameTaken") },
         values: {
           username: parsed.data.username,
           name: parsed.data.name,
@@ -2116,17 +2127,18 @@ export async function updateProfileSettings(
   _prev: ProfileFormState,
   formData: FormData,
 ): Promise<ProfileFormState> {
+  const t = await getTranslations("ActionMessages");
   const userId = await getAuthUserId();
   const name = formData.get("name");
   const bio = formData.get("bio");
   const errors: NonNullable<ProfileFormState>["errors"] = {};
 
   if (typeof name !== "string" || name.trim().length === 0 || name.length > 50) {
-    errors.name = "Display name is required (max 50 characters).";
+    errors.name = t("profile.nameRequired");
   }
 
   if (bio !== null && bio !== "" && (typeof bio !== "string" || bio.length > 160)) {
-    errors.bio = "Bio must be 160 characters or less.";
+    errors.bio = t("profile.bioTooLong");
   }
 
   if (Object.keys(errors).length > 0) {
@@ -2160,6 +2172,7 @@ export async function updateUserSettings(
   _prev: SettingsFormState,
   formData: FormData,
 ): Promise<SettingsFormState> {
+  const t = await getTranslations("ActionMessages");
   const userId = await getAuthUserId();
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -2169,7 +2182,7 @@ export async function updateUserSettings(
   if (!user) {
     return {
       errors: {
-        general: "User not found.",
+        general: t("settings.userNotFound"),
       },
     };
   }
@@ -2182,7 +2195,7 @@ export async function updateUserSettings(
     ) {
       return {
         errors: {
-          language: "Invalid language option.",
+          language: t("settings.invalidLanguage"),
         },
       };
     }
@@ -2206,7 +2219,7 @@ export async function updateUserSettings(
     });
 
     revalidatePath("/settings");
-    return { success: "Language updated." };
+    return { success: t("settings.languageUpdated") };
   }
 
   if (section === "visibility") {
@@ -2217,7 +2230,7 @@ export async function updateUserSettings(
     ) {
       return {
         errors: {
-          visibility: "Invalid visibility option.",
+          visibility: t("settings.invalidVisibility"),
         },
       };
     }
@@ -2233,7 +2246,7 @@ export async function updateUserSettings(
     if (user.username) {
       revalidatePath(`/u/${user.username}`);
     }
-    return { success: "Visibility updated." };
+    return { success: t("settings.visibilityUpdated") };
   }
 
   if (section === "notifications") {
@@ -2251,12 +2264,12 @@ export async function updateUserSettings(
     });
 
     revalidatePath("/settings");
-    return { success: "Notification preferences updated." };
+    return { success: t("settings.notificationsUpdated") };
   }
 
   return {
     errors: {
-      general: "Invalid settings section.",
+      general: t("settings.invalidSection"),
     },
   };
 }

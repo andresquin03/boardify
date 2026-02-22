@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages } from "next-intl/server";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,18 +18,24 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Boardify",
-  description: "Boardify your game nights.",
-  icons: {
-    icon: [
-      { url: "/favicon-circle.ico" },
-      { url: "/favicon-circle.png", type: "image/png" },
-    ],
-    shortcut: "/favicon-circle.ico",
-    apple: "/favicon-circle.png",
-  },
+const appIcons: Metadata["icons"] = {
+  icon: [
+    { url: "/favicon-circle.ico" },
+    { url: "/favicon-circle.png", type: "image/png" },
+  ],
+  shortcut: "/favicon-circle.ico",
+  apple: "/favicon-circle.png",
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("AppMetadata");
+
+  return {
+    title: t("title"),
+    description: t("description"),
+    icons: appIcons,
+  };
+}
 
 export default async function RootLayout({
   children,

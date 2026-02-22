@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,32 +17,34 @@ import { FormPendingButton } from "@/components/ui/form-pending-button";
 import { clearAllNotifications } from "@/lib/actions";
 
 export function ClearAllNotificationsButton() {
+  const t = useTranslations("ClearAllNotificationsButton");
+
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button variant="outline" className="gap-2">
           <X className="h-4 w-4" />
-          Clear all notifications
+          {t("trigger")}
         </Button>
       </AlertDialogTrigger>
 
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Clear all notifications?</AlertDialogTitle>
+          <AlertDialogTitle>{t("dialog.title")}</AlertDialogTitle>
           <AlertDialogDescription>
-            This will remove all your notifications from the list.
+            {t("dialog.description")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t("dialog.cancel")}</AlertDialogCancel>
           <form action={clearAllNotifications}>
             <FormPendingButton
               type="submit"
               variant="destructive"
-              pendingText="Clearing..."
+              pendingText={t("dialog.pending")}
               className="w-full sm:w-auto"
             >
-              Yes, clear all
+              {t("dialog.confirm")}
             </FormPendingButton>
           </form>
         </AlertDialogFooter>

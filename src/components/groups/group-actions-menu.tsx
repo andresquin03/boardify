@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Ellipsis, LogOut, Pencil, ShieldAlert } from "lucide-react";
 import { leaveGroup } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ export function GroupActionsMenu({
   triggerClassName?: string;
   triggerLabel?: string;
 }) {
+  const t = useTranslations("GroupActionsMenu");
   const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false);
   const canLeave = isMember && !isSoleAdmin;
 
@@ -63,7 +65,7 @@ export function GroupActionsMenu({
             {triggerLabel ? (
               <span>{triggerLabel}</span>
             ) : (
-              <span className="sr-only">Group actions</span>
+              <span className="sr-only">{t("srOnly")}</span>
             )}
           </Button>
         </DropdownMenuTrigger>
@@ -73,7 +75,7 @@ export function GroupActionsMenu({
               <DropdownMenuItem asChild className="cursor-pointer gap-2">
                 <Link href={`/groups/${groupSlug}/edit`}>
                   <Pencil className="h-4 w-4" />
-                  Edit group
+                  {t("editGroup")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -90,16 +92,16 @@ export function GroupActionsMenu({
               }}
             >
               <LogOut className="h-4 w-4" />
-              Leave group
+              {t("leaveGroup")}
             </DropdownMenuItem>
           ) : (
             <>
               <DropdownMenuItem disabled className="gap-2">
                 <ShieldAlert className="h-4 w-4" />
-                Leave group
+                {t("leaveGroup")}
               </DropdownMenuItem>
               <DropdownMenuLabel className="px-2 pb-1 text-xs leading-snug font-normal text-muted-foreground">
-                You are the only admin. Assign another admin first.
+                {t("onlyAdminNotice")}
               </DropdownMenuLabel>
             </>
           )}
@@ -109,22 +111,21 @@ export function GroupActionsMenu({
       <AlertDialog open={isLeaveConfirmOpen} onOpenChange={setIsLeaveConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Leave this group?</AlertDialogTitle>
+            <AlertDialogTitle>{t("dialog.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              You will leave this group and lose access to member-only actions.
-              You can join again later if allowed.
+              {t("dialog.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("dialog.cancel")}</AlertDialogCancel>
             <form action={leaveGroup.bind(null, groupId)}>
               <FormPendingButton
                 type="submit"
                 variant="destructive"
-                pendingText="Leaving..."
+                pendingText={t("dialog.pending")}
                 className="w-full sm:w-auto"
               >
-                Yes, leave group
+                {t("dialog.confirm")}
               </FormPendingButton>
             </form>
           </AlertDialogFooter>

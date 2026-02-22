@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Trash2 } from "lucide-react";
 import { deleteGroup } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ export function DeleteGroupButton({
   groupId: string;
   groupName: string;
 }) {
+  const t = useTranslations("DeleteGroupButton");
   const [open, setOpen] = useState(false);
 
   return (
@@ -33,28 +35,27 @@ export function DeleteGroupButton({
         onClick={() => setOpen(true)}
       >
         <Trash2 className="h-4 w-4" />
-        Delete group
+        {t("button")}
       </Button>
 
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {groupName}?</AlertDialogTitle>
+            <AlertDialogTitle>{t("dialog.title", { groupName })}</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently deletes the group, members, and invitations.
-              This action cannot be undone.
+              {t("dialog.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("dialog.cancel")}</AlertDialogCancel>
             <form action={deleteGroup.bind(null, groupId)}>
               <FormPendingButton
                 type="submit"
                 variant="destructive"
-                pendingText="Deleting..."
+                pendingText={t("dialog.pending")}
                 className="w-full sm:w-auto"
               >
-                Yes, delete group
+                {t("dialog.confirm")}
               </FormPendingButton>
             </form>
           </AlertDialogFooter>

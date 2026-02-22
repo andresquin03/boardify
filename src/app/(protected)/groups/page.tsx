@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import {
   CircleHelp,
   Clock3,
@@ -19,25 +20,8 @@ import { GROUP_ICON_MAP } from "@/lib/group-icons";
 import type { GroupColor, GroupVisibility } from "@/generated/prisma/client";
 import { cn } from "@/lib/utils";
 
-const visibilityConfig = {
-  PUBLIC: {
-    label: "Public group",
-    icon: Globe,
-    className: "border-sky-400/30 bg-sky-500/10 text-sky-500 dark:text-sky-400",
-  },
-  INVITATION: {
-    label: "Invitation only",
-    icon: Mail,
-    className: "border-amber-400/30 bg-amber-500/10 text-amber-500 dark:text-amber-400",
-  },
-  PRIVATE: {
-    label: "Private group",
-    icon: Lock,
-    className: "border-violet-400/30 bg-violet-500/10 text-violet-500 dark:text-violet-400",
-  },
-} as const;
-
 export default async function GroupsPage() {
+  const t = await getTranslations("GroupsPage");
   const session = await auth();
   if (!session?.user?.id) redirect("/signin?callbackUrl=%2Fgroups");
   const viewerId = session.user.id;
@@ -79,7 +63,24 @@ export default async function GroupsPage() {
     pendingJoinRequests.map((joinRequest) => joinRequest.groupId),
   );
   const createGroupCta =
-    groups.length === 0 ? "Be the first to add a group" : "Create group";
+    groups.length === 0 ? t("actions.createFirstGroup") : t("actions.createGroup");
+  const visibilityConfig = {
+    PUBLIC: {
+      label: t("visibility.public"),
+      icon: Globe,
+      className: "border-sky-400/30 bg-sky-500/10 text-sky-500 dark:text-sky-400",
+    },
+    INVITATION: {
+      label: t("visibility.invitation"),
+      icon: Mail,
+      className: "border-amber-400/30 bg-amber-500/10 text-amber-500 dark:text-amber-400",
+    },
+    PRIVATE: {
+      label: t("visibility.private"),
+      icon: Lock,
+      className: "border-violet-400/30 bg-violet-500/10 text-violet-500 dark:text-violet-400",
+    },
+  } as const;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 pb-24">
@@ -87,18 +88,18 @@ export default async function GroupsPage() {
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/70 bg-card/70 text-sky-500 shadow-sm motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95">
           <Network className="h-4.5 w-4.5 transition-all duration-300 motion-safe:animate-[pulse_2.8s_ease-in-out_infinite] group-hover:scale-110 group-hover:-rotate-6 group-active:scale-95" />
         </span>
-        <h1 className="text-2xl font-bold">Groups</h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
-        Browse groups and find your community.
+        {t("description")}
       </p>
 
       <p className="mt-5 text-sm text-muted-foreground">
-        {groups.length} {groups.length === 1 ? "group" : "groups"}
+        {t("results", { count: groups.length })}
       </p>
 
       {groups.length === 0 ? (
-        <p className="mt-6 text-sm text-muted-foreground">No groups yet.</p>
+        <p className="mt-6 text-sm text-muted-foreground">{t("empty")}</p>
       ) : (
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map((group) => {
@@ -112,21 +113,21 @@ export default async function GroupsPage() {
             const relationMeta = isMember
               ? {
                   icon: UserCheck,
-                  tooltip: "You are a member",
+                  tooltip: t("relation.member"),
                   className:
                     "border-emerald-400/30 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400",
                 }
               : hasPendingInvitation
                 ? {
                     icon: CircleHelp,
-                    tooltip: "Invitation pending",
+                    tooltip: t("relation.invitationPending"),
                     className:
                       "border-amber-400/30 bg-amber-500/10 text-amber-500 dark:text-amber-400",
                   }
                 : hasPendingJoinRequest
                   ? {
                       icon: Clock3,
-                      tooltip: "Join request sent",
+                      tooltip: t("relation.joinRequestSent"),
                       className:
                         "border-sky-400/30 bg-sky-500/10 text-sky-500 dark:text-sky-400",
                     }
@@ -188,8 +189,7 @@ export default async function GroupsPage() {
                 <div className="mt-auto flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Users className="h-3.5 w-3.5" />
                   <span>
-                    {group._count.members}{" "}
-                    {group._count.members === 1 ? "member" : "members"}
+                    {t("membersCount", { count: group._count.members })}
                   </span>
                 </div>
               </Link>

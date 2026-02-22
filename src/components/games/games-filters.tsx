@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ArrowUpDown, Search, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -48,10 +49,23 @@ export function GamesFilters({
   selectedSort,
   categoryOptions,
 }: GamesFiltersProps) {
+  const t = useTranslations("GamesFilters");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(initialQuery);
+  const difficultyOptions = DIFFICULTY_FILTERS.map((value) => ({
+    value,
+    label: t(`difficulty.options.${value}`),
+  }));
+  const playerOptions = PLAYER_FILTERS.map((value) => ({
+    value,
+    label: t(`players.options.${value}`),
+  }));
+  const sortOptions = SORT_OPTIONS.map((value) => ({
+    value,
+    label: t(`sort.options.${value}`),
+  }));
 
   useEffect(() => {
     setQuery(initialQuery);
@@ -157,7 +171,7 @@ export function GamesFilters({
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search by title or category..."
+          placeholder={t("search.placeholder")}
           className="pl-9"
         />
       </div>
@@ -168,11 +182,11 @@ export function GamesFilters({
           onValueChange={changeDifficulty}
         >
           <SelectTrigger className="w-full justify-between 2xl:w-[160px]">
-            <SelectValue placeholder="Difficulty" />
+            <SelectValue placeholder={t("difficulty.placeholder")} />
           </SelectTrigger>
           <SelectContent align="end">
-            <SelectItem value="all">All difficulties</SelectItem>
-            {DIFFICULTY_FILTERS.map((difficulty) => (
+            <SelectItem value="all">{t("difficulty.all")}</SelectItem>
+            {difficultyOptions.map((difficulty) => (
               <SelectItem key={difficulty.value} value={difficulty.value}>
                 {difficulty.label}
               </SelectItem>
@@ -183,14 +197,14 @@ export function GamesFilters({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="w-full justify-between gap-2 2xl:w-[180px]">
-              <span>Players</span>
+              <span>{t("players.trigger")}</span>
               {selectedPlayers.length > 0 ? <span className="text-xs text-muted-foreground">{selectedPlayers.length}</span> : <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Player count</DropdownMenuLabel>
+            <DropdownMenuLabel>{t("players.label")}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {PLAYER_FILTERS.map((filter) => (
+            {playerOptions.map((filter) => (
               <DropdownMenuCheckboxItem
                 key={filter.value}
                 checked={selectedPlayers.includes(filter.value)}
@@ -206,15 +220,15 @@ export function GamesFilters({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="w-full justify-between gap-2 2xl:w-[200px]">
-              <span>Categories</span>
+              <span>{t("categories.trigger")}</span>
               {selectedCategories.length > 0 ? <span className="text-xs text-muted-foreground">{selectedCategories.length}</span> : <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="max-h-72 w-64">
-            <DropdownMenuLabel>Category</DropdownMenuLabel>
+            <DropdownMenuLabel>{t("categories.label")}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {categoryOptions.length === 0 ? (
-              <div className="px-2 py-1.5 text-sm text-muted-foreground">No categories</div>
+              <div className="px-2 py-1.5 text-sm text-muted-foreground">{t("categories.empty")}</div>
             ) : (
               categoryOptions.map((category) => (
                 <DropdownMenuCheckboxItem
@@ -234,11 +248,11 @@ export function GamesFilters({
           <SelectTrigger className="w-full justify-between 2xl:w-[170px]">
             <span className="flex items-center gap-2">
               <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-              <SelectValue placeholder="Sort by" />
+              <SelectValue placeholder={t("sort.placeholder")} />
             </span>
           </SelectTrigger>
           <SelectContent align="end">
-            {SORT_OPTIONS.map((option) => (
+            {sortOptions.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>
@@ -252,7 +266,7 @@ export function GamesFilters({
           disabled={!hasActiveFilters}
           className="w-full text-muted-foreground disabled:text-muted-foreground/40 2xl:w-auto 2xl:justify-self-auto"
         >
-          Clear
+          {t("actions.clear")}
         </Button>
       </div>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useTranslations } from "next-intl";
 import { BellRing, Check, Globe, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -18,19 +19,8 @@ import {
 } from "@/lib/actions";
 import { cn } from "@/lib/utils";
 
-const languageOptions = {
-  EN: "English",
-  ES: "Spanish",
-} as const;
-
-const visibilityOptions = {
-  PUBLIC: "🌐 Public profile",
-  FRIENDS: "👥 Friends only",
-  PRIVATE: "🔒 Private profile",
-} as const;
-
-type LanguageValue = keyof typeof languageOptions;
-type VisibilityValue = keyof typeof visibilityOptions;
+type LanguageValue = "EN" | "ES";
+type VisibilityValue = "PUBLIC" | "FRIENDS" | "PRIVATE";
 type NotificationOptionKey = "notifyFriendshipEvents" | "notifyGroupEvents" | "notifySystemEvents";
 
 function NotificationToggle({
@@ -103,6 +93,7 @@ export function SettingsForms({
   defaultNotifyGroupEvents: boolean;
   defaultNotifySystemEvents: boolean;
 }) {
+  const t = useTranslations("SettingsForms");
   const [languageState, languageAction, isLanguagePending] = useActionState(updateLanguageSettings, null);
   const [visibilityState, visibilityAction, isVisibilityPending] = useActionState(updateVisibilitySettings, null);
   const [notificationState, notificationAction, isNotificationPending] = useActionState(updateNotificationSettings, null);
@@ -119,23 +110,23 @@ export function SettingsForms({
         <div className="mb-4 flex items-start gap-2">
           <Languages className="mt-0.5 h-4.5 w-4.5 text-sky-500" />
           <div>
-            <h2 className="text-base font-semibold">Language</h2>
+            <h2 className="text-base font-semibold">{t("language.title")}</h2>
             <p className="text-sm text-muted-foreground">
-              Choose your preferred app language.
+              {t("language.description")}
             </p>
           </div>
         </div>
 
         <form action={languageAction} className="space-y-3" noValidate>
           <div className="space-y-2">
-            <Label htmlFor="language">Preferred language</Label>
+            <Label htmlFor="language">{t("language.label")}</Label>
             <Select name="language" value={language} onValueChange={(value) => setLanguage(value as LanguageValue)}>
               <SelectTrigger id="language" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="EN">{languageOptions.EN}</SelectItem>
-                <SelectItem value="ES">{languageOptions.ES}</SelectItem>
+                <SelectItem value="EN">{t("language.options.EN")}</SelectItem>
+                <SelectItem value="ES">{t("language.options.ES")}</SelectItem>
               </SelectContent>
             </Select>
             {languageState?.errors?.language && (
@@ -156,7 +147,7 @@ export function SettingsForms({
               className="cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700"
               disabled={isLanguagePending}
             >
-              {isLanguagePending ? "Saving..." : "Save language"}
+              {isLanguagePending ? t("actions.pendingSave") : t("actions.saveLanguage")}
             </Button>
           </div>
         </form>
@@ -166,16 +157,16 @@ export function SettingsForms({
         <div className="mb-4 flex items-start gap-2">
           <Globe className="mt-0.5 h-4.5 w-4.5 text-violet-500" />
           <div>
-            <h2 className="text-base font-semibold">Profile visibility</h2>
+            <h2 className="text-base font-semibold">{t("visibility.title")}</h2>
             <p className="text-sm text-muted-foreground">
-              Control who can access your profile details and collections.
+              {t("visibility.description")}
             </p>
           </div>
         </div>
 
         <form action={visibilityAction} className="space-y-3" noValidate>
           <div className="space-y-2">
-            <Label htmlFor="visibility">Visibility</Label>
+            <Label htmlFor="visibility">{t("visibility.label")}</Label>
             <Select
               name="visibility"
               value={visibility}
@@ -185,9 +176,9 @@ export function SettingsForms({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="PUBLIC">{visibilityOptions.PUBLIC}</SelectItem>
-                <SelectItem value="FRIENDS">{visibilityOptions.FRIENDS}</SelectItem>
-                <SelectItem value="PRIVATE">{visibilityOptions.PRIVATE}</SelectItem>
+                <SelectItem value="PUBLIC">{t("visibility.options.PUBLIC")}</SelectItem>
+                <SelectItem value="FRIENDS">{t("visibility.options.FRIENDS")}</SelectItem>
+                <SelectItem value="PRIVATE">{t("visibility.options.PRIVATE")}</SelectItem>
               </SelectContent>
             </Select>
             {visibilityState?.errors?.visibility && (
@@ -208,7 +199,7 @@ export function SettingsForms({
               className="cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700"
               disabled={isVisibilityPending}
             >
-              {isVisibilityPending ? "Saving..." : "Save visibility"}
+              {isVisibilityPending ? t("actions.pendingSave") : t("actions.saveVisibility")}
             </Button>
           </div>
         </form>
@@ -218,9 +209,9 @@ export function SettingsForms({
         <div className="mb-4 flex items-start gap-2">
           <BellRing className="mt-0.5 h-4.5 w-4.5 text-amber-500" />
           <div>
-            <h2 className="text-base font-semibold">Notifications</h2>
+            <h2 className="text-base font-semibold">{t("notifications.title")}</h2>
             <p className="text-sm text-muted-foreground">
-              Pick which activity categories can notify you.
+              {t("notifications.description")}
             </p>
           </div>
         </div>
@@ -231,8 +222,8 @@ export function SettingsForms({
             name="notifyFriendshipEvents"
             checked={notifyFriendshipEvents}
             onChange={setNotifyFriendshipEvents}
-            title="Friend activity"
-            description="Requests received and accepted."
+            title={t("notifications.friendship.title")}
+            description={t("notifications.friendship.description")}
           />
 
           <NotificationToggle
@@ -240,8 +231,8 @@ export function SettingsForms({
             name="notifyGroupEvents"
             checked={notifyGroupEvents}
             onChange={setNotifyGroupEvents}
-            title="Group activity"
-            description="Invitations, join requests, members, and admin changes."
+            title={t("notifications.group.title")}
+            description={t("notifications.group.description")}
           />
 
           <NotificationToggle
@@ -249,8 +240,8 @@ export function SettingsForms({
             name="notifySystemEvents"
             checked={notifySystemEvents}
             onChange={setNotifySystemEvents}
-            title="System activity"
-            description="Other product notifications scoped as system messages."
+            title={t("notifications.system.title")}
+            description={t("notifications.system.description")}
           />
 
           {notificationState?.errors?.notifications && (
@@ -270,7 +261,7 @@ export function SettingsForms({
               className="cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700"
               disabled={isNotificationPending}
             >
-              {isNotificationPending ? "Saving..." : "Save notification preferences"}
+              {isNotificationPending ? t("actions.pendingSave") : t("actions.saveNotifications")}
             </Button>
           </div>
         </form>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import {
   CalendarDays,
   Check,
@@ -35,29 +36,13 @@ import {
   requestToJoinGroup,
 } from "@/lib/actions";
 
-const visibilityConfig = {
-  PUBLIC: {
-    label: "Public group",
-    icon: Globe,
-    className: "border-sky-400/30 bg-sky-500/10 text-sky-500 dark:text-sky-400",
-  },
-  INVITATION: {
-    label: "Invitation only",
-    icon: Mail,
-    className: "border-amber-400/30 bg-amber-500/10 text-amber-500 dark:text-amber-400",
-  },
-  PRIVATE: {
-    label: "Private group",
-    icon: Lock,
-    className: "border-violet-400/30 bg-violet-500/10 text-violet-500 dark:text-violet-400",
-  },
-} as const;
-
 export default async function GroupDetailPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  const t = await getTranslations("GroupDetailPage");
+  const locale = await getLocale();
   const session = await auth();
   if (!session?.user?.id) redirect("/");
   const viewerId = session.user.id;
@@ -103,6 +88,24 @@ export default async function GroupDetailPage({
 
   await markGroupNotificationsSeen(viewerId, group.id);
 
+  const visibilityConfig = {
+    PUBLIC: {
+      label: t("visibility.public"),
+      icon: Globe,
+      className: "border-sky-400/30 bg-sky-500/10 text-sky-500 dark:text-sky-400",
+    },
+    INVITATION: {
+      label: t("visibility.invitation"),
+      icon: Mail,
+      className: "border-amber-400/30 bg-amber-500/10 text-amber-500 dark:text-amber-400",
+    },
+    PRIVATE: {
+      label: t("visibility.private"),
+      icon: Lock,
+      className: "border-violet-400/30 bg-violet-500/10 text-violet-500 dark:text-violet-400",
+    },
+  } as const;
+  const fallbackUser = t("fallbackUser");
   const IconComponent = GROUP_ICON_MAP[group.icon];
   const colorConfig = GROUP_COLOR_CONFIG[group.color as GroupColor];
   const visibility = visibilityConfig[group.visibility as GroupVisibility];
@@ -259,7 +262,7 @@ export default async function GroupDetailPage({
       owners: game.userGames
         .map((item) => item.user)
         .sort((a, b) =>
-          getUserDisplayName(a).localeCompare(getUserDisplayName(b), undefined, {
+          getUserDisplayName(a, fallbackUser).localeCompare(getUserDisplayName(b, fallbackUser), locale, {
             sensitivity: "base",
           }),
         ),
@@ -267,7 +270,7 @@ export default async function GroupDetailPage({
     .sort((a, b) => {
       const ownerDiff = b.owners.length - a.owners.length;
       if (ownerDiff !== 0) return ownerDiff;
-      return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+      return a.title.localeCompare(b.title, locale, { sensitivity: "base" });
     });
 
   const pendingInvitation =
@@ -297,14 +300,18 @@ export default async function GroupDetailPage({
             list.findIndex((candidate) => candidate.id === friend.id) === index,
         )
         .sort((a, b) =>
-          getUserDisplayName(a).localeCompare(getUserDisplayName(b), undefined, {
+          getUserDisplayName(a, fallbackUser).localeCompare(
+            getUserDisplayName(b, fallbackUser),
+            locale,
+            {
             sensitivity: "base",
-          }),
+            },
+          ),
         )
     : [];
 
-  const membershipBadgeLabel = isMember ? "Joined" : "Not joined";
-  const createdAtLabel = new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(
+  const membershipBadgeLabel = isMember ? t("membership.joined") : t("membership.notJoined");
+  const createdAtLabel = new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
     group.createdAt,
   );
   const pendingOwnJoinRequestId = pendingOwnJoinRequest?.id ?? null;
@@ -331,7 +338,7 @@ export default async function GroupDetailPage({
         className="pressable inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <Network className="h-4 w-4" />
-        Back to groups
+        {t("backToGroups")}
       </Link>
 
       <div className="mt-4 rounded-2xl border bg-card/70 p-4 shadow-sm sm:p-6">
@@ -367,11 +374,11 @@ export default async function GroupDetailPage({
                       type="submit"
                       variant="outline"
                       size="sm"
-                      pendingText="Joining..."
+                      pendingText={t("pending.joining")}
                       className="h-11 w-full justify-center gap-1.5 rounded-full border-border/70 bg-muted/40 px-4 text-base font-semibold text-foreground hover:bg-muted/55"
                     >
                       <Users className="h-4 w-4" />
-                      Join group
+                      {t("actions.joinGroup")}
                     </FormPendingButton>
                   </form>
                 ) : showRequestToJoinBubble ? (
@@ -380,11 +387,11 @@ export default async function GroupDetailPage({
                       type="submit"
                       variant="outline"
                       size="sm"
-                      pendingText="Sending..."
+                      pendingText={t("pending.sending")}
                       className="h-11 w-full justify-center gap-1.5 rounded-full border-amber-400/40 bg-amber-500/10 px-4 text-base font-semibold text-amber-600 hover:bg-amber-500/20 dark:text-amber-400"
                     >
                       <Mail className="h-4 w-4" />
-                      Request to join
+                      {t("actions.requestToJoin")}
                     </FormPendingButton>
                   </form>
                 ) : showCancelRequestBubble ? (
@@ -396,17 +403,17 @@ export default async function GroupDetailPage({
                       type="submit"
                       variant="outline"
                       size="sm"
-                      pendingText="Cancelling..."
+                      pendingText={t("pending.cancelling")}
                       className="h-11 w-full justify-center gap-1.5 rounded-full border-border/70 bg-muted/40 px-4 text-base font-semibold text-muted-foreground hover:bg-muted/55"
                     >
                       <X className="h-4 w-4" />
-                      Cancel request
+                      {t("actions.cancelRequest")}
                     </FormPendingButton>
                   </form>
                 ) : showPendingInvitationBubble ? (
                   <span className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-500/10 px-4 text-base font-semibold text-amber-600 dark:text-amber-400">
                     <Mail className="h-4 w-4" />
-                    Invitation pending
+                    {t("badges.invitationPending")}
                   </span>
                 ) : (
                   <span
@@ -430,9 +437,9 @@ export default async function GroupDetailPage({
                 <div className="flex shrink-0 items-center gap-2">
                   <ShareIconButton
                     path={`/groups/${group.slug}`}
-                    message={isMember ? "Join my Boardify group:" : "Check out this Boardify group:"}
-                    tooltipLabel="Share group"
-                    ariaLabel="Share group"
+                    message={isMember ? t("share.messageMember") : t("share.messageVisitor")}
+                    tooltipLabel={t("share.tooltip")}
+                    ariaLabel={t("share.aria")}
                     className="size-11 rounded-full"
                   />
                   {isMember && (
@@ -478,9 +485,9 @@ export default async function GroupDetailPage({
             <div className="flex items-center gap-2">
               <ShareIconButton
                 path={`/groups/${group.slug}`}
-                message={isMember ? "Join my Boardify group:" : "Check out this Boardify group:"}
-                tooltipLabel="Share group"
-                ariaLabel="Share group"
+                message={isMember ? t("share.messageMember") : t("share.messageVisitor")}
+                tooltipLabel={t("share.tooltip")}
+                ariaLabel={t("share.aria")}
               />
               <GroupActionsMenu
                 groupId={group.id}
@@ -495,7 +502,7 @@ export default async function GroupDetailPage({
           <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/30 px-3 py-1.5 text-muted-foreground">
               <CalendarDays className="h-3.5 w-3.5" />
-              Created {createdAtLabel}
+              {t("createdAt", { date: createdAtLabel })}
             </span>
             <div className="flex items-center gap-1.5 sm:ml-auto">
               {showJoinGroupBubble ? (
@@ -504,11 +511,11 @@ export default async function GroupDetailPage({
                     type="submit"
                     variant="outline"
                     size="sm"
-                    pendingText="Joining..."
+                    pendingText={t("pending.joining")}
                     className="h-10 gap-1.5 rounded-full border-border/70 bg-muted/40 px-3.5 text-base font-medium text-foreground hover:bg-muted/55"
                   >
                     <Users className="h-4 w-4" />
-                    Join group
+                    {t("actions.joinGroup")}
                   </FormPendingButton>
                 </form>
               ) : showRequestToJoinBubble ? (
@@ -517,11 +524,11 @@ export default async function GroupDetailPage({
                     type="submit"
                     variant="outline"
                     size="sm"
-                    pendingText="Sending..."
+                    pendingText={t("pending.sending")}
                     className="h-10 gap-1.5 rounded-full border-amber-400/40 bg-amber-500/10 px-3.5 text-base font-medium text-amber-600 hover:bg-amber-500/20 dark:text-amber-400"
                   >
                     <Mail className="h-4 w-4" />
-                    Request to join
+                    {t("actions.requestToJoin")}
                   </FormPendingButton>
                 </form>
               ) : showCancelRequestBubble ? (
@@ -530,17 +537,17 @@ export default async function GroupDetailPage({
                     type="submit"
                     variant="outline"
                     size="sm"
-                    pendingText="Cancelling..."
+                    pendingText={t("pending.cancelling")}
                     className="h-10 gap-1.5 rounded-full border-border/70 bg-muted/40 px-3.5 text-base font-medium text-muted-foreground hover:bg-muted/55"
                   >
                     <X className="h-4 w-4" />
-                    Cancel request
+                    {t("actions.cancelRequest")}
                   </FormPendingButton>
                 </form>
               ) : showPendingInvitationBubble ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-500/10 px-3.5 py-1.5 text-base font-medium text-amber-600 dark:text-amber-400">
                   <Mail className="h-4 w-4" />
-                  Invitation pending
+                  {t("badges.invitationPending")}
                 </span>
               ) : (
                 <span
@@ -571,11 +578,11 @@ export default async function GroupDetailPage({
                     type="submit"
                     variant="outline"
                     size="sm"
-                    pendingText="Accepting..."
+                    pendingText={t("pending.accepting")}
                     className="cursor-pointer gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400"
                   >
                     <Check className="h-3.5 w-3.5" />
-                    Accept invitation
+                    {t("actions.acceptInvitation")}
                   </FormPendingButton>
                 </form>
                 <form action={rejectGroupInvitation.bind(null, pendingInvitation.id)}>
@@ -583,17 +590,17 @@ export default async function GroupDetailPage({
                     type="submit"
                     variant="outline"
                     size="sm"
-                    pendingText="Rejecting..."
+                    pendingText={t("pending.rejecting")}
                     className="cursor-pointer gap-1 border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive dark:hover:text-destructive"
                   >
                     <X className="h-3.5 w-3.5" />
-                    Reject invitation
+                    {t("actions.rejectInvitation")}
                   </FormPendingButton>
                 </form>
               </div>
             ) : showBottomPrivateNotice ? (
               <p className="text-sm text-muted-foreground">
-                This group is private. Ask an admin for an invitation.
+                {t("privateNotice")}
               </p>
             ) : null}
           </div>
@@ -601,14 +608,14 @@ export default async function GroupDetailPage({
       </div>
 
       <div className="mt-6 rounded-xl border bg-card/70 p-5 shadow-sm">
-        <h2 className="text-lg font-semibold">Members</h2>
+        <h2 className="text-lg font-semibold">{t("sections.members.title")}</h2>
 
         {group.members.length === 0 ? (
-          <p className="mt-3 text-sm text-muted-foreground">No members yet.</p>
+          <p className="mt-3 text-sm text-muted-foreground">{t("sections.members.empty")}</p>
         ) : (
           <div className="mt-4 space-y-3">
             {group.members.map((member) => {
-              const displayName = getUserDisplayName(member.user);
+              const displayName = getUserDisplayName(member.user, fallbackUser);
               const canManageMember =
                 isAdmin && member.role === "MEMBER" && member.userId !== viewerId;
 
@@ -643,7 +650,7 @@ export default async function GroupDetailPage({
                           : "border-border/70 bg-background text-muted-foreground"
                       }`}
                     >
-                      {member.role === "ADMIN" ? "Admin" : "Member"}
+                      {member.role === "ADMIN" ? t("roles.admin") : t("roles.member")}
                     </span>
                     {canManageMember && (
                       <MemberActionsMenu
@@ -663,10 +670,10 @@ export default async function GroupDetailPage({
           <div className="mt-6 border-t border-border/60 pt-4">
             {pendingJoinRequests.length > 0 && (
               <>
-                <h3 className="text-sm font-semibold">Join requests</h3>
+                <h3 className="text-sm font-semibold">{t("sections.joinRequests.title")}</h3>
                 <div className="mt-3 space-y-2.5">
                   {pendingJoinRequests.map((request) => {
-                    const displayName = getUserDisplayName(request.requester);
+                    const displayName = getUserDisplayName(request.requester, fallbackUser);
                     return (
                       <div
                         key={request.id}
@@ -695,7 +702,9 @@ export default async function GroupDetailPage({
                               </p>
                             )}
                             <p className="text-xs text-muted-foreground">
-                              Requested {formatTimestamp(request.createdAt)}
+                              {t("sections.joinRequests.requestedAt", {
+                                timestamp: formatTimestamp(request.createdAt, locale),
+                              })}
                             </p>
                           </div>
                         </Link>
@@ -706,11 +715,11 @@ export default async function GroupDetailPage({
                               type="submit"
                               variant="outline"
                               size="sm"
-                              pendingText="Accepting..."
+                              pendingText={t("pending.accepting")}
                               className="cursor-pointer gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400"
                             >
                               <Check className="h-3.5 w-3.5" />
-                              Accept
+                              {t("actions.accept")}
                             </FormPendingButton>
                           </form>
                           <form action={rejectGroupJoinRequest.bind(null, request.id)}>
@@ -718,11 +727,11 @@ export default async function GroupDetailPage({
                               type="submit"
                               variant="outline"
                               size="sm"
-                              pendingText="Rejecting..."
+                              pendingText={t("pending.rejecting")}
                               className="cursor-pointer gap-1 border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive dark:hover:text-destructive"
                             >
                               <X className="h-3.5 w-3.5" />
-                              Reject
+                              {t("actions.reject")}
                             </FormPendingButton>
                           </form>
                         </div>
@@ -736,12 +745,12 @@ export default async function GroupDetailPage({
             {sentInvitations.length > 0 && (
               <>
                 <h3 className={`${pendingJoinRequests.length > 0 ? "mt-6" : ""} text-sm font-semibold`}>
-                  Sent invitations
+                  {t("sections.sentInvitations.title")}
                 </h3>
                 <div className="mt-3 space-y-2.5">
                   {sentInvitations.map((invitation) => {
-                    const displayName = getUserDisplayName(invitation.invitee);
-                    const inviterDisplayName = getUserDisplayName(invitation.inviter);
+                    const displayName = getUserDisplayName(invitation.invitee, fallbackUser);
+                    const inviterDisplayName = getUserDisplayName(invitation.inviter, fallbackUser);
                     const canCancelInvitation = invitation.inviterId === viewerId;
                     return (
                       <div
@@ -771,7 +780,10 @@ export default async function GroupDetailPage({
                               </p>
                             )}
                             <p className="text-xs text-muted-foreground">
-                              Sent {formatTimestamp(invitation.createdAt)} by {inviterDisplayName}
+                              {t("sections.sentInvitations.sentBy", {
+                                timestamp: formatTimestamp(invitation.createdAt, locale),
+                                name: inviterDisplayName,
+                              })}
                             </p>
                           </div>
                         </Link>
@@ -783,16 +795,16 @@ export default async function GroupDetailPage({
                                 type="submit"
                                 variant="outline"
                                 size="sm"
-                                pendingText="Cancelling..."
+                                pendingText={t("pending.cancelling")}
                                 className="cursor-pointer gap-1"
                               >
                                 <X className="h-3.5 w-3.5" />
-                                Cancel
+                                {t("actions.cancel")}
                               </FormPendingButton>
                             </form>
                           ) : (
                             <span className="inline-flex items-center rounded-full border border-border/70 bg-background px-2 py-0.5 text-xs text-muted-foreground">
-                              Pending
+                              {t("badges.pending")}
                             </span>
                           )}
                         </div>
@@ -812,15 +824,15 @@ export default async function GroupDetailPage({
       <div className="mt-6 rounded-xl border bg-card/70 p-5 shadow-sm">
         <div className="flex items-center gap-2">
           <LibraryBig className="h-4.5 w-4.5 text-emerald-500" />
-          <h2 className="text-lg font-semibold">Group library</h2>
+          <h2 className="text-lg font-semibold">{t("sections.library.title")}</h2>
         </div>
 
         {!isMember ? (
           <p className="mt-3 text-sm text-muted-foreground">
-            Join this group to see which games members own.
+            {t("sections.library.notMember")}
           </p>
         ) : ownedGames.length === 0 ? (
-          <p className="mt-3 text-sm text-muted-foreground">No owned games in this group yet.</p>
+          <p className="mt-3 text-sm text-muted-foreground">{t("sections.library.empty")}</p>
         ) : (
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {ownedGames.map((game) => (
@@ -838,8 +850,11 @@ export default async function GroupDetailPage({
   );
 }
 
-function getUserDisplayName(user: { name: string | null; username: string | null }) {
-  return user.name ?? user.username ?? "User";
+function getUserDisplayName(
+  user: { name: string | null; username: string | null },
+  fallbackUser: string,
+) {
+  return user.name ?? user.username ?? fallbackUser;
 }
 
 function getUserInitials(displayName: string) {
@@ -851,8 +866,8 @@ function getUserInitials(displayName: string) {
     .toUpperCase();
 }
 
-function formatTimestamp(value: Date) {
-  return new Intl.DateTimeFormat("en-US", {
+function formatTimestamp(value: Date, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(value);

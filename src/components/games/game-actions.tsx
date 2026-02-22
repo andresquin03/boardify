@@ -1,6 +1,7 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Heart, Bookmark, CircleCheckBig } from "lucide-react";
 import { toggleFavorite, toggleWishlist, toggleOwned } from "@/lib/actions";
@@ -17,6 +18,7 @@ interface GameActionsProps {
 }
 
 export function GameActions({ gameId, userState, className }: GameActionsProps) {
+  const t = useTranslations("GameStateActions");
   const [isPending, startTransition] = useTransition();
   const [pendingAction, setPendingAction] = useState<"favorite" | "wishlist" | "owned" | null>(null);
   const [optimistic, setOptimistic] = useOptimistic(
@@ -68,7 +70,7 @@ export function GameActions({ gameId, userState, className }: GameActionsProps) 
               glowClassName:
                 "bg-rose-500/35 ring-1 ring-inset ring-rose-300/80 shadow-[0_0_0_1px_rgba(251,113,133,0.45),0_0_22px_rgba(244,63,94,0.5)]",
             })}
-            aria-label="Favorite"
+            aria-label={t("favorite")}
             aria-pressed={optimistic.isFavorite}
           >
             <span
@@ -88,7 +90,7 @@ export function GameActions({ gameId, userState, className }: GameActionsProps) 
             />
           </button>
         </TooltipTrigger>
-        <TooltipContent side="bottom">Favorite</TooltipContent>
+        <TooltipContent side="bottom">{t("favorite")}</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
@@ -105,7 +107,7 @@ export function GameActions({ gameId, userState, className }: GameActionsProps) 
                 "bg-sky-500/35 ring-1 ring-inset ring-sky-300/80 shadow-[0_0_0_1px_rgba(56,189,248,0.45),0_0_22px_rgba(14,165,233,0.45)]",
               disabled: optimistic.isOwned,
             })}
-            aria-label="Wishlist"
+            aria-label={t("wishlist")}
             aria-pressed={optimistic.isWishlist}
           >
             <span
@@ -126,7 +128,7 @@ export function GameActions({ gameId, userState, className }: GameActionsProps) 
           </button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          {optimistic.isOwned ? "Owned games can't be wishlisted" : "Wishlist"}
+          {optimistic.isOwned ? t("ownedBlocksWishlist") : t("wishlist")}
         </TooltipContent>
       </Tooltip>
       <Tooltip>
@@ -143,7 +145,7 @@ export function GameActions({ gameId, userState, className }: GameActionsProps) 
               glowClassName:
                 "bg-emerald-500/35 ring-1 ring-inset ring-emerald-300/80 shadow-[0_0_0_1px_rgba(52,211,153,0.45),0_0_22px_rgba(16,185,129,0.45)]",
             })}
-            aria-label="Owned"
+            aria-label={t("owned")}
             aria-pressed={optimistic.isOwned}
           >
             <span
@@ -162,7 +164,7 @@ export function GameActions({ gameId, userState, className }: GameActionsProps) 
             />
           </button>
         </TooltipTrigger>
-        <TooltipContent side="bottom">Owned</TooltipContent>
+        <TooltipContent side="bottom">{t("owned")}</TooltipContent>
       </Tooltip>
     </div>
   );

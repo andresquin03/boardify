@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Plus, UserPlus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FormPendingButton } from "@/components/ui/form-pending-button";
@@ -30,14 +31,16 @@ export function AddMembersPopup({
   groupId: string;
   friends: InvitableFriend[];
 }) {
+  const t = useTranslations("AddMembersPopup");
+
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <button
           type="button"
           className="inline-flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border border-border/70 bg-card text-foreground shadow-sm transition-colors hover:bg-accent/60 active:bg-accent/75"
-          aria-label="Add members"
-          title="Add members"
+          aria-label={t("trigger")}
+          title={t("trigger")}
         >
           <Plus className="h-7 w-7" />
         </button>
@@ -45,19 +48,19 @@ export function AddMembersPopup({
 
       <AlertDialogContent className="max-h-[85vh] overflow-hidden p-0 sm:max-w-xl">
         <AlertDialogHeader className="border-b border-border/60 px-6 pt-6 pb-4">
-          <AlertDialogTitle>Add members</AlertDialogTitle>
+          <AlertDialogTitle>{t("title")}</AlertDialogTitle>
           <AlertDialogDescription>
-            Invite friends to join this group.
+            {t("description")}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
         <div className="max-h-[55vh] overflow-y-auto px-6 py-4">
           {friends.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No friends to invite.</p>
+            <p className="text-sm text-muted-foreground">{t("empty")}</p>
           ) : (
             <div className="space-y-2.5">
               {friends.map((friend) => {
-                const displayName = getUserDisplayName(friend);
+                const displayName = getUserDisplayName(friend, t("fallbackUser"));
                 return (
                   <div
                     key={friend.id}
@@ -86,11 +89,11 @@ export function AddMembersPopup({
                         type="submit"
                         variant="outline"
                         size="sm"
-                        pendingText="Inviting..."
+                        pendingText={t("actions.pendingInvite")}
                         className="cursor-pointer gap-1"
                       >
                         <UserPlus className="h-3.5 w-3.5" />
-                        Invite
+                        {t("actions.invite")}
                       </FormPendingButton>
                     </form>
                   </div>
@@ -101,15 +104,18 @@ export function AddMembersPopup({
         </div>
 
         <AlertDialogFooter className="border-t border-border/60 px-6 py-4">
-          <AlertDialogCancel>Close</AlertDialogCancel>
+          <AlertDialogCancel>{t("actions.close")}</AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
 }
 
-function getUserDisplayName(user: { name: string | null; username: string | null }) {
-  return user.name ?? user.username ?? "User";
+function getUserDisplayName(
+  user: { name: string | null; username: string | null },
+  fallbackUser: string,
+) {
+  return user.name ?? user.username ?? fallbackUser;
 }
 
 function getUserInitials(displayName: string) {
