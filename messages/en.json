@@ -465,6 +465,12 @@
         "title": "Group library",
         "notMember": "Join this group to see which games members own.",
         "empty": "No owned games in this group yet."
+      },
+      "events": {
+        "title": "Events",
+        "notMember": "Join the group to see events.",
+        "empty": "No events yet.",
+        "viewAll": "View all events"
       }
     }
   },
@@ -644,7 +650,8 @@
     },
     "fallbacks": {
       "someone": "Someone",
-      "group": "group"
+      "group": "group",
+      "event": "Event"
     },
     "events": {
       "friendRequestReceived": {
@@ -682,6 +689,10 @@
       "groupMemberRemoved": {
         "title": "Kicked from group",
         "message": "{actorName} kicked you out of {groupName}."
+      },
+      "groupEventCreated": {
+        "title": "New event in group",
+        "message": "{actorName} created an event in {groupName}: {eventTitle}."
       },
       "unknown": {
         "title": "Notification",
@@ -836,7 +847,100 @@
       "invalidLanguage": "Invalid language option.",
       "invalidVisibility": "Invalid visibility option.",
       "invalidSection": "Invalid settings section."
+    },
+    "event": {
+      "groupNotFound": "Group not found.",
+      "notMember": "You are not a member of this group.",
+      "dateRequired": "Date is required.",
+      "dateInvalid": "Date must be today or in the future.",
+      "timeRequired": "Time is required.",
+      "timeInvalid": "Invalid time format.",
+      "titleTooLong": "Title can be at most 100 characters.",
+      "locationTextTooLong": "Location can be at most 200 characters.",
+      "notesTooLong": "Notes can be at most 500 characters.",
+      "tooManyGames": "You can select up to 20 games.",
+      "calendarPermissionRequired": "You need to authorize access to Google Calendar.",
+      "calendarError": "Could not create the event in Google Calendar. The event was saved anyway."
     }
+  },
+  "GroupEventsPage": {
+    "title": "Events",
+    "backToGroup": "Back to group",
+    "upcoming": "Upcoming",
+    "upcomingEmpty": "No upcoming events.",
+    "past": "History",
+    "pastEmpty": "No past events.",
+    "createEvent": "Create event",
+    "at": "at",
+    "hostedBy": "At {name}'s place"
+  },
+  "CreateEventPage": {
+    "backToGroup": "Back to group",
+    "backToEvents": "Back to group events",
+    "title": "New event",
+    "description": "Organize a game night for the group."
+  },
+  "CreateEventForm": {
+    "date": {
+      "label": "Date"
+    },
+    "time": {
+      "label": "Time"
+    },
+    "title": {
+      "label": "Title",
+      "placeholder": "Optional. E.g. Summer game night",
+      "helper": "If left empty, the event date and time will be shown."
+    },
+    "locationMember": {
+      "label": "Where is it?",
+      "placeholder": "Select a group member",
+      "none": "No host defined"
+    },
+    "locationText": {
+      "label": "Address or location",
+      "placeholder": "E.g. 123 Main St",
+      "helper": "Optional."
+    },
+    "games": {
+      "label": "Games to bring",
+      "helper": "Select games from the group library and optionally assign who brings each one.",
+      "selectedCount": "{count, plural, =0 {0 selected} one {# selected} other {# selected}}",
+      "empty": "No games in the group library.",
+      "carrierLabel": "Who brings it?",
+      "carrierNone": "Not defined"
+    },
+    "notes": {
+      "label": "Notes",
+      "placeholder": "Additional info for the event...",
+      "helper": "Optional. Max 500 characters."
+    },
+    "calendar": {
+      "label": "Add to Google Calendar",
+      "helper": "All group members will be automatically invited.",
+      "permissionRequired": "To add the event to Google Calendar you need to authorize access.",
+      "authorizeButton": "Authorize Google Calendar access",
+      "connected": "Google Calendar authorized. The event will be added to the calendar when created."
+    },
+    "actions": {
+      "create": "Create event",
+      "pendingCreate": "Creating..."
+    }
+  },
+  "EventDetailPage": {
+    "backToGroup": "Back to group",
+    "createdBy": "Created by {name}",
+    "date": "Date and time",
+    "location": "Location",
+    "locationNoHost": "No host",
+    "locationNoText": "No address specified",
+    "games": "Games",
+    "gamesEmpty": "No games defined for this event.",
+    "carriedBy": "Brought by {name}",
+    "carrierUndefined": "Not defined",
+    "notes": "Notes",
+    "calendarLink": "View in Google Calendar",
+    "fallbackUser": "User"
   },
   "AboutPage": {
     "metadata": {

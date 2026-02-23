@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   BellOff,
   BellRing,
+  CalendarDays,
   CircleCheckBig,
   Dices,
   Network,
@@ -130,7 +131,9 @@ export default async function NotificationsPage() {
                             href={details.href}
                             className="pressable inline-flex items-center gap-1 rounded-md border border-border/70 bg-card px-2 py-1 text-xs font-medium transition-colors hover:bg-accent/60 active:bg-accent/75"
                           >
-                            {details.scope === NOTIFICATION_SCOPE.GROUP ? (
+                            {notification.eventKey === NOTIFICATION_EVENT_KEY.GROUP_EVENT_CREATED ? (
+                              <CalendarDays className="h-3.5 w-3.5" />
+                            ) : details.scope === NOTIFICATION_SCOPE.GROUP ? (
                               <Network className="h-3.5 w-3.5" />
                             ) : (
                               <CircleCheckBig className="h-3.5 w-3.5" />
@@ -316,6 +319,40 @@ function getNotificationDetails(notification: NotificationItem, t: Notifications
       title: t("events.groupMemberRemoved.title"),
       message: t("events.groupMemberRemoved.message", { actorName, groupName }),
       href: groupSlug ? `/groups/${groupSlug}` : "/groups",
+      actorDisplayName: actorName,
+      actorProfileHref,
+      actorInitials,
+      scope,
+    };
+  }
+
+  if (notification.eventKey === NOTIFICATION_EVENT_KEY.GROUP_EVENT_CREATED) {
+    const eventId =
+      payload &&
+      "eventId" in payload &&
+      typeof payload.eventId === "string" &&
+      payload.eventId.length > 0
+        ? payload.eventId
+        : null;
+    const eventTitle =
+      payload &&
+      "eventTitle" in payload &&
+      typeof payload.eventTitle === "string" &&
+      payload.eventTitle.length > 0
+        ? payload.eventTitle
+        : t("fallbacks.event");
+
+    const href =
+      groupSlug && eventId
+        ? `/groups/${groupSlug}/events/${eventId}`
+        : groupSlug
+          ? `/groups/${groupSlug}`
+          : "/groups";
+
+    return {
+      title: t("events.groupEventCreated.title"),
+      message: t("events.groupEventCreated.message", { actorName, groupName, eventTitle }),
+      href,
       actorDisplayName: actorName,
       actorProfileHref,
       actorInitials,

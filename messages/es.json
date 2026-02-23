@@ -465,6 +465,12 @@
         "title": "Biblioteca del grupo",
         "notMember": "Unite a este grupo para ver qué juegos tienen sus miembros.",
         "empty": "Todavía no hay juegos propios en este grupo."
+      },
+      "events": {
+        "title": "Eventos",
+        "notMember": "Unite al grupo para ver los eventos.",
+        "empty": "Todavía no hay eventos.",
+        "viewAll": "Ver todos los eventos"
       }
     }
   },
@@ -644,7 +650,8 @@
     },
     "fallbacks": {
       "someone": "Alguien",
-      "group": "grupo"
+      "group": "grupo",
+      "event": "Evento"
     },
     "events": {
       "friendRequestReceived": {
@@ -682,6 +689,10 @@
       "groupMemberRemoved": {
         "title": "Expulsado del grupo",
         "message": "{actorName} te expulsó de {groupName}."
+      },
+      "groupEventCreated": {
+        "title": "Nuevo evento en el grupo",
+        "message": "{actorName} creó un evento en {groupName}: {eventTitle}."
       },
       "unknown": {
         "title": "Notificación",
@@ -836,7 +847,100 @@
       "invalidLanguage": "Opción de idioma inválida.",
       "invalidVisibility": "Opción de visibilidad inválida.",
       "invalidSection": "Sección de configuración inválida."
+    },
+    "event": {
+      "groupNotFound": "Grupo no encontrado.",
+      "notMember": "No sos miembro de este grupo.",
+      "dateRequired": "La fecha es obligatoria.",
+      "dateInvalid": "La fecha debe ser de hoy en adelante.",
+      "timeRequired": "La hora es obligatoria.",
+      "timeInvalid": "Formato de hora inválido.",
+      "titleTooLong": "El título puede tener hasta 100 caracteres.",
+      "locationTextTooLong": "El lugar puede tener hasta 200 caracteres.",
+      "notesTooLong": "Las notas pueden tener hasta 500 caracteres.",
+      "tooManyGames": "Podés seleccionar hasta 20 juegos.",
+      "calendarPermissionRequired": "Necesitás autorizar el acceso a Google Calendar.",
+      "calendarError": "No se pudo crear el evento en Google Calendar. El evento fue guardado igual."
     }
+  },
+  "GroupEventsPage": {
+    "title": "Eventos",
+    "backToGroup": "Volver al grupo",
+    "upcoming": "Próximos",
+    "upcomingEmpty": "No hay eventos próximos.",
+    "past": "Historial",
+    "pastEmpty": "No hay eventos anteriores.",
+    "createEvent": "Crear evento",
+    "at": "a las",
+    "hostedBy": "En casa de {name}"
+  },
+  "CreateEventPage": {
+    "backToGroup": "Volver al grupo",
+    "backToEvents": "Volver a eventos del grupo",
+    "title": "Nuevo evento",
+    "description": "Organizá una partida para el grupo."
+  },
+  "CreateEventForm": {
+    "date": {
+      "label": "Fecha"
+    },
+    "time": {
+      "label": "Hora"
+    },
+    "title": {
+      "label": "Título",
+      "placeholder": "Opcional. Ej: Partida de verano",
+      "helper": "Si lo dejás vacío se muestra la fecha y hora del evento."
+    },
+    "locationMember": {
+      "label": "¿Dónde se juega?",
+      "placeholder": "Seleccioná un miembro del grupo",
+      "none": "Sin anfitrión definido"
+    },
+    "locationText": {
+      "label": "Dirección o lugar",
+      "placeholder": "Ej: Rivadavia 123, CABA",
+      "helper": "Opcional."
+    },
+    "games": {
+      "label": "Juegos a llevar",
+      "helper": "Seleccioná juegos de la biblioteca del grupo y, si querés, quién lleva cada uno.",
+      "selectedCount": "{count, plural, =0 {0 seleccionados} one {# seleccionado} other {# seleccionados}}",
+      "empty": "No hay juegos en la biblioteca del grupo.",
+      "carrierLabel": "¿Quién lo lleva?",
+      "carrierNone": "Sin definir"
+    },
+    "notes": {
+      "label": "Notas",
+      "placeholder": "Info adicional para el evento...",
+      "helper": "Opcional. Máximo 500 caracteres."
+    },
+    "calendar": {
+      "label": "Agregar a Google Calendar",
+      "helper": "Se invitan automáticamente todos los miembros del grupo.",
+      "permissionRequired": "Para agregar el evento a Google Calendar necesitás autorizar el acceso.",
+      "authorizeButton": "Autorizar acceso a Google Calendar",
+      "connected": "Google Calendar autorizado. El evento se agregará al calendario al crearlo."
+    },
+    "actions": {
+      "create": "Crear evento",
+      "pendingCreate": "Creando..."
+    }
+  },
+  "EventDetailPage": {
+    "backToGroup": "Volver al grupo",
+    "createdBy": "Creado por {name}",
+    "date": "Fecha y hora",
+    "location": "Lugar",
+    "locationNoHost": "Sin anfitrión",
+    "locationNoText": "Sin dirección especificada",
+    "games": "Juegos",
+    "gamesEmpty": "No hay juegos definidos para este evento.",
+    "carriedBy": "Lo lleva {name}",
+    "carrierUndefined": "Sin definir",
+    "notes": "Notas",
+    "calendarLink": "Ver en Google Calendar",
+    "fallbackUser": "Usuario"
   },
   "AboutPage": {
     "metadata": {

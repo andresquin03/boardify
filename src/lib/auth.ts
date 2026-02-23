@@ -54,6 +54,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   callbacks: {
+    async signIn({ account }) {
+      // Auth.js with JWT strategy doesn't update the Account in DB on re-auth.
+      // We need to persist the new tokens and scope (e.g. after calendar re-auth).
+      if (account?.provider === "google") {
+        await prisma.account.updateMany({
+          where: { providerAccountId: account.providerAccountId, provider: "google" },
+          data: {
+            access_token: account.access_token,
+            expires_at: account.expires_at,
+            scope: account.scope,
+            ...(account.refresh_token ? { refresh_token: account.refresh_token } : {}),
+            ...(account.id_token ? { id_token: account.id_token } : {}),
+          },
+        });
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user?.id) {
         token.sub = user.id;

@@ -36,6 +36,9 @@ model User {
   handledGroupJoinRequests  GroupJoinRequest[] @relation("GroupJoinRequestHandled")
   notifications             Notification[] @relation("NotificationRecipient")
   actedNotifications        Notification[] @relation("NotificationActor")
+  createdGroupEvents        GroupEvent[]     @relation("GroupEventCreator")
+  hostedGroupEvents         GroupEvent[]     @relation("GroupEventLocation")
+  carriedEventGames         GroupEventGame[] @relation("GroupEventGameCarrier")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -70,6 +73,7 @@ enum NotificationEventKey {
   GROUP_MEMBER_JOINED
   GROUP_MEMBER_PROMOTED_TO_ADMIN
   GROUP_MEMBER_REMOVED
+  GROUP_EVENT_CREATED
 }
 
 enum NotificationScope {
@@ -177,8 +181,9 @@ model Game {
   designer      String?
   image         String?
 
-  userGames   UserGame[]
-  categories  GameCategory[]
+  userGames        UserGame[]
+  categories       GameCategory[]
+  groupEventGames  GroupEventGame[]
 
   createdAt DateTime @default(now())
 }
@@ -314,6 +319,7 @@ model Group {
   invitations GroupInvitation[]
   joinRequests GroupJoinRequest[]
   slugHistory GroupSlug[]
+  events      GroupEvent[]
 }
 
 model GroupSlug {
@@ -375,4 +381,41 @@ model GroupJoinRequest {
   @@unique([groupId, requesterId])
   @@index([requesterId, status])
   @@index([groupId, status])
+}
+
+// ── Group Events ─────────────────────────────────────────
+
+model GroupEvent {
+  id                      String    @id @default(cuid())
+  groupId                 String
+  createdByUserId         String
+  title                   String?
+  date                    DateTime
+  locationUserId          String?
+  locationText            String?
+  notes                   String?
+  googleCalendarEventId   String?
+  googleCalendarEventLink String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  group        Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy    User             @relation("GroupEventCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  locationUser User?            @relation("GroupEventLocation", fields: [locationUserId], references: [id], onDelete: SetNull)
+  games        GroupEventGame[]
+
+  @@index([groupId, date])
+}
+
+model GroupEventGame {
+  id              String  @id @default(cuid())
+  groupEventId    String
+  gameId          String
+  carriedByUserId String?
+
+  groupEvent GroupEvent @relation(fields: [groupEventId], references: [id], onDelete: Cascade)
+  game       Game       @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  carriedBy  User?      @relation("GroupEventGameCarrier", fields: [carriedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([groupEventId, gameId])
 }

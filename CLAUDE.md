@@ -86,10 +86,11 @@ Abrir: `http://localhost:3000`
 │   └── games/
 ├── src/
 │   ├── app/
-│   │   ├── (protected)/                     # rutas autenticadas (games, users, friends, groups, profile, settings, notifications)
+│   │   ├── (protected)/                     # rutas autenticadas (games, users, friends, groups, profile, settings, notifications); grupos incluye /events y /events/new y /events/[eventId]
 │   │   ├── about/
 │   │   ├── api/
 │   │   │   ├── auth/[...nextauth]/
+│   │   │   ├── auth/calendar-connect/        # re-auth Google con scope calendar.events
 │   │   │   └── notifications/unread-count/
 │   │   ├── contact/
 │   │   ├── onboarding/
@@ -119,7 +120,7 @@ Abrir: `http://localhost:3000`
 - Sesion de idioma: `Session.user.language` puede ser `null` hasta completar onboarding.
 - Layout global: `src/app/layout.tsx` compone `Navbar` + `<main />` + `Footer`; el footer expone links a `/about` y `/contact`.
 - Acceso: `src/app/(protected)/layout.tsx` obliga onboarding completo; paginas de dominio aplican checks server-side y usan `redirect()` / `notFound()` segun permisos.
-- Mutaciones: `src/lib/actions.ts` concentra server actions para auth, onboarding, perfil, amistades, grupos, invitaciones/solicitudes y estado de juegos.
+- Mutaciones: `src/lib/actions.ts` concentra server actions para auth, onboarding, perfil, amistades, grupos, invitaciones/solicitudes, estado de juegos y eventos de grupos.
 - i18n runtime: `src/i18n/request.ts` resuelve locale en este orden: `user.language` -> cookie `boardify_lang` -> header `Accept-Language` -> `en`.
 - i18n bootstrap visitante: `src/proxy.ts` crea `boardify_lang` para no autenticados segun navegador.
 - Onboarding/settings: al cambiar idioma se sincroniza `User.language` y cookie `boardify_lang`.
@@ -129,10 +130,12 @@ Abrir: `http://localhost:3000`
 - UX de notificaciones de grupos: entrar a `/u/[username]/groups` marca vistas las de scope grupos solo si el viewer es owner de ese perfil; entrar a `/groups/[slug]` marca vistas solo las notificaciones asociadas a ese grupo (`entityId` o `payload.groupId`).
 - TODO (future review): el `payload` de notificaciones guarda snapshot de metadatos de grupo (`groupName/groupSlug`); tras renames puede verse stale y, si el grupo se elimina, algunos links historicos pueden terminar en `notFound`.
 - Integridad: validacion defensiva de inputs (regex/enums), checks de autorizacion y `revalidatePath` despues de cambios.
+- Eventos de grupos: los grupos tienen eventos (`/groups/[slug]/events`). Cada evento tiene fecha, hora, ubicacion (miembro anfitrion + texto libre), juegos a llevar (con portador opcional) y notas. Se pueden crear con invitacion a Google Calendar (re-auth on-demand via `/api/auth/calendar-connect`). Titulo es opcional; si esta vacio se muestra la fecha+hora formateada con `Intl.DateTimeFormat` (no se persiste en DB). `getEventDisplayTitle` en `group-events-preview-card.tsx` es el helper compartido para esto.
+- Google Calendar: re-auth on-demand (no modifica el provider global). El scope `calendar.events` se verifica en `Account.scope` antes de crear el evento (para evitar registros huerfanos). Si falta el scope, la action retorna `{ calendarPermissionRequired: true }` sin crear nada. El token se refresca automaticamente si esta vencido.
 - Dominio de datos (Prisma):
   - Auth: `User`, `Account`, `Session`, `VerificationToken`.
   - Catalogo: `Game`, `Category`, `GameCategory`, `UserGame`.
   - Social: `Friendship`, `Notification`, `NotificationEvent`, `NotificationEventKey`, `NotificationScope`.
-  - Grupos: `Group`, `GroupMember`, `GroupInvitation`, `GroupJoinRequest`, `GroupSlug`.
+  - Grupos: `Group`, `GroupMember`, `GroupInvitation`, `GroupJoinRequest`, `GroupSlug`, `GroupEvent`, `GroupEventGame`.
 - Seguridad web: `next.config.ts` agrega headers de seguridad globales, CSP/HSTS en produccion y allowlist explicita para imagenes remotas.
 - Persistencia: Prisma corre sobre `pg.Pool` + `PrismaPg` (`src/lib/prisma.ts`) y la semilla `prisma/seed.ts` usa `upsert` para juegos y categorias.

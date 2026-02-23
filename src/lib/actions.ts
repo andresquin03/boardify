@@ -21,6 +21,7 @@ import {
   deleteNotificationForUser,
   notifyFriendRequestAccepted,
   notifyFriendRequestReceived,
+  notifyGroupEventCreated,
   notifyGroupInviteAccepted,
   notifyGroupInviteReceived,
   notifyGroupJoinRequestAccepted,
@@ -32,6 +33,10 @@ import {
   softDeleteGroupInviteReceivedNotification,
   softDeleteGroupJoinRequestReceivedNotifications,
 } from "@/lib/notifications";
+import {
+  createGoogleCalendarEvent,
+  refreshGoogleToken,
+} from "@/lib/google-calendar";
 
 // ── Input validation ─────────────────────────────────────
 
@@ -2307,4 +2312,248 @@ export async function updateNotificationSettings(
   formData: FormData,
 ): Promise<SettingsFormState> {
   return updateUserSettings("notifications", prev, formData);
+}
+
+// ── Group Events ──────────────────────────────────────────
+
+export type GroupEventFormState = {
+  errors?: {
+    date?: string;
+    time?: string;
+    title?: string;
+    locationText?: string;
+    notes?: string;
+    games?: string;
+    calendar?: string;
+    general?: string;
+  };
+  calendarPermissionRequired?: boolean;
+} | null;
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_RE = /^\d{2}:\d{2}$/;
+
+export async function createGroupEvent(
+  _prev: GroupEventFormState,
+  formData: FormData,
+): Promise<GroupEventFormState> {
+  const t = await getActionMessagesTranslator(formData);
+  const userId = await getAuthUserId();
+
+  const rawGroupId = formData.get("groupId");
+  const rawDate = formData.get("date");
+  const rawTime = formData.get("time");
+  const rawTitle = formData.get("title");
+  const rawLocationUserId = formData.get("locationUserId");
+  const rawLocationText = formData.get("locationText");
+  const rawNotes = formData.get("notes");
+  const rawGameIds = formData.getAll("gameIds");
+  const withCalendar = formData.get("withCalendar") === "on";
+  const locale = getLocaleFromFormData(formData) ?? "es";
+
+  const groupId = typeof rawGroupId === "string" ? rawGroupId.trim() : "";
+  const date = typeof rawDate === "string" ? rawDate.trim() : "";
+  const time = typeof rawTime === "string" ? rawTime.trim() : "";
+  const title = typeof rawTitle === "string" ? rawTitle.trim() : "";
+  const locationUserId =
+    typeof rawLocationUserId === "string" && CUID_RE.test(rawLocationUserId.trim())
+      ? rawLocationUserId.trim()
+      : null;
+  const locationText = typeof rawLocationText === "string" ? rawLocationText.trim() : "";
+  const notes = typeof rawNotes === "string" ? rawNotes.trim() : "";
+  const gameIds = rawGameIds
+    .map((id) => (typeof id === "string" ? id.trim() : ""))
+    .filter((id) => id.length > 0);
+
+  const errors: NonNullable<GroupEventFormState>["errors"] = {};
+
+  if (!CUID_RE.test(groupId)) {
+    return { errors: { general: t("event.groupNotFound") } };
+  }
+
+  if (!date || !DATE_RE.test(date)) {
+    errors.date = t("event.dateRequired");
+  } else {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const parsed = new Date(date + "T00:00:00");
+    if (parsed < today) {
+      errors.date = t("event.dateInvalid");
+    }
+  }
+
+  if (!time || !TIME_RE.test(time)) {
+    errors.time = t("event.timeRequired");
+  }
+
+  if (title && title.length > 100) {
+    errors.title = t("event.titleTooLong");
+  }
+
+  if (locationText && locationText.length > 200) {
+    errors.locationText = t("event.locationTextTooLong");
+  }
+
+  if (notes && notes.length > 500) {
+    errors.notes = t("event.notesTooLong");
+  }
+
+  if (gameIds.length > 20) {
+    errors.games = t("event.tooManyGames");
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return { errors };
+  }
+
+  const group = await getGroupActionContext(groupId);
+  const isMember = group.members.some((m) => m.userId === userId);
+  if (!isMember) {
+    return { errors: { general: t("event.notMember") } };
+  }
+
+  const [year, month, day] = date.split("-").map(Number);
+  const [hours, minutes] = time.split(":").map(Number);
+  const eventDateTime = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+
+  const resolvedTitle =
+    title ||
+    new Intl.DateTimeFormat(locale === "es" ? "es-AR" : "en-US", {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "UTC",
+    }).format(eventDateTime);
+
+  // Check Google Calendar scope BEFORE creating the event to avoid orphaned events
+  let calendarAccount: {
+    access_token: string | null;
+    refresh_token: string | null;
+    expires_at: number | null;
+  } | null = null;
+
+  if (withCalendar) {
+    const account = await prisma.account.findFirst({
+      where: { userId, provider: "google" },
+      select: {
+        access_token: true,
+        refresh_token: true,
+        expires_at: true,
+        scope: true,
+      },
+    });
+
+    if (!account?.scope?.includes("calendar.events")) {
+      return { calendarPermissionRequired: true };
+    }
+
+    calendarAccount = account;
+  }
+
+  const carriersMap: Record<string, string | null> = {};
+  for (const gameId of gameIds) {
+    const rawCarrier = formData.get(`carrierUserId_${gameId}`);
+    const carrierId =
+      typeof rawCarrier === "string" && CUID_RE.test(rawCarrier.trim())
+        ? rawCarrier.trim()
+        : null;
+    carriersMap[gameId] = carrierId;
+  }
+
+  const createdEvent = await prisma.groupEvent.create({
+    data: {
+      groupId,
+      createdByUserId: userId,
+      title: title || null,
+      date: eventDateTime,
+      locationUserId,
+      locationText: locationText || null,
+      notes: notes || null,
+      games: {
+        create: gameIds.map((gameId) => ({
+          gameId,
+          carriedByUserId: carriersMap[gameId] ?? null,
+        })),
+      },
+    },
+    select: { id: true },
+  });
+
+  if (withCalendar && calendarAccount) {
+    const account = calendarAccount;
+
+    try {
+      let accessToken = account.access_token ?? "";
+      if (account.expires_at && account.expires_at * 1000 < Date.now()) {
+        if (account.refresh_token) {
+          const refreshed = await refreshGoogleToken(account.refresh_token);
+          accessToken = refreshed.access_token;
+          await prisma.account.updateMany({
+            where: { userId, provider: "google" },
+            data: {
+              access_token: refreshed.access_token,
+              expires_at: Math.floor(Date.now() / 1000 + refreshed.expires_in),
+            },
+          });
+        }
+      }
+
+      const memberIds = group.members.map((m) => m.userId);
+      const memberUsers = await prisma.user.findMany({
+        where: { id: { in: memberIds } },
+        select: { email: true },
+      });
+      const attendeeEmails = memberUsers
+        .map((u) => u.email)
+        .filter((e): e is string => Boolean(e));
+
+      const locationUser = locationUserId
+        ? group.members.find((m) => m.userId === locationUserId)
+        : null;
+      const locationParts = [
+        locationUser?.user?.username ? `@${locationUser.user.username}` : null,
+        locationText || null,
+      ].filter(Boolean);
+
+      const endDateTime = new Date(eventDateTime.getTime() + 3 * 60 * 60 * 1000);
+
+      const calendarResult = await createGoogleCalendarEvent(accessToken, {
+        summary: resolvedTitle,
+        description: notes || undefined,
+        location: locationParts.length > 0 ? locationParts.join(" – ") : undefined,
+        start: { dateTime: eventDateTime.toISOString(), timeZone: "UTC" },
+        end: { dateTime: endDateTime.toISOString(), timeZone: "UTC" },
+        attendees: attendeeEmails.map((email) => ({ email })),
+      });
+
+      await prisma.groupEvent.update({
+        where: { id: createdEvent.id },
+        data: {
+          googleCalendarEventId: calendarResult.id,
+          googleCalendarEventLink: calendarResult.htmlLink,
+        },
+      });
+    } catch {
+      // Calendar failed — event is already saved, continue without error
+    }
+  }
+
+  const memberIds = group.members.map((m) => m.userId);
+  await notifyGroupEventCreated({
+    recipientIds: memberIds,
+    actorId: userId,
+    groupId,
+    groupSlug: group.slug,
+    groupName: group.name,
+    eventId: createdEvent.id,
+    eventTitle: resolvedTitle,
+  });
+
+  revalidatePath(`/groups/${group.slug}`);
+  revalidatePath(`/groups/${group.slug}/events`);
+  revalidatePath("/notifications");
+  revalidatePath("/", "layout");
+
+  redirect(`/groups/${group.slug}/events/${createdEvent.id}`);
 }

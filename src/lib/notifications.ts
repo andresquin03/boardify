@@ -13,6 +13,7 @@ export const NOTIFICATION_EVENT_KEY = {
   GROUP_MEMBER_JOINED: NotificationEventKey.GROUP_MEMBER_JOINED,
   GROUP_MEMBER_PROMOTED_TO_ADMIN: NotificationEventKey.GROUP_MEMBER_PROMOTED_TO_ADMIN,
   GROUP_MEMBER_REMOVED: NotificationEventKey.GROUP_MEMBER_REMOVED,
+  GROUP_EVENT_CREATED: NotificationEventKey.GROUP_EVENT_CREATED,
 } as const;
 
 type NotificationCreateInput = {
@@ -591,4 +592,45 @@ export async function notifyGroupMemberRemoved({
       groupName,
     },
   });
+}
+
+export async function notifyGroupEventCreated({
+  recipientIds,
+  actorId,
+  groupId,
+  groupSlug,
+  groupName,
+  eventId,
+  eventTitle,
+}: {
+  recipientIds: string[];
+  actorId: string;
+  groupId: string;
+  groupSlug?: string;
+  groupName?: string;
+  eventId: string;
+  eventTitle: string;
+}) {
+  const uniqueRecipientIds = [...new Set(recipientIds)].filter((id) => id !== actorId);
+  if (uniqueRecipientIds.length === 0) {
+    return [];
+  }
+
+  return Promise.all(
+    uniqueRecipientIds.map((recipientId) =>
+      createNotification({
+        userId: recipientId,
+        actorId,
+        eventKey: NOTIFICATION_EVENT_KEY.GROUP_EVENT_CREATED,
+        entityId: eventId,
+        payload: {
+          groupId,
+          groupSlug,
+          groupName,
+          eventId,
+          eventTitle,
+        },
+      }),
+    ),
+  );
 }

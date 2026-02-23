@@ -42,7 +42,7 @@ export function AddMembersPopup({
           aria-label={t("trigger")}
           title={t("trigger")}
         >
-          <Plus className="h-7 w-7" />
+          <Plus className="h-7 w-7 text-emerald-500" />
         </button>
       </AlertDialogTrigger>
 

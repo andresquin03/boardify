@@ -22,6 +22,8 @@ Boardify baja esa friccion con flujos simples de perfil, amigos, grupos y notifi
 - Grupos con visibilidad `PUBLIC`, `INVITATION` y `PRIVATE`.
 - Invitaciones a grupos entre amigos y solicitudes de ingreso para grupos por invitacion.
 - Moderacion de miembros en grupos: admins pueden promover miembros a admin y expulsar (`kick`) miembros no-admin.
+- Eventos de grupo: crear eventos con fecha/hora, anfitrion/lugar, juegos a llevar (con portador opcional) y notas.
+- Integracion opcional con Google Calendar para crear el evento e invitar miembros del grupo (re-autorizacion on-demand).
 - Centro de notificaciones (no leidas, vistas, borrado individual y clear all).
 
 ## Estado actual
@@ -86,9 +88,11 @@ pnpm dev
 ## Arquitectura (resumen)
 
 - `src/app`: rutas App Router (publicas y protegidas).
-- `src/app/(protected)`: dominio principal autenticado (games, users, friends, groups, profile, settings, notifications).
-- `src/lib/actions.ts`: server actions con mutaciones de dominio.
+- `src/app/(protected)`: dominio principal autenticado (games, users, friends, groups, profile, settings, notifications) e incluye eventos de grupos (`/groups/[slug]/events`, `/new`, `/[eventId]`).
+- `src/lib/actions.ts`: server actions con mutaciones de dominio (incluyendo creacion de eventos de grupos).
 - `src/lib/notifications.ts`: logica de notificaciones (crear, listar, marcar vistas, borrar) basada en catalogo de eventos y scopes.
+- `src/lib/google-calendar.ts`: integracion con Google Calendar (refresh token + creacion de eventos).
+- `src/app/api/auth/calendar-connect/route.ts`: re-auth con Google para pedir scope `calendar.events` cuando el usuario quiere exportar un evento.
 - `src/i18n/request.ts`: resolucion de locale por request con prioridad `user.language` -> cookie `boardify_lang` -> `Accept-Language` -> `en`.
 - `src/lib/locale.ts`: normalizacion de locales (`en`, `es`) y mapeo entre locale UI y `User.language` (`EN`/`ES`).
 - `src/proxy.ts`: inicializa cookie de idioma para visitantes no autenticados segun `Accept-Language`.
@@ -97,7 +101,7 @@ pnpm dev
 - `TODO (future review)`: `Notification.payload` guarda snapshot de `groupName/groupSlug`; puede quedar desactualizado tras rename y el link puede fallar si el grupo se elimina.
 - Notificaciones de amistad: `/friends` marca vistas las del scope amistad; visitar `/u/[username]` marca vistas solo las notificaciones de amistad cuyo actor es ese usuario.
 - Notificaciones de grupos: `/u/[username]/groups` (solo owner) marca vistas las del scope grupos; visitar `/groups/[slug]` marca vistas solo las notificaciones del grupo abierto (por `entityId` o `payload.groupId`).
-- `prisma/schema.prisma`: modelos de auth, juegos, amistad, grupos, settings de usuario y notificaciones.
+- `prisma/schema.prisma`: modelos de auth, juegos, amistad, grupos, eventos de grupos (`GroupEvent`, `GroupEventGame`), settings de usuario y notificaciones.
 
 ## Verificacion rapida (smoke check)
 

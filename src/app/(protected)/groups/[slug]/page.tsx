@@ -25,6 +25,7 @@ import { GroupOwnedGameCard } from "@/components/groups/group-owned-game-card";
 import { MemberActionsMenu } from "@/components/groups/member-actions-menu";
 import { ShareIconButton } from "@/components/ui/share-icon-button";
 import { AddMembersPopup } from "@/components/groups/add-members-popup";
+import { GroupEventsPreviewCard } from "@/components/groups/group-events-preview-card";
 import {
   acceptGroupInvitation,
   acceptGroupJoinRequest,
@@ -127,6 +128,7 @@ export default async function GroupDetailPage({
     pendingJoinRequests,
     friendConnections,
     pendingGroupInvitations,
+    previewEvent,
   ] = await Promise.all([
     isMember
       ? prisma.game.findMany({
@@ -247,6 +249,33 @@ export default async function GroupDetailPage({
           orderBy: { createdAt: "desc" },
         })
       : Promise.resolve([]),
+    isMember
+      ? prisma.groupEvent
+          .findFirst({
+            where: { groupId: group.id, date: { gte: new Date() } },
+            orderBy: { date: "asc" },
+            select: {
+              id: true,
+              title: true,
+              date: true,
+              locationUser: { select: { id: true, name: true, username: true } },
+            },
+          })
+          .then(
+            (upcoming) =>
+              upcoming ??
+              prisma.groupEvent.findFirst({
+                where: { groupId: group.id },
+                orderBy: { date: "desc" },
+                select: {
+                  id: true,
+                  title: true,
+                  date: true,
+                  locationUser: { select: { id: true, name: true, username: true } },
+                },
+              }),
+          )
+      : Promise.resolve(null),
   ]);
 
   const ownedGames = ownedGamesRaw
@@ -821,6 +850,12 @@ export default async function GroupDetailPage({
         )}
       </div>
 
+      <GroupEventsPreviewCard
+        groupSlug={group.slug}
+        isMember={isMember}
+        previewEvent={previewEvent ?? null}
+      />
+
       <div className="mt-6 rounded-xl border bg-card/70 p-5 shadow-sm">
         <div className="flex items-center gap-2">
           <LibraryBig className="h-4.5 w-4.5 text-emerald-500" />
@@ -846,6 +881,7 @@ export default async function GroupDetailPage({
           </div>
         )}
       </div>
+
     </div>
   );
 }
