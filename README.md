@@ -61,6 +61,8 @@ DIRECT_URL=...
 AUTH_SECRET=...
 AUTH_GOOGLE_ID=...
 AUTH_GOOGLE_SECRET=...
+UPSTASH_REDIS_REST_URL=...
+UPSTASH_REDIS_REST_TOKEN=...
 ```
 
 3. Configurar Google OAuth para desarrollo local:
@@ -92,6 +94,8 @@ pnpm dev
 - `src/app/(protected)`: dominio principal autenticado (games, users, friends, groups, profile, settings, notifications) e incluye eventos de grupos (`/groups/[slug]/events`, `/new`, `/[eventId]`, `/[eventId]/edit`).
 - `src/lib/actions.ts`: server actions con mutaciones de dominio (incluyendo creacion, edicion y eliminacion de eventos de grupos, con notificaciones).
 - `src/lib/notifications.ts`: logica de notificaciones (crear, listar, marcar vistas, borrar) basada en catalogo de eventos y scopes. Cubre amistades, grupos, membresia y eventos de grupo (create/update/delete).
+- `src/lib/env.ts`: valida todas las vars de entorno criticas al arranque; falla rapido con mensaje claro si alguna falta.
+- `src/lib/ratelimit.ts`: rate limiting con Upstash Redis (sliding window) — limiters `creation`, `social` y `mutation` por `userId`.
 - `src/lib/google-calendar.ts`: integracion con Google Calendar (refresh token, crear, actualizar y cancelar eventos con `sendUpdates=all`).
 - `src/app/api/auth/calendar-connect/route.ts`: re-auth con Google para pedir scope `calendar.events` cuando el usuario quiere exportar un evento.
 - `src/i18n/request.ts`: resolucion de locale por request con prioridad `user.language` -> cookie `boardify_lang` -> `Accept-Language` -> `en`.
@@ -114,7 +118,7 @@ pnpm dev
 
 ## Troubleshooting
 
-- `Missing AUTH_SECRET environment variable`: falta `AUTH_SECRET` en `.env`.
+- `Missing required environment variable: X`: falta alguna var critica en `.env` — verificar que todas las vars de la seccion anterior esten configuradas.
 - Error de callback OAuth: revisar URI exacta en Google Console.
 - Error de DB/Prisma: validar `DATABASE_URL` y que PostgreSQL este activo.
 

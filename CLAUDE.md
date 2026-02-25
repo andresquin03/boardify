@@ -38,6 +38,8 @@ DIRECT_URL=...
 AUTH_SECRET=...
 AUTH_GOOGLE_ID=...
 AUTH_GOOGLE_SECRET=...
+UPSTASH_REDIS_REST_URL=...
+UPSTASH_REDIS_REST_TOKEN=...
 ```
 
 Para OAuth local con Google:
@@ -59,7 +61,7 @@ Abrir: `http://localhost:3000`
 - Cargan juegos/grupos sin errores de base de datos.
 
 ### Troubleshooting rapido
-- `Missing AUTH_SECRET environment variable`: falta `AUTH_SECRET` en `.env`.
+- `Missing required environment variable: X`: falta alguna var critica en `.env` — verificar que todas las vars de la seccion anterior esten configuradas.
 - Error de callback OAuth: revisar que la redirect URI coincida exactamente.
 - Error Prisma/DB: verificar `DATABASE_URL` y que PostgreSQL este levantado.
 
@@ -140,4 +142,6 @@ Abrir: `http://localhost:3000`
   - Social: `Friendship`, `Notification`, `NotificationEvent`, `NotificationEventKey`, `NotificationScope`.
   - Grupos: `Group`, `GroupMember`, `GroupInvitation`, `GroupJoinRequest`, `GroupSlug`, `GroupEvent`, `GroupEventGame`.
 - Seguridad web: `next.config.ts` agrega headers de seguridad globales, CSP/HSTS en produccion y allowlist explicita para imagenes remotas.
+- Variables de entorno: `src/lib/env.ts` valida todas las vars criticas al arranque del servidor (`DATABASE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`); si alguna falta el proceso falla inmediatamente con un mensaje claro. Los modulos `prisma.ts`, `ratelimit.ts` y `google-calendar.ts` importan de `env.ts` en lugar de `process.env` directo.
+- Rate limiting: `src/lib/ratelimit.ts` expone tres limiters con Upstash Redis (sliding window): `creation` (3/min) para crear grupos y eventos, `social` (8/min) para solicitudes de amistad/grupo e invitaciones, `mutation` (12/min) para editar grupos y eventos. Los checks se hacen por `userId` en `src/lib/actions.ts` justo despues de `getAuthUserId()`.
 - Persistencia: Prisma corre sobre `pg.Pool` + `PrismaPg` (`src/lib/prisma.ts`) y la semilla `prisma/seed.ts` usa `upsert` para juegos y categorias.

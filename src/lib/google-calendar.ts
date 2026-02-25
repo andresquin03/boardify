@@ -1,3 +1,5 @@
+import { env } from "@/lib/env";
+
 type CalendarEventInput = {
   summary: string;
   description?: string;
@@ -24,8 +26,8 @@ export async function refreshGoogleToken(
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: process.env.AUTH_GOOGLE_ID!,
-      client_secret: process.env.AUTH_GOOGLE_SECRET!,
+      client_id: env.AUTH_GOOGLE_ID,
+      client_secret: env.AUTH_GOOGLE_SECRET,
       refresh_token: refreshToken,
       grant_type: "refresh_token",
     }),
