@@ -477,7 +477,8 @@
   "GamesPage": {
     "title": "Juegos",
     "description": "Explorá nuestro catálogo de juegos de mesa.",
-    "empty": "No se encontraron juegos con esos filtros."
+    "empty": "No se encontraron juegos con esos filtros.",
+    "loadingMore": "Cargando más juegos..."
   },
   "GamesFilters": {
     "search": {

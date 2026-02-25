@@ -1,18 +1,21 @@
-import { GameCard } from "@/components/games/game-card";
 import { GamesFilters } from "@/components/games/games-filters";
+import { GamesGrid } from "@/components/games/games-grid";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import {
   isDifficultyFilterValue,
   isGameSortValue,
   isPlayerFilterValue,
-  type DifficultyFilterValue,
-  type GameSortValue,
-  type PlayerFilterValue,
 } from "@/lib/game-filters";
+import {
+  buildGamesOrderBy,
+  buildGamesWhereClause,
+  GAMES_PAGE_SIZE,
+  type GameFiltersInput,
+  type GameWithUserState,
+} from "@/lib/games-query";
 import { Dice5 } from "lucide-react";
-import type { Prisma } from "@/generated/prisma/client";
 
 interface GamesPageProps {
   searchParams: Promise<{
@@ -34,87 +37,8 @@ function normalizeSingleValue(value?: string | string[]) {
   return value ?? "";
 }
 
-function buildPlayersFilter(selectedPlayers: PlayerFilterValue[]) {
-  if (selectedPlayers.length === 0) return undefined;
-
-  return {
-    OR: selectedPlayers.map((filter) => {
-      if (filter === "2") {
-        return {
-          minPlayers: { lte: 2 },
-          maxPlayers: { gte: 2 },
-        };
-      }
-
-      if (filter === "3-4") {
-        return {
-          minPlayers: { lte: 4 },
-          maxPlayers: { gte: 3 },
-        };
-      }
-
-      return {
-        maxPlayers: { gte: 5 },
-      };
-    }),
-  };
-}
-
-function buildDifficultyFilter(selectedDifficulty: DifficultyFilterValue | "") {
-  if (!selectedDifficulty) return undefined;
-
-  if (selectedDifficulty === "easy") {
-    return { difficulty: { lte: 2 } };
-  }
-
-  if (selectedDifficulty === "medium") {
-    return {
-      difficulty: {
-        gt: 2,
-        lte: 3,
-      },
-    };
-  }
-
-  return { difficulty: { gt: 3 } };
-}
-
-function compareNullableNumberDesc(a: number | null, b: number | null) {
-  if (a === null && b === null) return 0;
-  if (a === null) return 1;
-  if (b === null) return -1;
-  return b - a;
-}
-
-function sortGamesByOption<
-  T extends { title: string; difficulty: number | null; rating: number | null },
->(games: T[], sortBy: GameSortValue, locale: string) {
-  const sorted = [...games];
-
-  if (sortBy === "abc") {
-    return sorted.sort((a, b) =>
-      a.title.localeCompare(b.title, locale, { sensitivity: "base" }),
-    );
-  }
-
-  if (sortBy === "difficulty") {
-    return sorted.sort((a, b) => {
-      const numberDiff = compareNullableNumberDesc(a.difficulty, b.difficulty);
-      if (numberDiff !== 0) return numberDiff;
-      return a.title.localeCompare(b.title, locale, { sensitivity: "base" });
-    });
-  }
-
-  return sorted.sort((a, b) => {
-    const numberDiff = compareNullableNumberDesc(a.rating, b.rating);
-    if (numberDiff !== 0) return numberDiff;
-    return a.title.localeCompare(b.title, locale, { sensitivity: "base" });
-  });
-}
-
 export default async function GamesPage({ searchParams }: GamesPageProps) {
   const t = await getTranslations("GamesPage");
-  const locale = await getLocale();
   const params = await searchParams;
   const session = await auth();
   const userId = session?.user?.id;
@@ -127,67 +51,39 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
     ? selectedDifficultyRaw
     : "";
   const selectedSortRaw = normalizeSingleValue(params.sort).trim().toLowerCase();
-  const selectedSort: GameSortValue = isGameSortValue(selectedSortRaw)
-    ? selectedSortRaw
-    : "abc";
+  const selectedSort = isGameSortValue(selectedSortRaw) ? selectedSortRaw : "abc";
 
-  const whereFilters: Prisma.GameWhereInput[] = [];
+  const filters: GameFiltersInput = {
+    q: query,
+    players: selectedPlayers,
+    categories: selectedCategories,
+    difficulty: selectedDifficulty,
+    sort: selectedSort,
+  };
 
-  if (query) {
-    whereFilters.push({
-      OR: [
-        { title: { contains: query, mode: "insensitive" as const } },
-        {
-          categories: {
-            some: {
-              category: {
-                name: { contains: query, mode: "insensitive" as const },
-              },
-            },
-          },
-        },
-      ],
-    });
-  }
+  const [games, categories] = await Promise.all([
+    prisma.game.findMany({
+      where: buildGamesWhereClause(filters),
+      orderBy: buildGamesOrderBy(selectedSort),
+      take: GAMES_PAGE_SIZE,
+      skip: 0,
+    }),
+    prisma.category.findMany({
+      select: { name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
-  const playersFilter = buildPlayersFilter(selectedPlayers);
-  if (playersFilter) {
-    whereFilters.push(playersFilter);
-  }
+  const hasMore = games.length === GAMES_PAGE_SIZE;
+  const categoryOptions = categories.map((c) => c.name);
 
-  const difficultyFilter = buildDifficultyFilter(selectedDifficulty);
-  if (difficultyFilter) {
-    whereFilters.push(difficultyFilter);
-  }
-
-  if (selectedCategories.length > 0) {
-    whereFilters.push({
-      categories: {
-        some: {
-          category: {
-            name: { in: selectedCategories },
-          },
-        },
-      },
-    });
-  }
-
-  const games = await prisma.game.findMany({
-    where: whereFilters.length > 0 ? { AND: whereFilters } : undefined,
-  });
-  const sortedGames = sortGamesByOption(games, selectedSort, locale);
-
-  const categories = await prisma.category.findMany({
-    select: { name: true },
-    orderBy: { name: "asc" },
-  });
-
-  const categoryOptions = categories.map((item) => item.name);
-
-  const userGamesMap = new Map<string, { isFavorite: boolean; isWishlist: boolean; isOwned: boolean }>();
-  if (userId) {
+  const userGamesMap = new Map<
+    string,
+    { isFavorite: boolean; isWishlist: boolean; isOwned: boolean }
+  >();
+  if (userId && games.length > 0) {
     const userGames = await prisma.userGame.findMany({
-      where: { userId },
+      where: { userId, gameId: { in: games.map((g) => g.id) } },
       select: { gameId: true, isFavorite: true, isWishlist: true, isOwned: true },
     });
     for (const ug of userGames) {
@@ -199,6 +95,13 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
     }
   }
 
+  const initialGames: GameWithUserState[] = games.map((g) => ({
+    ...g,
+    userState: userGamesMap.get(g.id),
+  }));
+
+  const filterKey = JSON.stringify(filters);
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
       <div className="group flex items-center gap-2.5">
@@ -207,9 +110,7 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
         </span>
         <h1 className="text-3xl font-bold">{t("title")}</h1>
       </div>
-      <p className="mt-1 text-muted-foreground">
-        {t("description")}
-      </p>
+      <p className="mt-1 text-muted-foreground">{t("description")}</p>
 
       <GamesFilters
         initialQuery={query}
@@ -220,19 +121,16 @@ export default async function GamesPage({ searchParams }: GamesPageProps) {
         categoryOptions={categoryOptions}
       />
 
-      {sortedGames.length === 0 ? (
+      {initialGames.length === 0 ? (
         <p className="mt-8 text-sm text-muted-foreground">{t("empty")}</p>
       ) : (
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {sortedGames.map((game) => (
-            <GameCard
-              key={game.id}
-              game={game}
-              userState={userGamesMap.get(game.id)}
-              isAuthenticated={!!userId}
-            />
-          ))}
-        </div>
+        <GamesGrid
+          key={filterKey}
+          initialGames={initialGames}
+          initialHasMore={hasMore}
+          filters={filters}
+          isAuthenticated={!!userId}
+        />
       )}
     </div>
   );

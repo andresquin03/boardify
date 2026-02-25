@@ -477,7 +477,8 @@
   "GamesPage": {
     "title": "Games",
     "description": "Browse our catalog of board games.",
-    "empty": "No games found with those filters."
+    "empty": "No games found with those filters.",
+    "loadingMore": "Loading more games..."
   },
   "GamesFilters": {
     "search": {

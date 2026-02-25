@@ -26,6 +26,8 @@ Boardify baja esa friccion con flujos simples de perfil, amigos, grupos y notifi
 - Integracion con Google Calendar: crear, actualizar y cancelar eventos con notificacion a invitados (re-autorizacion on-demand). La descripcion incluye lista de juegos y link al evento en Boardify.
 - `/groups` muestra los grupos privados a los que el usuario pertenece ademas de los publicos e "invitation only".
 - Centro de notificaciones (no leidas, vistas, borrado individual y clear all). Cubre amistades, grupos y eventos — incluye notificaciones de edicion y eliminacion.
+- Catalogo de juegos con infinite scroll (18 juegos por pagina, paginacion en DB) y filtros por jugadores, categoria, dificultad y orden.
+- Analytics y performance monitoring con Vercel Analytics y Speed Insights.
 
 ## Estado actual
 
@@ -96,6 +98,7 @@ pnpm dev
 - `src/lib/notifications.ts`: logica de notificaciones (crear, listar, marcar vistas, borrar) basada en catalogo de eventos y scopes. Cubre amistades, grupos, membresia y eventos de grupo (create/update/delete).
 - `src/lib/env.ts`: valida todas las vars de entorno criticas al arranque; falla rapido con mensaje claro si alguna falta.
 - `src/lib/ratelimit.ts`: rate limiting con Upstash Redis (sliding window) — limiters `creation`, `social` y `mutation` por `userId`.
+- `src/lib/games-query.ts`: tipos y utilidades para filtros/orden del catalogo de juegos (sin `"use server"`). `src/lib/games-actions.ts`: server action `fetchGamesPage` para infinite scroll de `/games`. `src/components/games/games-grid.tsx`: client component con `IntersectionObserver` para cargar paginas adicionales.
 - `src/lib/google-calendar.ts`: integracion con Google Calendar (refresh token, crear, actualizar y cancelar eventos con `sendUpdates=all`).
 - `src/app/api/auth/calendar-connect/route.ts`: re-auth con Google para pedir scope `calendar.events` cuando el usuario quiere exportar un evento.
 - `src/i18n/request.ts`: resolucion de locale por request con prioridad `user.language` -> cookie `boardify_lang` -> `Accept-Language` -> `en`.
