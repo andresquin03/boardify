@@ -860,7 +860,10 @@
       "notesTooLong": "Notes can be at most 500 characters.",
       "tooManyGames": "You can select up to 20 games.",
       "calendarPermissionRequired": "You need to authorize access to Google Calendar.",
-      "calendarError": "Could not create the event in Google Calendar. The event was saved anyway."
+      "calendarError": "Could not create the event in Google Calendar. The event was saved anyway.",
+      "notFound": "Event not found.",
+      "notAuthorized": "You don't have permission to modify this event.",
+      "updateCalendarError": "Could not update the event in Google Calendar."
     }
   },
   "GroupEventsPage": {
@@ -930,6 +933,8 @@
   "EventDetailPage": {
     "backToGroup": "Back to group",
     "createdBy": "Created by {name}",
+    "editEvent": "Edit",
+    "deleteEvent": "Delete",
     "date": "Date and time",
     "location": "Location",
     "locationNoHost": "No host",
@@ -941,6 +946,66 @@
     "notes": "Notes",
     "calendarLink": "View in Google Calendar",
     "fallbackUser": "User"
+  },
+  "DeleteEventButton": {
+    "button": "Delete",
+    "dialog": {
+      "title": "Delete this event?",
+      "description": "This action cannot be undone.",
+      "descriptionWithCalendar": "This action cannot be undone. The event will also be cancelled in <b>Google Calendar</b> and attendees will be notified.",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "pending": "Deleting..."
+    }
+  },
+  "EditEventPage": {
+    "backToEvent": "Back to event",
+    "title": "Edit event",
+    "description": "Update the event details."
+  },
+  "EditEventForm": {
+    "date": {
+      "label": "Date"
+    },
+    "time": {
+      "label": "Time"
+    },
+    "title": {
+      "label": "Title",
+      "placeholder": "Optional. E.g.: Summer game night",
+      "helper": "Leave blank to use the event date and time as the title."
+    },
+    "locationMember": {
+      "label": "Where is it happening?",
+      "placeholder": "Select a group member",
+      "none": "No host defined"
+    },
+    "locationText": {
+      "label": "Address or location",
+      "placeholder": "E.g.: 123 Main St",
+      "helper": "Optional."
+    },
+    "games": {
+      "label": "Games to bring",
+      "helper": "Select games from the group library and optionally who brings each one.",
+      "empty": "No games in the group library.",
+      "carrierLabel": "Who brings it?",
+      "carrierNone": "Not defined"
+    },
+    "notes": {
+      "label": "Notes",
+      "placeholder": "Additional info for the event...",
+      "helper": "Optional. Max 500 characters."
+    },
+    "calendar": {
+      "updateToggle": "Update Google Calendar invite",
+      "updateHelper": "The event will be updated and invites will be resent.",
+      "permissionRequired": "Could not update the event in Google Calendar. Make sure you have authorized access."
+    },
+    "actions": {
+      "save": "Save changes",
+      "pendingSave": "Saving..."
+    }
   },
   "AboutPage": {
     "metadata": {

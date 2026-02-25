@@ -6,6 +6,7 @@ type PreviewEvent = {
   id: string;
   title: string | null;
   date: Date;
+  timezone: string;
   locationUser: {
     id: string;
     name: string | null;
@@ -20,7 +21,7 @@ type GroupEventsPreviewCardProps = {
 };
 
 export function getEventDisplayTitle(
-  event: { title: string | null; date: Date },
+  event: { title: string | null; date: Date; timezone?: string },
   locale: string,
 ): string {
   if (event.title) return event.title;
@@ -29,7 +30,7 @@ export function getEventDisplayTitle(
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: "UTC",
+    timeZone: event.timezone ?? "UTC",
   }).format(event.date);
 }
 

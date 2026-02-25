@@ -860,7 +860,10 @@
       "notesTooLong": "Las notas pueden tener hasta 500 caracteres.",
       "tooManyGames": "Podés seleccionar hasta 20 juegos.",
       "calendarPermissionRequired": "Necesitás autorizar el acceso a Google Calendar.",
-      "calendarError": "No se pudo crear el evento en Google Calendar. El evento fue guardado igual."
+      "calendarError": "No se pudo crear el evento en Google Calendar. El evento fue guardado igual.",
+      "notFound": "Evento no encontrado.",
+      "notAuthorized": "No tenés permiso para modificar este evento.",
+      "updateCalendarError": "No se pudo actualizar el evento en Google Calendar."
     }
   },
   "GroupEventsPage": {
@@ -930,6 +933,8 @@
   "EventDetailPage": {
     "backToGroup": "Volver al grupo",
     "createdBy": "Creado por {name}",
+    "editEvent": "Editar",
+    "deleteEvent": "Eliminar",
     "date": "Fecha y hora",
     "location": "Lugar",
     "locationNoHost": "Sin anfitrión",
@@ -941,6 +946,66 @@
     "notes": "Notas",
     "calendarLink": "Ver en Google Calendar",
     "fallbackUser": "Usuario"
+  },
+  "DeleteEventButton": {
+    "button": "Eliminar",
+    "dialog": {
+      "title": "¿Eliminar este evento?",
+      "description": "Esta acción no se puede deshacer.",
+      "descriptionWithCalendar": "Esta acción no se puede deshacer. El evento también se cancelará en <b>Google Calendar</b> y los invitados recibirán una notificación.",
+      "cancel": "Cancelar",
+      "confirm": "Eliminar",
+      "pending": "Eliminando..."
+    }
+  },
+  "EditEventPage": {
+    "backToEvent": "Volver al evento",
+    "title": "Editar evento",
+    "description": "Modificá los detalles del evento."
+  },
+  "EditEventForm": {
+    "date": {
+      "label": "Fecha"
+    },
+    "time": {
+      "label": "Hora"
+    },
+    "title": {
+      "label": "Título",
+      "placeholder": "Opcional. Ej: Partida de verano",
+      "helper": "Si lo dejás vacío se muestra la fecha y hora del evento."
+    },
+    "locationMember": {
+      "label": "¿Dónde se juega?",
+      "placeholder": "Seleccioná un miembro del grupo",
+      "none": "Sin anfitrión definido"
+    },
+    "locationText": {
+      "label": "Dirección o lugar",
+      "placeholder": "Ej: Rivadavia 123, CABA",
+      "helper": "Opcional."
+    },
+    "games": {
+      "label": "Juegos a llevar",
+      "helper": "Seleccioná juegos de la biblioteca del grupo y, si querés, quién lleva cada uno.",
+      "empty": "No hay juegos en la biblioteca del grupo.",
+      "carrierLabel": "¿Quién lo lleva?",
+      "carrierNone": "Sin definir"
+    },
+    "notes": {
+      "label": "Notas",
+      "placeholder": "Info adicional para el evento...",
+      "helper": "Opcional. Máximo 500 caracteres."
+    },
+    "calendar": {
+      "updateToggle": "Actualizar invitación en Google Calendar",
+      "updateHelper": "Se actualizará el evento y se re-enviarán las invitaciones.",
+      "permissionRequired": "No se pudo actualizar el evento en Google Calendar. Verificá que tengas el acceso autorizado."
+    },
+    "actions": {
+      "save": "Guardar cambios",
+      "pendingSave": "Guardando..."
+    }
   },
   "AboutPage": {
     "metadata": {

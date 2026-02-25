@@ -2,9 +2,8 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import Link from "next/link";
-import { AlertTriangle, CalendarDays, CheckCircle2, Dices, Plus, UserRound } from "lucide-react";
-import { createGroupEvent, type GroupEventFormState } from "@/lib/actions";
+import { AlertTriangle, CalendarDays, Dices, Plus, RefreshCw, UserRound } from "lucide-react";
+import { updateGroupEvent, type GroupEventFormState } from "@/lib/actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,94 +40,70 @@ type LibraryGame = {
   ownerIds: string[];
 };
 
-type CreateEventFormProps = {
+type InitialValues = {
+  date: string;
+  time: string;
+  title: string;
+  locationUserId: string | null;
+  locationText: string;
+  notes: string;
+  gameIds: string[];
+  carriers: Record<string, string>;
+  timezone: string;
+};
+
+type EditEventFormProps = {
+  eventId: string;
   groupId: string;
   groupSlug: string;
   members: Member[];
   libraryGames: LibraryGame[];
-  calendarConnected?: boolean;
-};
-
-type EventFormDraft = {
-  date: string;
-  time: string;
-  title: string;
-  locationUserId: string;
-  locationText: string;
-  notes: string;
-  timezone: string;
-  selectedGameIds: string[];
-  carriers: Record<string, string>;
+  hasCalendarEvent: boolean;
+  initialValues: InitialValues;
 };
 
 const NO_HOST_VALUE = "__none__";
 const NO_CARRIER_VALUE = "__none__";
 
-function getDraftKey(groupId: string) {
-  return `event_form_draft_${groupId}`;
-}
-
-function readDraft(groupId: string): EventFormDraft | null {
-  try {
-    const raw = sessionStorage.getItem(getDraftKey(groupId));
-    return raw ? (JSON.parse(raw) as EventFormDraft) : null;
-  } catch {
-    return null;
-  }
-}
-
-export function CreateEventForm({
+export function EditEventForm({
+  eventId,
   groupId,
-  groupSlug,
+  groupSlug: _groupSlug,
   members,
   libraryGames,
-  calendarConnected = false,
-}: CreateEventFormProps) {
-  const t = useTranslations("CreateEventForm");
+  hasCalendarEvent,
+  initialValues,
+}: EditEventFormProps) {
+  const t = useTranslations("EditEventForm");
   const locale = useLocale();
   const [state, action] = useActionState<GroupEventFormState, FormData>(
-    createGroupEvent,
+    updateGroupEvent,
     null,
   );
 
-  // All inputs are controlled so values survive any re-render/re-mount.
-  // Initialize with defaults (must match SSR — sessionStorage is client-only).
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [title, setTitle] = useState("");
-  const [locationUserId, setLocationUserId] = useState(NO_HOST_VALUE);
-  const [locationText, setLocationText] = useState("");
-  const [notes, setNotes] = useState("");
-  const [selectedGameIds, setSelectedGameIds] = useState<Set<string>>(new Set());
-  const [carriers, setCarriers] = useState<Record<string, string>>({});
-  const [timezone, setTimezone] = useState("UTC");
-  const [withCalendar, setWithCalendar] = useState(calendarConnected);
+  const [date, setDate] = useState(initialValues.date);
+  const [time, setTime] = useState(initialValues.time);
+  const [title, setTitle] = useState(initialValues.title);
+  const [locationUserId, setLocationUserId] = useState(
+    initialValues.locationUserId ?? NO_HOST_VALUE,
+  );
+  const [locationText, setLocationText] = useState(initialValues.locationText);
+  const [notes, setNotes] = useState(initialValues.notes);
+  const [selectedGameIds, setSelectedGameIds] = useState<Set<string>>(
+    new Set(initialValues.gameIds),
+  );
+  const [carriers, setCarriers] = useState<Record<string, string>>(
+    initialValues.carriers,
+  );
+  const [timezone, setTimezone] = useState(initialValues.timezone);
+  const [updateCalendar, setUpdateCalendar] = useState(false);
 
-  // Detect browser timezone and restore draft after hydration (runs client-only)
+  // Sync browser timezone on mount (in case stored timezone differs)
   useEffect(() => {
-    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (calendarConnected) {
-      const draft = readDraft(groupId);
-      if (draft) {
-        setDate(draft.date);
-        setTime(draft.time);
-        setTitle(draft.title);
-        setLocationUserId(draft.locationUserId);
-        setLocationText(draft.locationText);
-        setNotes(draft.notes);
-        setTimezone(draft.timezone || browserTz);
-        setSelectedGameIds(new Set(draft.selectedGameIds));
-        setCarriers(draft.carriers);
-      } else {
-        setTimezone(browserTz);
-      }
-      sessionStorage.removeItem(getDraftKey(groupId));
-    } else {
-      setTimezone(browserTz);
+    if (!initialValues.timezone || initialValues.timezone === "UTC") {
+      setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
     }
   }, []);
-
-  const today = new Date().toISOString().split("T")[0];
 
   function getUserDisplayName(user: { name: string | null; username: string | null }) {
     return user.name ?? user.username ?? "—";
@@ -160,25 +135,10 @@ export function CreateEventForm({
     setCarriers((prev) => ({ ...prev, [gameId]: userId }));
   }
 
-  // Save all controlled state to sessionStorage before navigating to OAuth
-  function saveDraft() {
-    const draftData: EventFormDraft = {
-      date,
-      time,
-      title,
-      locationUserId,
-      locationText,
-      notes,
-      timezone,
-      selectedGameIds: Array.from(selectedGameIds),
-      carriers,
-    };
-    sessionStorage.setItem(getDraftKey(groupId), JSON.stringify(draftData));
-  }
-
   return (
     <form action={action} className="space-y-5" noValidate>
       <input type="hidden" name="locale" value={locale} />
+      <input type="hidden" name="eventId" value={eventId} />
       <input type="hidden" name="groupId" value={groupId} />
       <input type="hidden" name="timezone" value={timezone} />
 
@@ -189,7 +149,6 @@ export function CreateEventForm({
           id="date"
           name="date"
           type="date"
-          min={today}
           required
           value={date}
           onChange={(e) => setDate(e.target.value)}
@@ -299,11 +258,11 @@ export function CreateEventForm({
             )}
           </div>
 
-        {libraryGames.length === 0 ? (
+          {libraryGames.length === 0 ? (
             <div className="rounded-lg border border-border/70 bg-background/40 px-3 py-2.5">
               <p className="text-sm text-muted-foreground">{t("games.empty")}</p>
             </div>
-        ) : (
+          ) : (
             <div className="max-h-80 space-y-2 overflow-y-auto rounded-lg border border-border/70 bg-muted/20 p-2">
               {libraryGames.map((game) => {
                 const isChecked = selectedGameIds.has(game.id);
@@ -411,10 +370,10 @@ export function CreateEventForm({
                 );
               })}
             </div>
-        )}
-        {state?.errors?.games && (
+          )}
+          {state?.errors?.games && (
             <p className="text-sm text-destructive">{state.errors.games}</p>
-        )}
+          )}
         </div>
       </div>
 
@@ -437,92 +396,78 @@ export function CreateEventForm({
         )}
       </div>
 
-      {/* Google Calendar toggle */}
-      <div className="space-y-2">
-        <label
-          className={cn(
-            "group flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-3 shadow-sm transition-colors",
-            withCalendar
-              ? "border-emerald-500/45 bg-emerald-500/5"
-              : "border-border/70 bg-card/70 hover:border-emerald-500/30 hover:bg-card/90",
-          )}
-        >
-          <input
-            type="checkbox"
-            name="withCalendar"
-            value="on"
-            checked={withCalendar}
-            onChange={(e) => setWithCalendar(e.target.checked)}
-            className="peer sr-only"
-          />
-          <span className="min-w-0 flex-1">
-            <span className="flex min-w-0 items-center gap-2.5">
-              <span
-                aria-hidden
-                className={cn(
-                  "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition-colors",
-                  withCalendar
-                    ? "border-emerald-500/45 bg-emerald-500/10 text-emerald-500"
-                    : "border-border/70 bg-background/50 text-muted-foreground group-hover:text-emerald-500",
-                )}
-              >
-                <CalendarDays className="h-4.5 w-4.5" />
-              </span>
-              <span className="min-w-0 truncate text-sm font-medium">{t("calendar.label")}</span>
-            </span>
-            <span className="mt-1 block pl-[2.625rem] text-xs text-muted-foreground">
-              {t("calendar.helper")}
-            </span>
-          </span>
-
-          <span
-            aria-hidden
+      {/* Update Google Calendar toggle (only if event has a calendar event) */}
+      {hasCalendarEvent && (
+        <div className="space-y-2">
+          <label
             className={cn(
-              "grid h-9 w-9 shrink-0 place-items-center rounded-lg border transition-all duration-200",
-              "border-border/80 bg-background/80",
-              "peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-emerald-500/70",
-              withCalendar &&
-                "border-emerald-500 bg-emerald-500/20 shadow-[0_0_0_3px_rgba(16,185,129,0.16)]",
+              "group flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-3 shadow-sm transition-colors",
+              updateCalendar
+                ? "border-emerald-500/45 bg-emerald-500/5"
+                : "border-border/70 bg-card/70 hover:border-emerald-500/30 hover:bg-card/90",
             )}
           >
-            <Plus
-              className={cn(
-                "h-5 w-5 transition-all duration-200",
-                withCalendar
-                  ? "scale-100 opacity-100 text-emerald-300"
-                  : "scale-90 opacity-65 text-muted-foreground",
-              )}
+            <input
+              type="checkbox"
+              name="updateCalendar"
+              value="on"
+              checked={updateCalendar}
+              onChange={(e) => setUpdateCalendar(e.target.checked)}
+              className="peer sr-only"
             />
-          </span>
-        </label>
+            <span className="min-w-0 flex-1">
+              <span className="flex min-w-0 items-center gap-2.5">
+                <span
+                  aria-hidden
+                  className={cn(
+                    "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition-colors",
+                    updateCalendar
+                      ? "border-emerald-500/45 bg-emerald-500/10 text-emerald-500"
+                      : "border-border/70 bg-background/50 text-muted-foreground group-hover:text-emerald-500",
+                  )}
+                >
+                  <CalendarDays className="h-4.5 w-4.5" />
+                </span>
+                <span className="min-w-0 truncate text-sm font-medium">{t("calendar.updateToggle")}</span>
+              </span>
+              <span className="mt-1 block pl-[2.625rem] text-xs text-muted-foreground">
+                {t("calendar.updateHelper")}
+              </span>
+            </span>
 
-        {calendarConnected && !state?.calendarPermissionRequired && (
-          <div className="mt-2 flex items-center gap-2 rounded-md border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-            <p className="text-xs">{t("calendar.connected")}</p>
-          </div>
-        )}
+            <span
+              aria-hidden
+              className={cn(
+                "grid h-9 w-9 shrink-0 place-items-center rounded-lg border transition-all duration-200",
+                "border-border/80 bg-background/80",
+                "peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-emerald-500/70",
+                updateCalendar &&
+                  "border-emerald-500 bg-emerald-500/20 shadow-[0_0_0_3px_rgba(16,185,129,0.16)]",
+              )}
+            >
+              <RefreshCw
+                className={cn(
+                  "h-4.5 w-4.5 transition-all duration-200",
+                  updateCalendar
+                    ? "scale-100 opacity-100 text-emerald-300"
+                    : "scale-90 opacity-65 text-muted-foreground",
+                )}
+              />
+            </span>
+          </label>
 
-        {state?.calendarPermissionRequired && (
-          <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-amber-600 dark:text-amber-400">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <div className="space-y-1">
+          {state?.calendarPermissionRequired && (
+            <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <p className="text-xs">{t("calendar.permissionRequired")}</p>
-              <Link
-                href={`/api/auth/calendar-connect?groupSlug=${groupSlug}`}
-                className="text-xs font-medium underline"
-                onClick={saveDraft}
-              >
-                {t("calendar.authorizeButton")}
-              </Link>
             </div>
-          </div>
-        )}
+          )}
 
-        {state?.errors?.calendar && (
-          <p className="text-sm text-destructive">{state.errors.calendar}</p>
-        )}
-      </div>
+          {state?.errors?.calendar && (
+            <p className="text-sm text-destructive">{state.errors.calendar}</p>
+          )}
+        </div>
+      )}
 
       {state?.errors?.general && (
         <p className="text-sm text-destructive">{state.errors.general}</p>
@@ -531,9 +476,9 @@ export function CreateEventForm({
       <FormPendingButton
         type="submit"
         className="w-full cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700"
-        pendingText={t("actions.pendingCreate")}
+        pendingText={t("actions.pendingSave")}
       >
-        {t("actions.create")}
+        {t("actions.save")}
       </FormPendingButton>
     </form>
   );

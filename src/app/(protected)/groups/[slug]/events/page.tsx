@@ -48,6 +48,7 @@ export default async function GroupEventsPage({
       id: true,
       title: true,
       date: true,
+      timezone: true,
       locationUser: { select: { id: true, name: true, username: true } },
     },
   });
@@ -135,6 +136,7 @@ function EventRow({
     id: string;
     title: string | null;
     date: Date;
+    timezone: string;
     locationUser: { id: string; name: string | null; username: string | null } | null;
   };
   groupSlug: string;

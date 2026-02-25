@@ -10,7 +10,7 @@ import {
   type GroupIcon as GroupIconValue,
   type GroupVisibility as GroupVisibilityValue,
 } from "@/generated/prisma/client";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -34,13 +34,51 @@ import {
   softDeleteGroupJoinRequestReceivedNotifications,
 } from "@/lib/notifications";
 import {
+  cancelGoogleCalendarEvent,
   createGoogleCalendarEvent,
   refreshGoogleToken,
+  updateGoogleCalendarEvent,
 } from "@/lib/google-calendar";
 
 // ── Input validation ─────────────────────────────────────
 
 const CUID_RE = /^c[a-z0-9]{20,32}$/;
+
+// ── Timezone helpers ──────────────────────────────────────
+
+function isValidTimezone(tz: unknown): tz is string {
+  if (typeof tz !== "string" || !tz) return false;
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Parses a local date+time string (e.g. "2026-02-26" + "15:00") in the given
+ * IANA timezone and returns the equivalent UTC Date.
+ * Uses the Intl formatter offset trick — no external libraries needed.
+ */
+function parseLocalDateTime(dateStr: string, timeStr: string, timezone: string): Date {
+  const naiveUTC = new Date(`${dateStr}T${timeStr}:00Z`);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(naiveUTC);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
+  const shownMs = new Date(
+    `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}:${get("second")}Z`,
+  ).getTime();
+  return new Date(naiveUTC.getTime() + (naiveUTC.getTime() - shownMs));
+}
 const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{1,28}[a-z0-9]$/;
 const PROFILE_PATH_SEGMENT_RE = /^[a-z0-9._-]{3,50}$/;
 const GAME_ID_RE = /^[a-z0-9][a-z0-9._-]{0,99}$/;
@@ -2348,7 +2386,9 @@ export async function createGroupEvent(
   const rawLocationText = formData.get("locationText");
   const rawNotes = formData.get("notes");
   const rawGameIds = formData.getAll("gameIds");
+  const rawTimezone = formData.get("timezone");
   const withCalendar = formData.get("withCalendar") === "on";
+  const timezone = isValidTimezone(rawTimezone) ? rawTimezone : "UTC";
   const locale = getLocaleFromFormData(formData) ?? "es";
 
   const groupId = typeof rawGroupId === "string" ? rawGroupId.trim() : "";
@@ -2412,9 +2452,7 @@ export async function createGroupEvent(
     return { errors: { general: t("event.notMember") } };
   }
 
-  const [year, month, day] = date.split("-").map(Number);
-  const [hours, minutes] = time.split(":").map(Number);
-  const eventDateTime = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+  const eventDateTime = parseLocalDateTime(date, time, timezone);
 
   const resolvedTitle =
     title ||
@@ -2467,6 +2505,7 @@ export async function createGroupEvent(
       createdByUserId: userId,
       title: title || null,
       date: eventDateTime,
+      timezone,
       locationUserId,
       locationText: locationText || null,
       notes: notes || null,
@@ -2518,12 +2557,41 @@ export async function createGroupEvent(
 
       const endDateTime = new Date(eventDateTime.getTime() + 3 * 60 * 60 * 1000);
 
+      const headersList = await headers();
+      const host = headersList.get("x-forwarded-host") ?? headersList.get("host");
+      const proto = (headersList.get("x-forwarded-proto") ?? "http").split(",")[0].trim();
+      const appUrl = host ? `${proto}://${host}` : null;
+      const boardifyEventUrl = appUrl
+        ? `${appUrl}/groups/${group.slug}/events/${createdEvent.id}`
+        : null;
+
+      const gameRecords = gameIds.length > 0
+        ? await prisma.game.findMany({
+            where: { id: { in: gameIds } },
+            select: { id: true, title: true },
+          })
+        : [];
+      const gameLines = gameIds.flatMap((gameId) => {
+        const game = gameRecords.find((g) => g.id === gameId);
+        if (!game) return [];
+        const carrierId = carriersMap[gameId];
+        const carrier = carrierId ? group.members.find((m) => m.userId === carrierId) : null;
+        const suffix = carrier?.user?.username ? ` (lleva @${carrier.user.username})` : "";
+        return [`• ${game.title}${suffix}`];
+      });
+      const gamesSection = gameLines.length > 0 ? `Juegos:\n${gameLines.join("\n")}` : null;
+
+      const calendarDescription =
+        [notes || null, gamesSection, boardifyEventUrl ? `Ver en Boardify: ${boardifyEventUrl}` : null]
+          .filter(Boolean)
+          .join("\n\n") || undefined;
+
       const calendarResult = await createGoogleCalendarEvent(accessToken, {
         summary: resolvedTitle,
-        description: notes || undefined,
+        description: calendarDescription,
         location: locationParts.length > 0 ? locationParts.join(" – ") : undefined,
-        start: { dateTime: eventDateTime.toISOString(), timeZone: "UTC" },
-        end: { dateTime: endDateTime.toISOString(), timeZone: "UTC" },
+        start: { dateTime: eventDateTime.toISOString(), timeZone: timezone },
+        end: { dateTime: endDateTime.toISOString(), timeZone: timezone },
         attendees: attendeeEmails.map((email) => ({ email })),
       });
 
@@ -2556,4 +2624,341 @@ export async function createGroupEvent(
   revalidatePath("/", "layout");
 
   redirect(`/groups/${group.slug}/events/${createdEvent.id}`);
+}
+
+// ── Update Group Event ────────────────────────────────────────────────────────
+
+export async function updateGroupEvent(
+  _prev: GroupEventFormState,
+  formData: FormData,
+): Promise<GroupEventFormState> {
+  const t = await getActionMessagesTranslator(formData);
+  const userId = await getAuthUserId();
+
+  const rawEventId = formData.get("eventId");
+  const rawGroupId = formData.get("groupId");
+  const rawDate = formData.get("date");
+  const rawTime = formData.get("time");
+  const rawTitle = formData.get("title");
+  const rawLocationUserId = formData.get("locationUserId");
+  const rawLocationText = formData.get("locationText");
+  const rawNotes = formData.get("notes");
+  const rawGameIds = formData.getAll("gameIds");
+  const rawTimezone = formData.get("timezone");
+  const updateCalendar = formData.get("updateCalendar") === "on";
+
+  const timezone = isValidTimezone(rawTimezone) ? rawTimezone : "UTC";
+  const locale = getLocaleFromFormData(formData) ?? "es";
+
+  const eventId = typeof rawEventId === "string" ? rawEventId.trim() : "";
+  const groupId = typeof rawGroupId === "string" ? rawGroupId.trim() : "";
+  const date = typeof rawDate === "string" ? rawDate.trim() : "";
+  const time = typeof rawTime === "string" ? rawTime.trim() : "";
+  const title = typeof rawTitle === "string" ? rawTitle.trim() : "";
+  const locationUserId =
+    typeof rawLocationUserId === "string" && CUID_RE.test(rawLocationUserId.trim())
+      ? rawLocationUserId.trim()
+      : null;
+  const locationText = typeof rawLocationText === "string" ? rawLocationText.trim() : "";
+  const notes = typeof rawNotes === "string" ? rawNotes.trim() : "";
+  const gameIds = rawGameIds
+    .map((id) => (typeof id === "string" ? id.trim() : ""))
+    .filter((id) => id.length > 0);
+
+  const errors: NonNullable<GroupEventFormState>["errors"] = {};
+
+  if (!CUID_RE.test(eventId) || !CUID_RE.test(groupId)) {
+    return { errors: { general: t("event.notFound") } };
+  }
+
+  if (!date || !DATE_RE.test(date)) {
+    errors.date = t("event.dateRequired");
+  }
+
+  if (!time || !TIME_RE.test(time)) {
+    errors.time = t("event.timeRequired");
+  }
+
+  if (title && title.length > 100) {
+    errors.title = t("event.titleTooLong");
+  }
+
+  if (locationText && locationText.length > 200) {
+    errors.locationText = t("event.locationTextTooLong");
+  }
+
+  if (notes && notes.length > 500) {
+    errors.notes = t("event.notesTooLong");
+  }
+
+  if (gameIds.length > 20) {
+    errors.games = t("event.tooManyGames");
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return { errors };
+  }
+
+  // Fetch event + group to check permissions
+  const event = await prisma.groupEvent.findUnique({
+    where: { id: eventId, groupId },
+    select: {
+      id: true,
+      createdByUserId: true,
+      googleCalendarEventId: true,
+    },
+  });
+
+  if (!event) {
+    return { errors: { general: t("event.notFound") } };
+  }
+
+  const group = await getGroupActionContext(groupId);
+  const membership = group.members.find((m) => m.userId === userId);
+  const canManage =
+    event.createdByUserId === userId || membership?.role === "ADMIN";
+
+  if (!canManage) {
+    return { errors: { general: t("event.notAuthorized") } };
+  }
+
+  // Check Calendar scope BEFORE updating the event if updateCalendar is requested
+  let calendarAccount: {
+    access_token: string | null;
+    refresh_token: string | null;
+    expires_at: number | null;
+  } | null = null;
+
+  if (updateCalendar && event.googleCalendarEventId) {
+    // Use creator's tokens (not necessarily the current user's)
+    const account = await prisma.account.findFirst({
+      where: { userId: event.createdByUserId, provider: "google" },
+      select: { access_token: true, refresh_token: true, expires_at: true, scope: true },
+    });
+
+    if (!account?.scope?.includes("calendar.events")) {
+      return { calendarPermissionRequired: true };
+    }
+
+    calendarAccount = account;
+  }
+
+  const eventDateTime = parseLocalDateTime(date, time, timezone);
+
+  const resolvedTitle =
+    title ||
+    new Intl.DateTimeFormat(locale === "es" ? "es-AR" : "en-US", {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "UTC",
+    }).format(eventDateTime);
+
+  const carriersMap: Record<string, string | null> = {};
+  for (const gameId of gameIds) {
+    const rawCarrier = formData.get(`carrierUserId_${gameId}`);
+    const carrierId =
+      typeof rawCarrier === "string" && CUID_RE.test(rawCarrier.trim())
+        ? rawCarrier.trim()
+        : null;
+    carriersMap[gameId] = carrierId;
+  }
+
+  await prisma.$transaction([
+    prisma.groupEventGame.deleteMany({ where: { groupEventId: eventId } }),
+    prisma.groupEvent.update({
+      where: { id: eventId },
+      data: {
+        title: title || null,
+        date: eventDateTime,
+        timezone,
+        locationUserId,
+        locationText: locationText || null,
+        notes: notes || null,
+        games: {
+          create: gameIds.map((gameId) => ({
+            gameId,
+            carriedByUserId: carriersMap[gameId] ?? null,
+          })),
+        },
+      },
+    }),
+  ]);
+
+  if (updateCalendar && calendarAccount && event.googleCalendarEventId) {
+    const account = calendarAccount;
+    try {
+      let accessToken = account.access_token ?? "";
+      if (account.expires_at && account.expires_at * 1000 < Date.now()) {
+        if (account.refresh_token) {
+          const refreshed = await refreshGoogleToken(account.refresh_token);
+          accessToken = refreshed.access_token;
+          await prisma.account.updateMany({
+            where: { userId: event.createdByUserId, provider: "google" },
+            data: {
+              access_token: refreshed.access_token,
+              expires_at: Math.floor(Date.now() / 1000 + refreshed.expires_in),
+            },
+          });
+        }
+      }
+
+      const memberIds = group.members.map((m) => m.userId);
+      const memberUsers = await prisma.user.findMany({
+        where: { id: { in: memberIds } },
+        select: { email: true },
+      });
+      const attendeeEmails = memberUsers
+        .map((u) => u.email)
+        .filter((e): e is string => Boolean(e));
+
+      const locationUser = locationUserId
+        ? group.members.find((m) => m.userId === locationUserId)
+        : null;
+      const locationParts = [
+        locationUser?.user?.username ? `@${locationUser.user.username}` : null,
+        locationText || null,
+      ].filter(Boolean);
+
+      const endDateTime = new Date(eventDateTime.getTime() + 3 * 60 * 60 * 1000);
+
+      const headersList = await headers();
+      const host = headersList.get("x-forwarded-host") ?? headersList.get("host");
+      const proto = (headersList.get("x-forwarded-proto") ?? "http").split(",")[0].trim();
+      const appUrl = host ? `${proto}://${host}` : null;
+      const boardifyEventUrl = appUrl
+        ? `${appUrl}/groups/${group.slug}/events/${eventId}`
+        : null;
+
+      const gameRecords = gameIds.length > 0
+        ? await prisma.game.findMany({
+            where: { id: { in: gameIds } },
+            select: { id: true, title: true },
+          })
+        : [];
+      const gameLines = gameIds.flatMap((gameId) => {
+        const game = gameRecords.find((g) => g.id === gameId);
+        if (!game) return [];
+        const carrierId = carriersMap[gameId];
+        const carrier = carrierId ? group.members.find((m) => m.userId === carrierId) : null;
+        const suffix = carrier?.user?.username ? ` (lleva @${carrier.user.username})` : "";
+        return [`• ${game.title}${suffix}`];
+      });
+      const gamesSection = gameLines.length > 0 ? `Juegos:\n${gameLines.join("\n")}` : null;
+
+      const calendarDescription =
+        [notes || null, gamesSection, boardifyEventUrl ? `Ver en Boardify: ${boardifyEventUrl}` : null]
+          .filter(Boolean)
+          .join("\n\n") || undefined;
+
+      await updateGoogleCalendarEvent(accessToken, event.googleCalendarEventId, {
+        summary: resolvedTitle,
+        description: calendarDescription,
+        location: locationParts.length > 0 ? locationParts.join(" – ") : undefined,
+        start: { dateTime: eventDateTime.toISOString(), timeZone: timezone },
+        end: { dateTime: endDateTime.toISOString(), timeZone: timezone },
+        attendees: attendeeEmails.map((email) => ({ email })),
+      });
+    } catch {
+      // Calendar update failed — event is already saved, continue without error
+    }
+  }
+
+  revalidatePath(`/groups/${group.slug}`);
+  revalidatePath(`/groups/${group.slug}/events`);
+  revalidatePath(`/groups/${group.slug}/events/${eventId}`);
+
+  redirect(`/groups/${group.slug}/events/${eventId}`);
+}
+
+// ── Delete Group Event ────────────────────────────────────────────────────────
+
+export async function deleteGroupEvent(eventId: string): Promise<void> {
+  "use server";
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Not authenticated");
+  const userId = session.user.id;
+
+  const event = await prisma.groupEvent.findUnique({
+    where: { id: eventId },
+    select: {
+      createdByUserId: true,
+      googleCalendarEventId: true,
+      group: {
+        select: {
+          slug: true,
+          members: { select: { userId: true, role: true } },
+        },
+      },
+    },
+  });
+
+  if (!event) throw new Error("Event not found");
+
+  const membership = event.group.members.find((m) => m.userId === userId);
+  const canManage =
+    event.createdByUserId === userId || membership?.role === "ADMIN";
+
+  if (!canManage) throw new Error("Forbidden");
+
+  // Fetch creator's Calendar tokens before deleting the DB record
+  let calendarCancelData: {
+    accessToken: string;
+    calendarEventId: string;
+  } | null = null;
+
+  if (event.googleCalendarEventId) {
+    const account = await prisma.account.findFirst({
+      where: { userId: event.createdByUserId, provider: "google" },
+      select: { access_token: true, refresh_token: true, expires_at: true, scope: true },
+    });
+
+    if (account?.scope?.includes("calendar.events")) {
+      let accessToken = account.access_token ?? "";
+      if (account.expires_at && account.expires_at * 1000 < Date.now()) {
+        if (account.refresh_token) {
+          try {
+            const refreshed = await refreshGoogleToken(account.refresh_token);
+            accessToken = refreshed.access_token;
+            await prisma.account.updateMany({
+              where: { userId: event.createdByUserId, provider: "google" },
+              data: {
+                access_token: refreshed.access_token,
+                expires_at: Math.floor(Date.now() / 1000 + refreshed.expires_in),
+              },
+            });
+          } catch {
+            // Token refresh failed — skip Calendar cancel
+          }
+        }
+      }
+      if (accessToken) {
+        calendarCancelData = {
+          accessToken,
+          calendarEventId: event.googleCalendarEventId,
+        };
+      }
+    }
+  }
+
+  await prisma.groupEvent.delete({ where: { id: eventId } });
+
+  // Cancel Google Calendar event (soft fail — DB record is already gone)
+  if (calendarCancelData) {
+    try {
+      await cancelGoogleCalendarEvent(
+        calendarCancelData.accessToken,
+        calendarCancelData.calendarEventId,
+      );
+    } catch {
+      // Calendar cancel failed — not fatal
+    }
+  }
+
+  revalidatePath(`/groups/${event.group.slug}`);
+  revalidatePath(`/groups/${event.group.slug}/events`);
+  revalidatePath("/", "layout");
+
+  redirect(`/groups/${event.group.slug}/events`);
 }

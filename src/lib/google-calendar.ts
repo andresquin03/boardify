@@ -46,7 +46,7 @@ export async function createGoogleCalendarEvent(
   event: CalendarEventInput,
 ): Promise<CalendarEventResult> {
   const res = await fetch(
-    "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+    "https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all",
     {
       method: "POST",
       headers: {
@@ -65,4 +65,48 @@ export async function createGoogleCalendarEvent(
   }
 
   return res.json() as Promise<CalendarEventResult>;
+}
+
+export async function updateGoogleCalendarEvent(
+  accessToken: string,
+  calendarEventId: string,
+  event: CalendarEventInput,
+): Promise<void> {
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(calendarEventId)}?sendUpdates=all`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(event),
+    },
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`Google Calendar API error: ${JSON.stringify(err)}`);
+  }
+}
+
+export async function cancelGoogleCalendarEvent(
+  accessToken: string,
+  calendarEventId: string,
+): Promise<void> {
+  // DELETE the event — Google sends cancellation emails to all attendees
+  // when sendUpdates=all is set.
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(calendarEventId)}?sendUpdates=all`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+  );
+
+  // 204 No Content = success; 410 Gone = already deleted — both are fine.
+  if (!res.ok && res.status !== 410) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`Google Calendar API error: ${JSON.stringify(err)}`);
+  }
 }

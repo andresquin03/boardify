@@ -8,11 +8,13 @@ import {
   MapPin,
   NotebookPen,
   Gamepad2,
+  Pencil,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getEventDisplayTitle } from "@/components/groups/group-events-preview-card";
+import { DeleteEventButton } from "@/components/groups/delete-event-button";
 
 export default async function EventDetailPage({
   params,
@@ -33,7 +35,7 @@ export default async function EventDetailPage({
       id: true,
       slug: true,
       name: true,
-      members: { select: { userId: true } },
+      members: { select: { userId: true, role: true } },
     },
   });
 
@@ -46,8 +48,8 @@ export default async function EventDetailPage({
     notFound();
   }
 
-  const isMember = group.members.some((m) => m.userId === viewerId);
-  if (!isMember) redirect(`/groups/${slug}`);
+  const membership = group.members.find((m) => m.userId === viewerId);
+  if (!membership) redirect(`/groups/${slug}`);
 
   const event = await prisma.groupEvent.findUnique({
     where: { id: eventId, groupId: group.id },
@@ -65,6 +67,9 @@ export default async function EventDetailPage({
 
   if (!event) notFound();
 
+  const canManageEvent =
+    event.createdByUserId === viewerId || membership.role === "ADMIN";
+
   const displayTitle = getEventDisplayTitle(event, locale);
   const fallbackUser = t("fallbackUser");
 
@@ -73,13 +78,13 @@ export default async function EventDetailPage({
     day: "numeric",
     month: "long",
     year: "numeric",
-    timeZone: "UTC",
+    timeZone: event.timezone,
   }).format(event.date);
 
   const formattedTime = new Intl.DateTimeFormat(locale === "es" ? "es-AR" : "en-US", {
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: "UTC",
+    timeZone: event.timezone,
   }).format(event.date);
 
   function getUserInitials(user: { name: string | null; username: string | null }) {
@@ -101,11 +106,26 @@ export default async function EventDetailPage({
         {t("backToGroup")}
       </Link>
 
-      <div className="mt-4 flex items-center gap-2.5">
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/70 bg-card/70 text-emerald-500 shadow-sm">
-          <CalendarDays className="h-4.5 w-4.5" />
-        </span>
-        <h1 className="text-2xl font-bold">{displayTitle}</h1>
+      <div className="mt-4 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-card/70 text-emerald-500 shadow-sm">
+            <CalendarDays className="h-4.5 w-4.5" />
+          </span>
+          <h1 className="truncate text-2xl font-bold">{displayTitle}</h1>
+        </div>
+
+        {canManageEvent && (
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              href={`/groups/${slug}/events/${eventId}/edit`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-card/70 px-3 py-1.5 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted/60"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              {t("editEvent")}
+            </Link>
+            <DeleteEventButton eventId={event.id} hasCalendarEvent={Boolean(event.googleCalendarEventId)} />
+          </div>
+        )}
       </div>
 
       <p className="mt-1 text-sm text-muted-foreground">
@@ -197,9 +217,9 @@ export default async function EventDetailPage({
             href={event.googleCalendarEventLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm text-emerald-600 hover:underline dark:text-emerald-400"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-500/50 bg-background px-4 py-2 text-sm font-medium text-emerald-600 transition-colors hover:bg-emerald-500/5 dark:text-emerald-400"
           >
-            <ExternalLink className="h-3.5 w-3.5" />
+            <ExternalLink className="h-4 w-4" />
             {t("calendarLink")}
           </a>
         </div>

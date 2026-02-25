@@ -258,6 +258,7 @@ export default async function GroupDetailPage({
               id: true,
               title: true,
               date: true,
+              timezone: true,
               locationUser: { select: { id: true, name: true, username: true } },
             },
           })
@@ -271,6 +272,7 @@ export default async function GroupDetailPage({
                   id: true,
                   title: true,
                   date: true,
+                  timezone: true,
                   locationUser: { select: { id: true, name: true, username: true } },
                 },
               }),
