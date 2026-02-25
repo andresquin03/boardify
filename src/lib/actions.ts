@@ -22,6 +22,8 @@ import {
   notifyFriendRequestAccepted,
   notifyFriendRequestReceived,
   notifyGroupEventCreated,
+  notifyGroupEventUpdated,
+  notifyGroupEventDeleted,
   notifyGroupInviteAccepted,
   notifyGroupInviteReceived,
   notifyGroupJoinRequestAccepted,
@@ -2786,6 +2788,17 @@ export async function updateGroupEvent(
     }),
   ]);
 
+  const memberIds = group.members.map((m) => m.userId);
+  await notifyGroupEventUpdated({
+    recipientIds: memberIds,
+    actorId: userId,
+    groupId,
+    groupSlug: group.slug,
+    groupName: group.name,
+    eventId,
+    eventTitle: resolvedTitle,
+  });
+
   if (updateCalendar && calendarAccount && event.googleCalendarEventId) {
     const account = calendarAccount;
     try {
@@ -2884,10 +2897,13 @@ export async function deleteGroupEvent(eventId: string): Promise<void> {
     where: { id: eventId },
     select: {
       createdByUserId: true,
+      title: true,
       googleCalendarEventId: true,
       group: {
         select: {
+          id: true,
           slug: true,
+          name: true,
           members: { select: { userId: true, role: true } },
         },
       },
@@ -2955,6 +2971,16 @@ export async function deleteGroupEvent(eventId: string): Promise<void> {
       // Calendar cancel failed — not fatal
     }
   }
+
+  const memberIds = event.group.members.map((m) => m.userId);
+  await notifyGroupEventDeleted({
+    recipientIds: memberIds,
+    actorId: userId,
+    groupId: event.group.id,
+    groupSlug: event.group.slug,
+    groupName: event.group.name,
+    eventTitle: event.title ?? "",
+  });
 
   revalidatePath(`/groups/${event.group.slug}`);
   revalidatePath(`/groups/${event.group.slug}/events`);

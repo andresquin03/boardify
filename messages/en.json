@@ -694,6 +694,14 @@
         "title": "New event in group",
         "message": "{actorName} created an event in {groupName}: {eventTitle}."
       },
+      "groupEventUpdated": {
+        "title": "Event updated",
+        "message": "{actorName} updated an event in {groupName}: {eventTitle}."
+      },
+      "groupEventDeleted": {
+        "title": "Event deleted",
+        "message": "{actorName} deleted an event in {groupName}: {eventTitle}."
+      },
       "unknown": {
         "title": "Notification",
         "message": "{actorName} triggered {eventKey}."
