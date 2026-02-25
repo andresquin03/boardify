@@ -348,7 +348,7 @@
     "button": "Delete group",
     "dialog": {
       "title": "Delete {groupName}?",
-      "description": "This permanently deletes the group, members, and invitations. This action cannot be undone.",
+      "description": "This permanently deletes the group, members, events, and invitations. This action cannot be undone.",
       "cancel": "Cancel",
       "confirm": "Yes, delete group",
       "pending": "Deleting..."
@@ -701,6 +701,14 @@
       "groupEventDeleted": {
         "title": "Event deleted",
         "message": "{actorName} deleted an event in {groupName}: {eventTitle}."
+      },
+      "groupUpdated": {
+        "title": "Group updated",
+        "message": "{actorName} updated {groupName}."
+      },
+      "groupDeleted": {
+        "title": "Group deleted",
+        "message": "{actorName} deleted {groupName}."
       },
       "unknown": {
         "title": "Notification",

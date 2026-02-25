@@ -405,12 +405,34 @@ function getNotificationDetails(notification: NotificationItem, t: Notifications
         ? payload.eventTitle
         : t("fallbacks.event");
 
-    const href = groupSlug ? `/groups/${groupSlug}/events` : "/groups";
-
     return {
       title: t("events.groupEventDeleted.title"),
       message: t("events.groupEventDeleted.message", { actorName, groupName, eventTitle }),
-      href,
+      href: null,
+      actorDisplayName: actorName,
+      actorProfileHref,
+      actorInitials,
+      scope,
+    };
+  }
+
+  if (notification.eventKey === NOTIFICATION_EVENT_KEY.GROUP_UPDATED) {
+    return {
+      title: t("events.groupUpdated.title"),
+      message: t("events.groupUpdated.message", { actorName, groupName }),
+      href: groupSlug ? `/groups/${groupSlug}` : "/groups",
+      actorDisplayName: actorName,
+      actorProfileHref,
+      actorInitials,
+      scope,
+    };
+  }
+
+  if (notification.eventKey === NOTIFICATION_EVENT_KEY.GROUP_DELETED) {
+    return {
+      title: t("events.groupDeleted.title"),
+      message: t("events.groupDeleted.message", { actorName, groupName }),
+      href: null,
       actorDisplayName: actorName,
       actorProfileHref,
       actorInitials,

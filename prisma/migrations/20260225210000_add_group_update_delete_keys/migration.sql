@@ -1,0 +1,2 @@
+ALTER TYPE "NotificationEventKey" ADD VALUE 'GROUP_UPDATED';
+ALTER TYPE "NotificationEventKey" ADD VALUE 'GROUP_DELETED';

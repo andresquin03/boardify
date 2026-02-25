@@ -31,6 +31,8 @@ import {
   notifyGroupMemberJoined,
   notifyGroupMemberPromotedToAdmin,
   notifyGroupMemberRemoved,
+  notifyGroupUpdated,
+  notifyGroupDeleted,
   softDeleteFriendRequestReceivedNotification,
   softDeleteGroupInviteReceivedNotification,
   softDeleteGroupJoinRequestReceivedNotifications,
@@ -962,9 +964,17 @@ export async function updateGroup(
     };
   }
 
-  const currentUser = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { username: true },
+  const [currentUser, groupMembers] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { username: true } }),
+    prisma.groupMember.findMany({ where: { groupId }, select: { userId: true } }),
+  ]);
+
+  await notifyGroupUpdated({
+    recipientIds: groupMembers.map((m) => m.userId),
+    actorId: userId,
+    groupId,
+    groupSlug: nextSlug,
+    groupName: parsed.data.name,
   });
 
   revalidatePath("/groups");
@@ -988,6 +998,7 @@ export async function deleteGroup(groupId: string) {
       select: {
         id: true,
         slug: true,
+        name: true,
         members: {
           select: {
             userId: true,
@@ -1015,10 +1026,20 @@ export async function deleteGroup(groupId: string) {
 
     return {
       slug: group.slug,
+      name: group.name,
+      memberIds: group.members.map((m) => m.userId),
       memberUsernames: group.members
         .map((member) => member.user.username)
         .filter((username): username is string => Boolean(username)),
     };
+  });
+
+  await notifyGroupDeleted({
+    recipientIds: deleted.memberIds,
+    actorId: userId,
+    groupId,
+    groupSlug: deleted.slug,
+    groupName: deleted.name,
   });
 
   revalidatePath("/groups");

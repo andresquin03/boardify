@@ -348,7 +348,7 @@
     "button": "Eliminar grupo",
     "dialog": {
       "title": "¿Eliminar {groupName}?",
-      "description": "Esto elimina de forma permanente el grupo, miembros e invitaciones. Esta acción no se puede deshacer.",
+      "description": "Esto elimina de forma permanente el grupo, miembros, eventos e invitaciones. Esta acción no se puede deshacer.",
       "cancel": "Cancelar",
       "confirm": "Sí, eliminar grupo",
       "pending": "Eliminando..."
@@ -701,6 +701,14 @@
       "groupEventDeleted": {
         "title": "Evento eliminado",
         "message": "{actorName} eliminó un evento en {groupName}: {eventTitle}."
+      },
+      "groupUpdated": {
+        "title": "Grupo actualizado",
+        "message": "{actorName} actualizó {groupName}."
+      },
+      "groupDeleted": {
+        "title": "Grupo eliminado",
+        "message": "{actorName} eliminó {groupName}."
       },
       "unknown": {
         "title": "Notificación",

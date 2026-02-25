@@ -86,7 +86,7 @@ Abrir: `http://localhost:3000`
 │   └── games/
 ├── src/
 │   ├── app/
-│   │   ├── (protected)/                     # rutas autenticadas (games, users, friends, groups, profile, settings, notifications); grupos incluye /events y /events/new y /events/[eventId]
+│   │   ├── (protected)/                     # rutas autenticadas (games, users, friends, groups, profile, settings, notifications); grupos incluye rutas de eventos
 │   │   ├── about/
 │   │   ├── api/
 │   │   │   ├── auth/[...nextauth]/
@@ -130,8 +130,10 @@ Abrir: `http://localhost:3000`
 - UX de notificaciones de grupos: entrar a `/u/[username]/groups` marca vistas las de scope grupos solo si el viewer es owner de ese perfil; entrar a `/groups/[slug]` marca vistas solo las notificaciones asociadas a ese grupo (`entityId` o `payload.groupId`).
 - TODO (future review): el `payload` de notificaciones guarda snapshot de metadatos de grupo (`groupName/groupSlug`); tras renames puede verse stale y, si el grupo se elimina, algunos links historicos pueden terminar en `notFound`.
 - Integridad: validacion defensiva de inputs (regex/enums), checks de autorizacion y `revalidatePath` despues de cambios.
-- Eventos de grupos: los grupos tienen eventos (`/groups/[slug]/events`). Cada evento tiene fecha, hora, ubicacion (miembro anfitrion + texto libre), juegos a llevar (con portador opcional) y notas. Se pueden crear con invitacion a Google Calendar (re-auth on-demand via `/api/auth/calendar-connect`). Titulo es opcional; si esta vacio se muestra la fecha+hora formateada con `Intl.DateTimeFormat` (no se persiste en DB). `getEventDisplayTitle` en `group-events-preview-card.tsx` es el helper compartido para esto.
-- Google Calendar: re-auth on-demand (no modifica el provider global). El scope `calendar.events` se verifica en `Account.scope` antes de crear el evento (para evitar registros huerfanos). Si falta el scope, la action retorna `{ calendarPermissionRequired: true }` sin crear nada. El token se refresca automaticamente si esta vencido.
+- Eventos de grupos: los grupos tienen eventos (`/groups/[slug]/events`) con fecha, hora, timezone, ubicacion, juegos y notas. Soportan crear/editar/eliminar con permisos para creador del evento o admins del grupo. Titulo opcional; si falta, se muestra fecha+hora formateada (`getEventDisplayTitle`).
+- Google Calendar: integracion con re-auth on-demand y chequeo de scope `calendar.events` antes de crear. Soporta sincronizacion de create/update/delete (delete en soft-fail) y arma descripcion con notas, juegos y link al evento en Boardify.
+- Visibilidad de grupos: `/groups` muestra todos los grupos publicos e "invitation only" mas los grupos PRIVATE donde el viewer es miembro.
+- Notificaciones de grupos y eventos: ademas de membresia, se notifican cambios de grupo y de eventos (crear/editar/eliminar). Las notificaciones de eliminacion no incluyen link de accion.
 - Dominio de datos (Prisma):
   - Auth: `User`, `Account`, `Session`, `VerificationToken`.
   - Catalogo: `Game`, `Category`, `GameCategory`, `UserGame`.

@@ -76,6 +76,8 @@ enum NotificationEventKey {
   GROUP_EVENT_CREATED
   GROUP_EVENT_UPDATED
   GROUP_EVENT_DELETED
+  GROUP_UPDATED
+  GROUP_DELETED
 }
 
 enum NotificationScope {

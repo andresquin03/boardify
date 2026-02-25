@@ -22,9 +22,10 @@ Boardify baja esa friccion con flujos simples de perfil, amigos, grupos y notifi
 - Grupos con visibilidad `PUBLIC`, `INVITATION` y `PRIVATE`.
 - Invitaciones a grupos entre amigos y solicitudes de ingreso para grupos por invitacion.
 - Moderacion de miembros en grupos: admins pueden promover miembros a admin y expulsar (`kick`) miembros no-admin.
-- Eventos de grupo: crear eventos con fecha/hora, anfitrion/lugar, juegos a llevar (con portador opcional) y notas.
-- Integracion opcional con Google Calendar para crear el evento e invitar miembros del grupo (re-autorizacion on-demand).
-- Centro de notificaciones (no leidas, vistas, borrado individual y clear all).
+- Eventos de grupo: crear, editar y eliminar eventos con fecha/hora, timezone, anfitrion/lugar, juegos a llevar (con portador opcional) y notas. Permisos: creador del evento o admin del grupo.
+- Integracion con Google Calendar: crear, actualizar y cancelar eventos con notificacion a invitados (re-autorizacion on-demand). La descripcion incluye lista de juegos y link al evento en Boardify.
+- `/groups` muestra los grupos privados a los que el usuario pertenece ademas de los publicos e "invitation only".
+- Centro de notificaciones (no leidas, vistas, borrado individual y clear all). Cubre amistades, grupos y eventos — incluye notificaciones de edicion y eliminacion.
 
 ## Estado actual
 
@@ -88,10 +89,10 @@ pnpm dev
 ## Arquitectura (resumen)
 
 - `src/app`: rutas App Router (publicas y protegidas).
-- `src/app/(protected)`: dominio principal autenticado (games, users, friends, groups, profile, settings, notifications) e incluye eventos de grupos (`/groups/[slug]/events`, `/new`, `/[eventId]`).
-- `src/lib/actions.ts`: server actions con mutaciones de dominio (incluyendo creacion de eventos de grupos).
-- `src/lib/notifications.ts`: logica de notificaciones (crear, listar, marcar vistas, borrar) basada en catalogo de eventos y scopes.
-- `src/lib/google-calendar.ts`: integracion con Google Calendar (refresh token + creacion de eventos).
+- `src/app/(protected)`: dominio principal autenticado (games, users, friends, groups, profile, settings, notifications) e incluye eventos de grupos (`/groups/[slug]/events`, `/new`, `/[eventId]`, `/[eventId]/edit`).
+- `src/lib/actions.ts`: server actions con mutaciones de dominio (incluyendo creacion, edicion y eliminacion de eventos de grupos, con notificaciones).
+- `src/lib/notifications.ts`: logica de notificaciones (crear, listar, marcar vistas, borrar) basada en catalogo de eventos y scopes. Cubre amistades, grupos, membresia y eventos de grupo (create/update/delete).
+- `src/lib/google-calendar.ts`: integracion con Google Calendar (refresh token, crear, actualizar y cancelar eventos con `sendUpdates=all`).
 - `src/app/api/auth/calendar-connect/route.ts`: re-auth con Google para pedir scope `calendar.events` cuando el usuario quiere exportar un evento.
 - `src/i18n/request.ts`: resolucion de locale por request con prioridad `user.language` -> cookie `boardify_lang` -> `Accept-Language` -> `en`.
 - `src/lib/locale.ts`: normalizacion de locales (`en`, `es`) y mapeo entre locale UI y `User.language` (`EN`/`ES`).

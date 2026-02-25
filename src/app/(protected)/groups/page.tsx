@@ -29,9 +29,10 @@ export default async function GroupsPage() {
   const [groups, pendingInvitations, pendingJoinRequests] = await Promise.all([
     prisma.group.findMany({
       where: {
-        visibility: {
-          not: "PRIVATE",
-        },
+        OR: [
+          { visibility: { not: "PRIVATE" } },
+          { visibility: "PRIVATE", members: { some: { userId: viewerId } } },
+        ],
       },
       include: {
         members: {

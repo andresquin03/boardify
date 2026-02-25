@@ -16,6 +16,8 @@ export const NOTIFICATION_EVENT_KEY = {
   GROUP_EVENT_CREATED: NotificationEventKey.GROUP_EVENT_CREATED,
   GROUP_EVENT_UPDATED: NotificationEventKey.GROUP_EVENT_UPDATED,
   GROUP_EVENT_DELETED: NotificationEventKey.GROUP_EVENT_DELETED,
+  GROUP_UPDATED: NotificationEventKey.GROUP_UPDATED,
+  GROUP_DELETED: NotificationEventKey.GROUP_DELETED,
 } as const;
 
 type NotificationCreateInput = {
@@ -695,6 +697,63 @@ export async function notifyGroupEventCreated({
           eventId,
           eventTitle,
         },
+      }),
+    ),
+  );
+}
+
+export async function notifyGroupUpdated({
+  recipientIds,
+  actorId,
+  groupId,
+  groupSlug,
+  groupName,
+}: {
+  recipientIds: string[];
+  actorId: string;
+  groupId: string;
+  groupSlug?: string;
+  groupName?: string;
+}) {
+  const uniqueRecipientIds = [...new Set(recipientIds)].filter((id) => id !== actorId);
+  if (uniqueRecipientIds.length === 0) return [];
+
+  return Promise.all(
+    uniqueRecipientIds.map((recipientId) =>
+      createNotification({
+        userId: recipientId,
+        actorId,
+        eventKey: NOTIFICATION_EVENT_KEY.GROUP_UPDATED,
+        entityId: groupId,
+        payload: { groupId, groupSlug, groupName },
+      }),
+    ),
+  );
+}
+
+export async function notifyGroupDeleted({
+  recipientIds,
+  actorId,
+  groupId,
+  groupSlug,
+  groupName,
+}: {
+  recipientIds: string[];
+  actorId: string;
+  groupId: string;
+  groupSlug?: string;
+  groupName?: string;
+}) {
+  const uniqueRecipientIds = [...new Set(recipientIds)].filter((id) => id !== actorId);
+  if (uniqueRecipientIds.length === 0) return [];
+
+  return Promise.all(
+    uniqueRecipientIds.map((recipientId) =>
+      createNotification({
+        userId: recipientId,
+        actorId,
+        eventKey: NOTIFICATION_EVENT_KEY.GROUP_DELETED,
+        payload: { groupId, groupSlug, groupName },
       }),
     ),
   );
