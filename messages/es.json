@@ -840,6 +840,9 @@
     }
   },
   "ActionMessages": {
+    "common": {
+      "rateLimited": "Demasiadas solicitudes. Esperá un momento e intentá de nuevo."
+    },
     "group": {
       "invalidName": "Nombre de grupo inválido. Usá 3-30 letras, números, espacios, puntos, guiones bajos o guiones.",
       "descriptionTooLong": "La descripción debe tener 160 caracteres o menos.",

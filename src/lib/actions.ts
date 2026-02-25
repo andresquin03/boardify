@@ -43,6 +43,7 @@ import {
   refreshGoogleToken,
   updateGoogleCalendarEvent,
 } from "@/lib/google-calendar";
+import { isRateLimited, limiters } from "@/lib/ratelimit";
 
 // ── Input validation ─────────────────────────────────────
 
@@ -335,6 +336,7 @@ export async function sendFriendRequest(addresseeId: string, profileUsername: st
   assertCuid(addresseeId, "addresseeId");
   assertProfilePathSegment(profileUsername, "profileUsername");
   const requesterId = await getAuthUserId();
+  if (await isRateLimited(limiters.social, requesterId)) return;
 
   if (requesterId === addresseeId) {
     throw new Error("Cannot send friend request to yourself");
@@ -766,6 +768,9 @@ export async function createGroup(
 ): Promise<GroupFormState> {
   const t = await getActionMessagesTranslator(formData);
   const userId = await getAuthUserId();
+  if (await isRateLimited(limiters.creation, userId)) {
+    return { errors: { general: t("common.rateLimited") } };
+  }
   const parsed = parseGroupFormData(formData, t);
 
   if ("errors" in parsed) {
@@ -859,6 +864,9 @@ export async function updateGroup(
 ): Promise<GroupFormState> {
   const t = await getActionMessagesTranslator(formData);
   const userId = await getAuthUserId();
+  if (await isRateLimited(limiters.mutation, userId)) {
+    return { errors: { general: t("common.rateLimited") } };
+  }
   const groupId = formData.get("groupId");
   assertCuid(groupId, "groupId");
   const parsed = parseGroupFormData(formData, t);
@@ -1220,6 +1228,7 @@ export async function removeGroupMember(groupId: string, targetUserId: string) {
 export async function joinPublicGroup(groupId: string) {
   assertCuid(groupId, "groupId");
   const userId = await getAuthUserId();
+  if (await isRateLimited(limiters.social, userId)) return;
   const [group, user, existingInvitation] = await Promise.all([
     getGroupActionContext(groupId),
     prisma.user.findUnique({
@@ -1310,6 +1319,7 @@ export async function joinPublicGroup(groupId: string) {
 export async function requestToJoinGroup(groupId: string) {
   assertCuid(groupId, "groupId");
   const requesterId = await getAuthUserId();
+  if (await isRateLimited(limiters.social, requesterId)) return;
   const [group, requester] = await Promise.all([
     getGroupActionContext(groupId),
     prisma.user.findUnique({
@@ -1651,6 +1661,7 @@ export async function sendGroupInvitation(groupId: string, inviteeId: string) {
   assertCuid(groupId, "groupId");
   assertCuid(inviteeId, "inviteeId");
   const inviterId = await getAuthUserId();
+  if (await isRateLimited(limiters.social, inviterId)) return;
 
   if (inviterId === inviteeId) {
     throw new Error("Cannot invite yourself");
@@ -2400,6 +2411,9 @@ export async function createGroupEvent(
 ): Promise<GroupEventFormState> {
   const t = await getActionMessagesTranslator(formData);
   const userId = await getAuthUserId();
+  if (await isRateLimited(limiters.creation, userId)) {
+    return { errors: { general: t("common.rateLimited") } };
+  }
 
   const rawGroupId = formData.get("groupId");
   const rawDate = formData.get("date");
@@ -2657,6 +2671,9 @@ export async function updateGroupEvent(
 ): Promise<GroupEventFormState> {
   const t = await getActionMessagesTranslator(formData);
   const userId = await getAuthUserId();
+  if (await isRateLimited(limiters.mutation, userId)) {
+    return { errors: { general: t("common.rateLimited") } };
+  }
 
   const rawEventId = formData.get("eventId");
   const rawGroupId = formData.get("groupId");

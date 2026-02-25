@@ -840,6 +840,9 @@
     }
   },
   "ActionMessages": {
+    "common": {
+      "rateLimited": "Too many requests. Please wait a moment and try again."
+    },
     "group": {
       "invalidName": "Invalid group name. Use 3-30 letters, numbers, spaces, dots, underscores or hyphens.",
       "descriptionTooLong": "Description must be 160 characters or less.",
