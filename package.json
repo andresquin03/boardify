@@ -7,9 +7,11 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
+    "lint:fix": "eslint --fix",
     "db:seed": "npx tsx prisma/seed.ts",
     "db:migrate": "npx prisma migrate dev",
-    "db:studio": "npx prisma studio"
+    "db:studio": "npx prisma studio",
+    "prepare": "husky"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
@@ -31,6 +33,9 @@
     "react-dom": "19.2.3",
     "tailwind-merge": "^3.4.1"
   },
+  "lint-staged": {
+    "*.{ts,tsx}": ["eslint --fix"]
+  },
   "pnpm": {
     "onlyBuiltDependencies": [
       "@prisma/engines",
@@ -46,6 +51,8 @@
     "dotenv": "^17.3.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.3.3",
     "prisma": "^7",
     "shadcn": "^3.8.5",
     "tailwindcss": "^4",
